@@ -1,0 +1,7 @@
+# Providers may only live in application layers (docs/riverpod.md).
+targets:
+  $default:
+    builders:
+      riverpod_generator:
+        generate_for:
+          - lib/src/**/application/*.dart

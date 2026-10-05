@@ -1,4 +1,21 @@
-include: package:flutter_lints/flutter.yaml
+include: package:very_good_analysis/analysis_options.yaml
 
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+formatter:
+  trailing_commas: automate
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    - "**/*.g.dart"
+
+plugins:
+  riverpod_lint: 3.1.4
+
+linter:
+  rules:
+    # Many internal widgets are Dart-public (one widget per file). Everything
+    # the barrel exports must still carry dartdoc: see docs/widgets.md.
+    public_member_api_docs: false

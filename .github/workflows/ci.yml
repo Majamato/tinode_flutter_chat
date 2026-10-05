@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tinode_flutter_chat
+    steps:
+      # tinode_dart_client is a path dependency (../tinode_dart_client) until
+      # it is on pub.dev, so both repos are checked out side by side.
+      - uses: actions/checkout@v4
+        with:
+          path: tinode_flutter_chat
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/tinode_dart_client
+          path: tinode_dart_client
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.38.6 # Keep in sync with .fvmrc.
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # Regenerate and format; any diff means stale generated code or
+      # unformatted sources were committed.
+      - run: dart run build_runner build
+      - run: dart format .
+      - run: git diff --exit-code
+      # `dart analyze`, not `flutter analyze`: only it reports riverpod_lint.
+      - run: dart analyze --fatal-infos
+      - run: dart analyze --fatal-infos
+        working-directory: tinode_flutter_chat/example
+      # Integration tests are skipped by default (dart_test.yaml).
+      - run: flutter test
+      # TODO: `flutter pub publish --dry-run` and pana once the client is
+      # hosted on pub.dev and the path dependency is gone.

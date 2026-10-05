@@ -4,4 +4,6 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- The local test server speaks plain ws://, not wss://. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>

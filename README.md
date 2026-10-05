@@ -1,39 +1,70 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# tinode_flutter_chat
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat server, built on
+[`tinode_dart_client`](../tinode_dart_client).
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+- Connects, logs in with a built-in form or with credentials you pass, and keeps the session for as
+  long as the widget lives.
+- Shows the chat list from `me`, newest first, with unread counts that follow new messages and reads
+  from other devices.
+- Opens direct chats, groups and channels. Channel followers get a read-only view.
+- Loads history, pages older messages in on scroll, and merges live messages as they arrive.
+- Sends plain text and marks what the user sees as read.
+- Restyle it with a `TinodeChatTheme` theme extension, and translate or reword it with
+  `TinodeChatStrings`.
+- Needs no `ProviderScope` or other setup in your app.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
 ```dart
-const like = 'sample';
+import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
+
+void main() => runApp(
+  MaterialApp(
+    home: TinodeChat(
+      config: TinodeConfig(
+        server: Uri.parse('wss://chat.example.com'),
+        apiKey: '<your API key>',
+        userAgent: 'MyApp/1.0',
+      ),
+      // Optional: skip the login form. Keep the token from onLoggedIn.
+      // credentials: TinodeCredentials.token(savedToken),
+      onLoggedIn: (login) => saveToken(login.token),
+    ),
+  ),
+);
 ```
 
-## Additional information
+To restyle the chat, add a theme extension:
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+```dart
+ThemeData(
+  extensions: [
+    TinodeChatTheme.fallback(ThemeData()).copyWith(ownBubbleColor: Colors.teal),
+  ],
+)
+```
+
+See [`example/`](example/lib/main.dart) for a runnable app. To try it locally, start the server
+from `../tinode-tests` (`docker compose up -d`) and log in as `alice` / `alice123`.
+
+## Current limits
+
+This release covers the online happy path. Not built yet:
+
+- automatic reconnect (a dropped connection shows a Reconnect button);
+- offline cache and message search (waiting on the client);
+- typing indicators, read receipts per message, sender names in groups;
+- attachments, rich Drafty rendering (messages show their plain text);
+- creating chats, finding users (`fnd`).
+
+## Development
+
+Start with [`docs/`](docs/README.md): architecture, Riverpod usage, widget rules and testing.
+
+## License
+
+MIT. Tinode's server is GPL-3.0; this package only talks to it over the network.
