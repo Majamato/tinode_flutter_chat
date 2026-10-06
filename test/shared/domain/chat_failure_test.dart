@@ -5,7 +5,7 @@ import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 void main() {
   test('maps errors to failures', () {
     expect(
-      ChatFailure.of(const ServerUnreachableException()),
+      ChatFailure.of(const ServerUnreachableException('refused')),
       ChatFailure.unreachable,
     );
     expect(

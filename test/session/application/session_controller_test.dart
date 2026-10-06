@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/session/application/credentials_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
@@ -140,6 +141,60 @@ void main() {
       SessionPhase.failed,
     );
     expect(container.read(sessionFailureProvider), ChatFailure.connectionLost);
+  });
+
+  group('after the client reconnects by itself', () {
+    late ProviderContainer container;
+
+    setUp(() async {
+      container = createTestContainer(
+        connector: connectTo(session),
+        credentials: TinodeCredentials.token(session.token),
+      );
+      await connect(container);
+    });
+
+    test('it stays logged in while reconnecting', () async {
+      session.emitStatus(
+        const Reconnecting(attempt: 1, retryIn: Duration.zero),
+      );
+      await settle();
+
+      expect(
+        SessionPhase.of(container.read(sessionControllerProvider)),
+        SessionPhase.loggedIn,
+      );
+    });
+
+    test('its login replaces the old one and its token is kept', () async {
+      const renewed = LoginResult(userId: 'usrAlice', token: 'renewed');
+      session.emitStatus(const Connected(login: renewed));
+      await settle();
+
+      final state = container.read(sessionControllerProvider).value;
+      expect(
+        state,
+        isA<SessionLoggedIn>().having((s) => s.login, 'login', renewed),
+      );
+      expect(
+        container.read(credentialsControllerProvider),
+        const TinodeCredentials.token('renewed'),
+      );
+    });
+
+    test('a refused token goes back to the login screen', () async {
+      session.emitStatus(
+        const Disconnected(cause: ServerException(401, 'expired')),
+      );
+      await settle();
+      await container.read(sessionControllerProvider.future);
+
+      expect(container.read(credentialsControllerProvider), isNull);
+      expect(
+        SessionPhase.of(container.read(sessionControllerProvider)),
+        SessionPhase.awaitingLogin,
+      );
+    });
   });
 
   test('reconnect closes the old session and reuses the token', () async {

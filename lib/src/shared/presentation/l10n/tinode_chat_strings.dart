@@ -24,6 +24,7 @@ class TinodeChatStrings {
     this.signIn = 'Sign in',
     this.retry = 'Retry',
     this.reconnect = 'Reconnect',
+    this.reconnecting = 'Reconnecting…',
     this.messageHint = 'Message',
     this.send = 'Send',
     this.readOnly = 'Only admins can post here.',
@@ -65,6 +66,9 @@ class TinodeChatStrings {
 
   /// Label of the button that connects again after a failure.
   final String reconnect;
+
+  /// Shown while the client restores a dropped connection by itself.
+  final String reconnecting;
 
   /// Placeholder of the message field.
   final String messageHint;

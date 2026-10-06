@@ -17,22 +17,30 @@ class SendController extends _$SendController {
   /// composer clears its field only then. Blank text is not sent.
   Future<bool> send(String text) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty || state.isLoading) return false;
+    if (trimmed.isEmpty || state.isLoading) {
+      return false;
+    }
     state = const AsyncLoading();
 
     try {
       final content = PlainText(trimmed);
       final session = ref.read(activeSessionProvider);
-      if (session == null) throw const ConnectionLostException();
+      if (session == null) {
+        throw const ConnectionLostException();
+      }
 
       final ack = await session.publish(topic, content);
-      if (!ref.mounted) return true;
+      if (!ref.mounted) {
+        return true;
+      }
 
       ref.read(chatControllerProvider(topic).notifier).addOwn(ack, content);
       state = const AsyncData(null);
       return true;
     } on Object catch (e, stackTrace) {
-      if (ref.mounted) state = AsyncError(e, stackTrace);
+      if (ref.mounted) {
+        state = AsyncError(e, stackTrace);
+      }
       return false;
     }
   }

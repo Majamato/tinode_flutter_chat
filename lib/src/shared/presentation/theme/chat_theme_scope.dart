@@ -11,7 +11,9 @@ class ChatThemeScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    if (theme.extension<TinodeChatTheme>() != null) return child;
+    if (theme.extension<TinodeChatTheme>() != null) {
+      return child;
+    }
 
     return Theme(
       data: theme.copyWith(

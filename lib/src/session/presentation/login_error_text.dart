@@ -11,7 +11,9 @@ class LoginErrorText extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final failure = ref.watch(loginFailureProvider);
-    if (failure == null) return const SizedBox.shrink();
+    if (failure == null) {
+      return const SizedBox.shrink();
+    }
     return Text(
       failureMessage(TinodeChatStrings.of(context), failure),
       style: TextStyle(color: Theme.of(context).colorScheme.error),

@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/data/client_tinode_session.dart';
-import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:web_socket/testing.dart';
 import 'package:web_socket/web_socket.dart';
 
@@ -77,7 +76,7 @@ void main() {
     final (client, serverSocket) = fakes();
     server = _Server(serverSocket);
     session = ClientTinodeSession(
-      await TinodeClient.withSocket(client, testConfig),
+      await TinodeClient.connect(testConfig, connector: (_) async => client),
     );
   });
 
@@ -125,26 +124,18 @@ void main() {
     expect(chats.map((s) => s.topic), ['usrBob']);
   });
 
-  test('attach retries while the server reports the topic locked', () async {
+  test('attach rides out a topic the server reports locked', () async {
     server.lockedReplies = 2;
 
     expect(await session.attach('usrBob'), 'usrBob');
     expect(server.lockedReplies, 0);
   });
 
-  test('attach gives up when the topic stays locked', () async {
-    server.lockedReplies = ClientTinodeSession.attachAttempts;
-
-    await expectLater(
-      session.attach('usrBob'),
-      throwsA(isA<ServerException>().having((e) => e.code, 'code', 503)),
-    );
-  });
-
-  test('closed completes when the server goes away', () async {
+  test('a dropped socket shows as reconnecting, not as the end', () async {
+    final status = session.statusChanges.first;
     await server.socket.close(1000);
 
-    await expectLater(session.closed, completes);
+    expect(await status, isA<Reconnecting>());
   });
 
   test('a refused connection reports the server unreachable', () async {

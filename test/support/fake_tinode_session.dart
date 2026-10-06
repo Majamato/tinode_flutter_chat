@@ -37,10 +37,11 @@ final class FakeTinodeSession implements TinodeSession {
   final _messages = StreamController<DataMessage>.broadcast(sync: true);
   final _presence = StreamController<PresMessage>.broadcast(sync: true);
   final _info = StreamController<InfoMessage>.broadcast(sync: true);
-  // Sync, like the stream controllers: a fake made in `setUp` lives outside
-  // a widget test's fake-async zone, where async callbacks would never run.
-  final _closed = Completer<void>.sync();
-  bool get isClosed => _closed.isCompleted;
+  // Sync, like the others: a fake made in `setUp` lives outside a widget
+  // test's fake-async zone, where async callbacks would never run.
+  final _statuses = StreamController<ConnectionStatus>.broadcast(sync: true);
+  bool isClosed = false;
+  ConnectionStatus _status = const Connected();
 
   String get token => 'token-$userId';
 
@@ -48,9 +49,23 @@ final class FakeTinodeSession implements TinodeSession {
 
   void emitPresence(PresMessage presence) => _presence.add(presence);
 
-  /// Simulates the server dropping the connection.
-  void dropConnection() {
-    if (!_closed.isCompleted) _closed.complete();
+  /// Like the client, a session that reached [Disconnected] stays closed.
+  void emitStatus(ConnectionStatus status) {
+    if (status is Disconnected) {
+      isClosed = true;
+    }
+    _status = status;
+    _statuses.add(status);
+  }
+
+  /// Simulates the link ending for good, e.g. reconnecting turned off.
+  void dropConnection({TinodeException? cause}) {
+    if (isClosed) {
+      return;
+    }
+    emitStatus(
+      Disconnected(cause: cause ?? const ConnectionClosedException('gone')),
+    );
   }
 
   @override
@@ -63,7 +78,18 @@ final class FakeTinodeSession implements TinodeSession {
   Stream<InfoMessage> get info => _info.stream;
 
   @override
-  Future<void> get closed => _closed.future;
+  ConnectionStatus get status => _status;
+
+  @override
+  Stream<ConnectionStatus> get statusChanges => _statuses.stream;
+
+  @override
+  void suspend() => calls.add('suspend');
+
+  @override
+  void resume({Duration? probeTimeout}) => calls.add(
+    probeTimeout == null ? 'resume' : 'resume probe ${probeTimeout.inSeconds}s',
+  );
 
   @override
   Future<LoginResult> loginBasic(String login, String password) async {
@@ -106,9 +132,14 @@ final class FakeTinodeSession implements TinodeSession {
   Future<List<DataMessage>> history(
     String topic, {
     required int limit,
+    int? since,
     int? before,
   }) async {
-    calls.add('history $topic${before == null ? '' : ' before $before'}');
+    calls.add(
+      'history $topic'
+      '${since == null ? '' : ' since $since'}'
+      '${before == null ? '' : ' before $before'}',
+    );
     await holdHistory?.future;
     if (failHistory case final error?) {
       failHistory = null;
@@ -116,7 +147,9 @@ final class FakeTinodeSession implements TinodeSession {
     }
     final all = [
       for (final m in histories[topic] ?? const <DataMessage>[])
-        if (before == null || m.seq < before) m,
+        if ((before == null || m.seq < before) &&
+            (since == null || m.seq >= since))
+          m,
     ]..sort((a, b) => a.seq.compareTo(b.seq));
     return all.length <= limit ? all : all.sublist(all.length - limit);
   }
@@ -139,7 +172,9 @@ final class FakeTinodeSession implements TinodeSession {
       content: content,
     );
     history.add(sent);
-    if (echo) scheduleMicrotask(() => emitMessage(sent));
+    if (echo) {
+      scheduleMicrotask(() => emitMessage(sent));
+    }
     return PublishResult(seq: seq, time: time);
   }
 
@@ -152,7 +187,9 @@ final class FakeTinodeSession implements TinodeSession {
   @override
   Future<void> close() async {
     calls.add('close');
-    dropConnection();
+    if (!isClosed) {
+      emitStatus(const Disconnected());
+    }
   }
 }
 

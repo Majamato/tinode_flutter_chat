@@ -49,10 +49,14 @@ final class ChatListState {
     ChatSummary Function(ChatSummary chat) update,
   ) {
     final chat = byTopic[topic];
-    if (chat == null) return this;
+    if (chat == null) {
+      return this;
+    }
 
     final updated = update(chat);
-    if (updated == chat) return this;
+    if (updated == chat) {
+      return this;
+    }
     final chats = Map.of(byTopic)..[topic] = updated;
     final newOrder = updated.lastMessageAt == chat.lastMessageAt
         ? order

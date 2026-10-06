@@ -17,7 +17,9 @@ class MessageBubble extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final message = ref.watch(chatMessageProvider(topic, seq));
-    if (message == null) return const SizedBox.shrink();
+    if (message == null) {
+      return const SizedBox.shrink();
+    }
 
     final theme = TinodeChatTheme.of(context);
     final textTheme = Theme.of(context).textTheme;

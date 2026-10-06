@@ -1,15 +1,5 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 
-/// The server could not be reached at all.
-final class ServerUnreachableException implements Exception {
-  const ServerUnreachableException([this.reason = '']);
-
-  final String reason;
-
-  @override
-  String toString() => 'ServerUnreachableException($reason)';
-}
-
 /// An open session ended without the user closing it.
 final class ConnectionLostException implements Exception {
   const ConnectionLostException();

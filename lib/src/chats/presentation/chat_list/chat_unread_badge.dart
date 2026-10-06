@@ -14,7 +14,9 @@ class ChatUnreadBadge extends ConsumerWidget {
     final unread = ref.watch(
       chatSummaryProvider(topic).select((chat) => chat?.unread ?? 0),
     );
-    if (unread == 0) return const SizedBox.shrink();
+    if (unread == 0) {
+      return const SizedBox.shrink();
+    }
     final theme = TinodeChatTheme.of(context);
 
     return Badge.count(

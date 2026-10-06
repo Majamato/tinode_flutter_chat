@@ -83,7 +83,9 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
 
   @override
   TinodeChatTheme lerp(TinodeChatTheme? other, double t) {
-    if (other == null) return this;
+    if (other == null) {
+      return this;
+    }
     return TinodeChatTheme(
       ownBubbleColor: Color.lerp(ownBubbleColor, other.ownBubbleColor, t)!,
       onOwnBubbleColor: Color.lerp(

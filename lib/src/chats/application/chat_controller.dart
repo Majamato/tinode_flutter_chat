@@ -6,6 +6,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_state.dart';
+import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/shared/application/build_lifetime.dart';
@@ -17,8 +18,8 @@ part 'chat_controller.g.dart';
 const historyPageSize = 32;
 
 /// One open chat: attaches to the topic, loads its history, merges live
-/// messages and marks what the user sees as read. Detaches when the chat
-/// screen closes.
+/// messages, catches up after a reconnect and marks what the user sees as
+/// read. Detaches when the chat screen closes.
 @riverpod
 class ChatController extends _$ChatController {
   late TinodeSession _session;
@@ -43,8 +44,12 @@ class ChatController extends _$ChatController {
     final live = session.messages
         .where((m) => m.topic == topic)
         .listen(_onLive);
+    final reconnects = session.statusChanges
+        .where((s) => s is Connected)
+        .listen((_) => unawaited(_catchUp(lifetime)));
     ref.onDispose(() {
       unawaited(live.cancel());
+      unawaited(reconnects.cancel());
       unawaited(session.detach(topic).then((_) {}, onError: (_) {}));
     });
     unawaited(_load(lifetime));
@@ -54,7 +59,9 @@ class ChatController extends _$ChatController {
   /// Loads the page before the oldest loaded message.
   Future<void> loadOlder() async {
     final before = state.firstSeq;
-    if (!state.hasOlder || state.loadingOlder || before == null) return;
+    if (!state.hasOlder || state.loadingOlder || before == null) {
+      return;
+    }
 
     final lifetime = _lifetime;
     state = state.withLoadingOlder(loading: true);
@@ -64,12 +71,16 @@ class ChatController extends _$ChatController {
         before: before,
         limit: historyPageSize,
       );
-      if (!lifetime.isActive) return;
+      if (!lifetime.isActive) {
+        return;
+      }
       state = state
           .withMessages(page.map(_toMessage))
           .withLoadingOlder(loading: false, hasOlder: _hasOlder(page));
     } on Object {
-      if (lifetime.isActive) state = state.withLoadingOlder(loading: false);
+      if (lifetime.isActive) {
+        state = state.withLoadingOlder(loading: false);
+      }
     }
   }
 
@@ -93,17 +104,55 @@ class ChatController extends _$ChatController {
   Future<void> _load(BuildLifetime lifetime) async {
     try {
       await _session.attach(topic);
-      if (!lifetime.isActive) return;
+      if (!lifetime.isActive) {
+        return;
+      }
 
       final page = await _session.history(topic, limit: historyPageSize);
-      if (!lifetime.isActive) return;
+      if (!lifetime.isActive) {
+        return;
+      }
 
       state = state
           .withMessages(page.map(_toMessage))
           .ready(hasOlder: _hasOlder(page));
-      if (state.lastSeq case final seq?) _markRead(seq);
+      if (state.lastSeq case final seq?) {
+        _markRead(seq);
+      }
     } on Object catch (e) {
-      if (lifetime.isActive) state = state.failed(ChatFailure.of(e));
+      if (lifetime.isActive) {
+        state = state.failed(ChatFailure.of(e));
+      }
+    }
+  }
+
+  /// Fetches what arrived while the link was down. A full page may hide
+  /// a bigger gap, and a failure leaves one, so both reload the chat.
+  Future<void> _catchUp(BuildLifetime lifetime) async {
+    final last = state.lastSeq;
+    if (state.status != LoadStatus.ready || last == null) {
+      return reload();
+    }
+    try {
+      final page = await _session.history(
+        topic,
+        since: last + 1,
+        limit: historyPageSize,
+      );
+      if (!lifetime.isActive) {
+        return;
+      }
+      if (page.length >= historyPageSize) {
+        return reload();
+      }
+      state = state.withMessages(page.map(_toMessage));
+      if (state.lastSeq case final seq?) {
+        _markRead(seq);
+      }
+    } on Object {
+      if (lifetime.isActive) {
+        reload();
+      }
     }
   }
 
@@ -113,7 +162,9 @@ class ChatController extends _$ChatController {
   }
 
   void _markRead(int seq) {
-    if (seq <= _lastMarkedRead) return;
+    if (seq <= _lastMarkedRead) {
+      return;
+    }
     _lastMarkedRead = seq;
     _session.markRead(topic, seq);
     ref.read(chatListControllerProvider.notifier).markRead(topic, seq);

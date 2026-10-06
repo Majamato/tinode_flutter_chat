@@ -45,6 +45,18 @@ void main() {
     expect(container.read(chatSummaryProvider(bob))?.unread, 2);
   });
 
+  test('a reconnect reloads the list', () async {
+    await loadList();
+    session
+      ..calls.clear()
+      ..chats.add(chat(carol, name: 'Carol', lastSeq: 1, lastMessageAt: at(9)))
+      ..emitStatus(const Connected());
+    await settle();
+
+    expect(session.calls, ['chatList']);
+    expect(container.read(chatListControllerProvider).order.first, carol);
+  });
+
   test('a load failure can be retried', () async {
     session.failChatList = const RequestTimeoutException('get', Duration.zero);
 

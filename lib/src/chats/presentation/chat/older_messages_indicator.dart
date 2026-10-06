@@ -13,7 +13,9 @@ class OlderMessagesIndicator extends ConsumerWidget {
     final loading = ref.watch(
       chatControllerProvider(topic).select((s) => s.loadingOlder),
     );
-    if (!loading) return const SizedBox.shrink();
+    if (!loading) {
+      return const SizedBox.shrink();
+    }
 
     return const Padding(
       padding: EdgeInsets.all(12),

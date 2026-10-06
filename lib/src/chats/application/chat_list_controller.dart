@@ -13,7 +13,7 @@ import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 part 'chat_list_controller.g.dart';
 
 /// The chat list of the logged-in user, kept current from `me` presence
-/// and from the messages of attached chats.
+/// and from the messages of attached chats, and reloaded after a reconnect.
 ///
 /// It subscribes to the streams before loading, so nothing that arrives
 /// during the load is lost.
@@ -34,6 +34,10 @@ class ChatListController extends _$ChatListController {
           .where((p) => p.topic == 'me')
           .listen((p) => _onPresence(session, p)),
       session.messages.listen((m) => _onMessage(m, me: me)),
+      // Presence missed while the link was down is never replayed.
+      session.statusChanges
+          .where((s) => s is Connected)
+          .listen((_) => unawaited(_refresh(session))),
     ];
     ref.onDispose(() {
       for (final s in subscriptions) {
@@ -55,17 +59,23 @@ class ChatListController extends _$ChatListController {
     try {
       await session.attach('me');
       final chats = await session.chatList();
-      if (!lifetime.isActive) return;
+      if (!lifetime.isActive) {
+        return;
+      }
       state = state.loaded(chats.map(ChatSummary.fromSubscription));
     } on Object catch (e) {
-      if (lifetime.isActive) state = state.failed(ChatFailure.of(e));
+      if (lifetime.isActive) {
+        state = state.failed(ChatFailure.of(e));
+      }
     }
   }
 
   void _onPresence(TinodeSession session, PresMessage presence) {
     final topic = presence.source;
     final seq = presence.seq;
-    if (topic == null || seq == null) return;
+    if (topic == null || seq == null) {
+      return;
+    }
     switch (presence.event) {
       case PresenceEvent.message when !state.contains(topic):
         // A chat this list has not seen yet: someone started it.

@@ -54,6 +54,44 @@ void main() {
     expect(container.read(chatSummaryProvider(bob))?.unread, 0);
   });
 
+  group('after a reconnect', () {
+    setUp(() async {
+      openChat();
+      await settle();
+      session.calls.clear();
+    });
+
+    test('fetches what it missed by seq and marks it read', () async {
+      session.histories[bob]!.addAll([message(bob, 4), message(bob, 5)]);
+
+      session.emitStatus(const Connected());
+      await settle();
+
+      expect(session.calls.where((c) => c.contains(bob)), [
+        'history $bob since 4',
+        'markRead $bob 5',
+      ]);
+      expect(chatState().seqs, [1, 2, 3, 4, 5]);
+    });
+
+    test('a full page of missed messages reloads the chat', () async {
+      session.histories[bob]!.addAll([
+        for (var seq = 4; seq < 4 + historyPageSize; seq++) message(bob, seq),
+      ]);
+
+      session.emitStatus(const Connected());
+      await settle();
+      await settle();
+
+      expect(
+        session.calls,
+        containsAllInOrder(['detach $bob', 'attach $bob', 'history $bob']),
+      );
+      expect(chatState().seqs.last, 3 + historyPageSize);
+      expect(chatState().seqs, hasLength(historyPageSize));
+    });
+  });
+
   test('a message arriving during the load is kept', () async {
     final hold = session.holdHistory = Completer<void>();
     openChat();

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
+import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
@@ -12,12 +13,14 @@ ProviderContainer createTinodeContainer({
   required TinodeConfig config,
   TinodeCredentials? credentials,
   SessionConnector? connector,
+  NetworkMonitor? network,
 }) => ProviderContainer(
   overrides: [
     tinodeConfigProvider.overrideWithValue(config),
     initialCredentialsProvider.overrideWithValue(credentials),
     if (connector != null)
       sessionConnectorProvider.overrideWithValue(connector),
+    if (network != null) networkMonitorProvider.overrideWithValue(network),
   ],
   retry: (_, _) => null,
 );

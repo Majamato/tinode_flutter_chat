@@ -14,7 +14,9 @@ class ChatLastMessageTime extends ConsumerWidget {
     final time = ref.watch(
       chatSummaryProvider(topic).select((chat) => chat?.lastMessageAt),
     );
-    if (time == null) return const SizedBox.shrink();
+    if (time == null) {
+      return const SizedBox.shrink();
+    }
     return Text(
       MaterialLocalizations.of(context).chatListTime(time),
       style: Theme.of(context).textTheme.labelSmall,

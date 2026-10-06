@@ -15,7 +15,9 @@ class LoginController extends _$LoginController {
   AsyncValue<void> build() => const AsyncData(null);
 
   Future<void> submit(String login, String password) async {
-    if (state.isLoading) return;
+    if (state.isLoading) {
+      return;
+    }
 
     state = const AsyncLoading();
     final result = await AsyncValue.guard(
@@ -23,7 +25,9 @@ class LoginController extends _$LoginController {
           .read(sessionControllerProvider.notifier)
           .login(TinodeCredentials.password(login.trim(), password)),
     );
-    if (ref.mounted) state = result;
+    if (ref.mounted) {
+      state = result;
+    }
   }
 }
 

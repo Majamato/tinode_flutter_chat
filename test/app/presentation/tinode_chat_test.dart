@@ -5,6 +5,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/read_only_notice
 import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
+import '../../support/fake_network_monitor.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
@@ -151,6 +152,136 @@ void main() {
     );
     expect(find.text('Reconnect'), findsOneWidget);
     expect(find.text('Hi Alice'), findsNothing);
+  });
+
+  testWidgets('a banner shows while the link is restored', (tester) async {
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+    );
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+
+    session.emitStatus(
+      const Reconnecting(attempt: 1, retryIn: Duration(seconds: 1)),
+    );
+    await tester.pump();
+    expect(find.text('Reconnecting…'), findsOneWidget);
+    expect(find.text('Hi Alice'), findsOneWidget);
+
+    session.emitStatus(const Connected());
+    await tester.pumpAndSettle();
+    expect(find.text('Reconnecting…'), findsNothing);
+  });
+
+  group('in the background', () {
+    Future<void> setLifecycle(
+      WidgetTester tester,
+      List<AppLifecycleState> states,
+    ) async {
+      states.forEach(tester.binding.handleAppLifecycleStateChanged);
+      await tester.pump();
+    }
+
+    const hide = [AppLifecycleState.inactive, AppLifecycleState.hidden];
+    const show = [AppLifecycleState.inactive, AppLifecycleState.resumed];
+
+    testWidgets('the session is suspended after the grace period', (
+      tester,
+    ) async {
+      await pumpTinodeChat(tester, session);
+      await setLifecycle(tester, hide);
+
+      await tester.pump(const Duration(seconds: 14));
+      expect(session.calls, isNot(contains('suspend')));
+      await tester.pump(const Duration(seconds: 1));
+      expect(session.calls, contains('suspend'));
+
+      await setLifecycle(tester, show);
+      expect(session.calls.last, 'resume');
+    });
+
+    testWidgets('coming back within the grace keeps the socket', (
+      tester,
+    ) async {
+      await pumpTinodeChat(tester, session);
+      await setLifecycle(tester, hide);
+      await tester.pump(const Duration(seconds: 5));
+      await setLifecycle(tester, show);
+
+      await tester.pump(const Duration(minutes: 1));
+      expect(session.calls, isNot(contains('suspend')));
+      expect(session.calls, contains('resume'));
+    });
+  });
+
+  group('network changes', () {
+    late FakeNetworkMonitor network;
+
+    Future<void> pumpLoggedIn(WidgetTester tester) {
+      network = FakeNetworkMonitor();
+      return pumpTinodeChat(
+        tester,
+        session,
+        credentials: TinodeCredentials.token(session.token),
+        network: network,
+      );
+    }
+
+    List<String> resumes() =>
+        session.calls.where((c) => c.startsWith('resume')).toList();
+
+    testWidgets('probe a connected socket once reports settle', (tester) async {
+      await pumpLoggedIn(tester);
+
+      network.report(available: false);
+      await tester.pump(const Duration(milliseconds: 500));
+      network.report(available: true);
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(resumes(), isEmpty);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(resumes(), ['resume probe 4s']);
+    });
+
+    testWidgets('while reconnecting, a network back retries at once', (
+      tester,
+    ) async {
+      await pumpLoggedIn(tester);
+      session.emitStatus(
+        const Reconnecting(attempt: 2, retryIn: Duration.zero),
+      );
+
+      network.report(available: false);
+      await tester.pump(const Duration(seconds: 2));
+      expect(resumes(), isEmpty);
+
+      network.report(available: true);
+      await tester.pump(const Duration(seconds: 1));
+      expect(resumes(), ['resume']);
+    });
+
+    testWidgets('a suspended session is not woken', (tester) async {
+      await pumpLoggedIn(tester);
+      session.emitStatus(const Suspended());
+
+      network.report(available: true);
+      await tester.pump(const Duration(seconds: 2));
+      expect(resumes(), isEmpty);
+    });
+
+    testWidgets('a failing monitor is ignored', (tester) async {
+      await pumpLoggedIn(tester);
+
+      network.fail(Exception('no NetworkManager'));
+      await tester.pump();
+      network.report(available: true);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Bob'), findsOneWidget);
+      expect(resumes(), ['resume probe 4s']);
+    });
   });
 
   testWidgets('removing the widget closes the session', (tester) async {

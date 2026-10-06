@@ -15,9 +15,10 @@ part 'session_controller.g.dart';
 /// Owns the connection: connects, logs in with the remembered credentials
 /// and closes the session when rebuilt or disposed.
 ///
-/// There is no automatic reconnect yet (the client has none): a dropped
-/// connection turns the state into a [ConnectionLostException] error, and
-/// [reconnect] starts over.
+/// The client reconnects by itself after a drop, so the state stays
+/// logged in meanwhile. Only a final disconnect ends it: a refused token
+/// goes back to the login screen, anything else to a
+/// [ConnectionLostException] error that [reconnect] starts over from.
 @Riverpod(keepAlive: true)
 class SessionController extends _$SessionController {
   @override
@@ -31,21 +32,27 @@ class SessionController extends _$SessionController {
       await session.close();
       return SessionAwaitingLogin(session);
     }
-    ref.onDispose(() => unawaited(session.close()));
-    unawaited(
-      session.closed.then((_) {
-        if (lifetime.isActive) {
-          state = const AsyncError(ConnectionLostException(), StackTrace.empty);
-        }
-      }),
-    );
+    final statuses = session.statusChanges.listen((status) {
+      if (lifetime.isActive) {
+        _onStatus(session, status);
+      }
+    });
+    ref.onDispose(() {
+      unawaited(statuses.cancel());
+      unawaited(session.close());
+    });
 
     final credentials = ref.read(credentialsControllerProvider);
-    if (credentials == null) return SessionAwaitingLogin(session);
+    if (credentials == null) {
+      return SessionAwaitingLogin(session);
+    }
+
     try {
       return SessionLoggedIn(session, await _login(session, credentials));
     } on ServerException catch (e) {
-      if (e.code != 401) rethrow;
+      if (e.code != 401) {
+        rethrow;
+      }
       if (lifetime.isActive) {
         ref.read(credentialsControllerProvider.notifier).forget();
       }
@@ -73,6 +80,29 @@ class SessionController extends _$SessionController {
   /// Closes the current session, if any, and connects again.
   void reconnect() => ref.invalidateSelf();
 
+  void _onStatus(TinodeSession session, ConnectionStatus status) {
+    switch (status) {
+      case Connected(login: final login?):
+        // The client logged in again by itself, renewing the token.
+        _remember(login);
+        if (state.value is SessionLoggedIn) {
+          state = AsyncData(SessionLoggedIn(session, login));
+        }
+      case Disconnected(cause: ServerException(code: 401 || 404)):
+        // The token expired or the user is gone: back to the login screen.
+        ref.read(credentialsControllerProvider.notifier).forget();
+        ref.invalidateSelf();
+      case Disconnected():
+        state = const AsyncError(ConnectionLostException(), StackTrace.empty);
+      case Connected() || Reconnecting() || Suspended():
+        break;
+    }
+  }
+
+  void _remember(LoginResult login) => ref
+      .read(credentialsControllerProvider.notifier)
+      .remember(TinodeCredentials.token(login.token));
+
   Future<LoginResult> _login(
     TinodeSession session,
     TinodeCredentials credentials,
@@ -85,9 +115,7 @@ class SessionController extends _$SessionController {
       TokenCredentials(:final token) => session.loginToken(token),
     };
     if (ref.mounted) {
-      ref
-          .read(credentialsControllerProvider.notifier)
-          .remember(TinodeCredentials.token(result.token));
+      _remember(result);
     }
     return result;
   }

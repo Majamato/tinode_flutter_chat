@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/data/client_tinode_session.dart';
+import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
@@ -18,3 +19,7 @@ TinodeCredentials? initialCredentials(Ref ref) => null;
 /// How sessions are opened; tests override it with a fake.
 @Riverpod(keepAlive: true)
 SessionConnector sessionConnector(Ref ref) => ClientTinodeSession.connect;
+
+/// The OS's network reports; tests override it with a fake.
+@Riverpod(keepAlive: true)
+NetworkMonitor networkMonitor(Ref ref) => ConnectivityNetworkMonitor();

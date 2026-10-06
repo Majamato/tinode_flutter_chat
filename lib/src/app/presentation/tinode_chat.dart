@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/session_gate.dart';
+import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
+import 'package:tinode_flutter_chat/src/session/application/network_policy.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_state.dart';
+import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
@@ -38,14 +41,16 @@ class TinodeChat extends StatefulWidget {
     this.onLoggedIn,
     this.strings = const TinodeChatStrings(),
     super.key,
-  }) : connector = null;
+  }) : connector = null,
+       network = null;
 
   /// Like the default constructor, with sessions opened by [connector]
-  /// instead of a real connection.
+  /// instead of a real connection, and network reports from [network].
   @visibleForTesting
   const TinodeChat.withConnector({
     required this.config,
     required SessionConnector this.connector,
+    this.network,
     this.credentials,
     this.onLoggedIn,
     this.strings = const TinodeChatStrings(),
@@ -70,6 +75,10 @@ class TinodeChat extends StatefulWidget {
   @visibleForTesting
   final SessionConnector? connector;
 
+  /// Reports network changes; null for the OS's.
+  @visibleForTesting
+  final NetworkMonitor? network;
+
   @override
   State<TinodeChat> createState() => _TinodeChatState();
 }
@@ -79,26 +88,38 @@ class _TinodeChatState extends State<TinodeChat> {
     config: widget.config,
     credentials: widget.credentials,
     connector: widget.connector,
+    network: widget.network,
   );
+
+  late final AppLifecycleListener _lifecycle;
 
   @override
   void initState() {
     super.initState();
-    _container.listen(
-      sessionControllerProvider.select(
-        (s) => switch (s) {
-          AsyncData(value: SessionLoggedIn(:final login)) => login,
-          _ => null,
-        },
-      ),
-      (_, login) {
-        if (login != null) widget.onLoggedIn?.call(login);
-      },
+    _lifecycle = AppLifecycleListener(
+      onHide: () => _container.read(backgroundPolicyProvider.notifier).hidden(),
+      onShow: () => _container.read(backgroundPolicyProvider.notifier).shown(),
     );
+    _container
+      ..read(networkPolicyProvider)
+      ..listen(
+        sessionControllerProvider.select(
+          (s) => switch (s) {
+            AsyncData(value: SessionLoggedIn(:final login)) => login,
+            _ => null,
+          },
+        ),
+        (_, login) {
+          if (login != null) {
+            widget.onLoggedIn?.call(login);
+          }
+        },
+      );
   }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _container.dispose();
     super.dispose();
   }

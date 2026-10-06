@@ -49,6 +49,19 @@ Which screen the session gate shows: connecting, awaiting login, logged in, fail
 **Failure**
 An error put in terms the UI can explain. *In code:* `ChatFailure`.
 
+**Reconnecting banner**
+The strip under the chats while the client restores a dropped link. The screens stay as they were;
+sending fails until the link is back. *In code:* `ReconnectingBanner`, `ReconnectingController`.
+
+**Network hint**
+A network change reported by the OS. It is not proof of anything: it only makes the client check
+its socket sooner (a quick probe) or stop waiting to retry. *In code:* `NetworkMonitor`,
+`NetworkPolicy`.
+
+**Background grace**
+How long the socket stays open after the app is hidden (15 s) before the session is suspended.
+*In code:* `BackgroundPolicy`, `backgroundGrace`.
+
 **Live model**
 A provider whose state follows server events as they arrive (chat list, open chat), as opposed to a
 one-shot load.

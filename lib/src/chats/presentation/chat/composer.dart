@@ -31,7 +31,9 @@ class _ComposerState extends ConsumerState<Composer> {
     final sent = await ref
         .read(sendControllerProvider(widget.topic).notifier)
         .send(_text.text);
-    if (sent && mounted) _text.clear();
+    if (sent && mounted) {
+      _text.clear();
+    }
   }
 
   void _onSendState(AsyncValue<void>? previous, AsyncValue<void> next) {

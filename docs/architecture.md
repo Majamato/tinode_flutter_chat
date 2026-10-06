@@ -85,7 +85,8 @@ TinodeChat                      owns the container
         ├ SessionErrorView      "Reconnect"
         └ ChatNavigator         nested Navigator, only while logged in
           ├ ChatListScreen      first route
-          └ ChatScreen(topic)   pushed per chat
+          ├ ChatScreen(topic)   pushed per chat
+          └ ReconnectingBanner  below the routes, while the link is restored
 ```
 
 `SessionGate` sits **above** the nested navigator on purpose. Riverpod 3 pauses consumers on routes
@@ -96,14 +97,14 @@ chat route with it.
 ## Session lifecycle
 
 ```
-             connect ok, no credentials          login()
-connecting ───────────────────────────► awaitingLogin ───────► loggedIn
-    │   connect ok + credentials ok ───────────────────────────────▲
-    │   token rejected (401) ─► awaitingLogin(lastFailure)          │
-    ▼                                                               │ socket drops
-  failed ◄──────────────────────────────────────────────────────────┘
-    │ reconnect()  (closes the old session, connects, logs in with the remembered token)
-    └──────────► connecting
+connecting ── no credentials ─────────► awaitingLogin ── login() ──► loggedIn
+connecting ── credentials accepted ───► loggedIn
+connecting ── token rejected (401) ───► awaitingLogin(lastFailure)
+connecting ── unreachable ────────────► failed
+loggedIn   ── socket drops ───────────► loggedIn        the client reconnects; banner meanwhile
+loggedIn   ── Disconnected(401/404) ──► awaitingLogin   token forgotten, controller rebuilt
+loggedIn   ── Disconnected(other) ────► failed
+failed     ── reconnect() ────────────► connecting      old session closed, token login
 ```
 
 - `SessionController` (keepAlive `AsyncNotifier<SessionState>`) holds it. `SessionState` is sealed:
@@ -111,15 +112,28 @@ connecting ───────────────────────
   connecting, an error means failed. `SessionPhase.of` turns that into the gate's four screens.
 - `CredentialsController` remembers what to log in with. After any login it holds the session
   token, so a reconnect never needs the password.
-- The client has no reconnection yet, so a drop goes to the error view. Automatic reconnect is the
-  first follow-up.
+- A dropped socket is the client's business: it reconnects with backoff, logs in with the token
+  and re-attaches topics. `SessionController` follows `TinodeSession.statusChanges` and acts only
+  on two cases: `Connected(login:)` (the client logged in again, so the renewed token replaces the
+  remembered one and `onLoggedIn` fires) and `Disconnected`, which is final. `ReconnectingController`
+  drives the banner.
+- **Background:** `TinodeChat` forwards `AppLifecycleListener` hide/show to `BackgroundPolicy`.
+  After `backgroundGrace` (15 s) hidden it suspends the session; push notifications cover the time
+  after that. Showing the app cancels the timer and resumes, which also probes a socket that
+  stayed open but may have died while the phone slept.
+- **Network hints:** `NetworkMonitor` (data, over `connectivity_plus`: OS callbacks, no polling)
+  reports network changes to `NetworkPolicy`. After 1 s of quiet (`networkSettle`) it probes a
+  connected socket with a 4 s deadline, or retries at once while reconnecting with a network up.
+  A suspended or closed session is left alone. The hint never changes what the UI shows; only the
+  socket's status does.
 
 ## Data flow
 
 `TinodeSession` (in `session/data`) is the only gateway to the server. It wraps `TinodeClient`
 (a `final` class that can't be faked), splits its events into typed streams, drops malformed
-packets, and retries an attach the server answers with `503 locked` (both sides of a P2P chat
-attaching at once). A cached or offline session will implement the same interface.
+packets. Retrying an attach the server answers with `503 locked` (both sides of a P2P chat
+attaching at once) is the client's job. A cached or offline session will implement the same
+interface.
 
 **Chat list** (`ChatListController`, keepAlive, sync `Notifier<ChatListState>`):
 
@@ -128,7 +142,8 @@ attaching at once). A cached or offline session will implement the same interfac
 2. `pres msg` raises a chat's `lastSeq`; an unknown topic reloads the list (a new chat).
    `pres read` (another device read it) raises `read`. A `data` message in an attached chat raises
    `lastSeq`, and also `read` when the user sent it.
-3. `unread = lastSeq − read`. Order is by `lastMessageAt`, newest first.
+3. After a reconnect the list reloads: presence sent while the link was down is never replayed.
+4. `unread = lastSeq − read`. Order is by `lastMessageAt`, newest first.
 
 **Chat** (`ChatController(topic)`, autoDispose, sync `Notifier<ChatState>`):
 
@@ -138,6 +153,8 @@ attaching at once). A cached or offline session will implement the same interfac
 3. What the user sees is marked read on the server and in the chat list.
 4. Scrolling to the top calls `loadOlder()`. Closing the screen disposes the provider, which
    detaches from the topic.
+5. After a reconnect it fetches `since: lastSeq + 1`. A full page may hide a bigger gap, and a
+   failed fetch leaves one, so both reload the chat instead.
 
 **Sending** (`SendController(topic)`): publishes plain text, then adds the message from the ack
 right away. On failure the composer keeps the text and shows a snack bar.
@@ -150,7 +167,8 @@ right away. On failure the composer keeps the text and shows a snack bar.
 
 | Where | Shown as |
 |-------|----------|
-| Connect fails or the socket drops | `SessionErrorView` with Reconnect |
+| Connect fails, or the link ends for good | `SessionErrorView` with Reconnect |
+| The socket drops and the client is reconnecting | `ReconnectingBanner`; sends fail meanwhile |
 | Login fails | Text under the login form; the session keeps waiting for a login |
 | Chat list or history fails to load | `ErrorRetryView` in place of the list |
 | Send fails | Snack bar; the text stays in the field |

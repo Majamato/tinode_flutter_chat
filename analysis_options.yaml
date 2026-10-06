@@ -19,3 +19,4 @@ linter:
     # Many internal widgets are Dart-public (one widget per file). Everything
     # the barrel exports must still carry dartdoc: see docs/widgets.md.
     public_member_api_docs: false
+    always_put_control_body_on_new_line: true

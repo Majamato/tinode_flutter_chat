@@ -3,7 +3,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 /// Opens a [TinodeSession] to the server described by a [TinodeConfig].
 typedef SessionConnector = Future<TinodeSession> Function(TinodeConfig config);
 
-/// One connection to a Tinode server, as the rest of the package sees it.
+/// The link to a Tinode server, as the rest of the package sees it.
 ///
 /// It wraps `TinodeClient` (a final class that cannot be faked) so that
 /// tests can swap in a fake, and so a cached or offline session can slot
@@ -22,10 +22,12 @@ abstract interface class TinodeSession {
   /// The chat list: the subscriptions of `me` that name a topic.
   Future<List<Subscription>> chatList();
 
-  /// Up to [limit] messages before [before] (or the newest), oldest first.
+  /// Up to [limit] messages with `since <= seq < before`, the newest of
+  /// them, oldest first.
   Future<List<DataMessage>> history(
     String topic, {
     required int limit,
+    int? since,
     int? before,
   });
 
@@ -41,8 +43,19 @@ abstract interface class TinodeSession {
 
   Stream<InfoMessage> get info;
 
-  /// Completes when the connection ends, for any reason.
-  Future<void> get closed;
+  /// Where the link to the server stands now.
+  ConnectionStatus get status;
+
+  /// Changes of the link to the server. After a drop the client restores
+  /// the login and attached topics; `Connected` then means catch up.
+  Stream<ConnectionStatus> get statusChanges;
+
+  /// Closes the socket on purpose, e.g. in the background.
+  void suspend();
+
+  /// Reconnects at once after [suspend] or during a backoff wait; on a live
+  /// link it probes the socket instead, within [probeTimeout] if given.
+  void resume({Duration? probeTimeout});
 
   Future<void> close();
 }

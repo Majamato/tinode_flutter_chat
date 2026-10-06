@@ -43,7 +43,9 @@ Future<void> eventually(
 }) async {
   final deadline = DateTime.now().add(timeout);
   while (!condition()) {
-    if (DateTime.now().isAfter(deadline)) fail('Timed out waiting: $what');
+    if (DateTime.now().isAfter(deadline)) {
+      fail('Timed out waiting: $what');
+    }
     await Future<void>.delayed(const Duration(milliseconds: 50));
   }
 }

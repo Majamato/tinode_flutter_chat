@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/session/application/session_controller.d
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
+import 'fake_network_monitor.dart';
 import 'fake_tinode_session.dart';
 
 final testConfig = TinodeConfig(
@@ -23,6 +24,7 @@ ProviderContainer createTestContainer({
     config: testConfig,
     credentials: credentials,
     connector: connector,
+    network: FakeNetworkMonitor(),
   );
   addTearDown(container.dispose);
   return container;

@@ -51,12 +51,16 @@ final class ChatState {
     var added = false;
     for (final message in messages) {
       final existing = (bySeq ?? this.bySeq)[message.seq];
-      if (existing == message) continue;
+      if (existing == message) {
+        continue;
+      }
       bySeq ??= Map.of(this.bySeq);
       bySeq[message.seq] = message;
       added |= existing == null;
     }
-    if (bySeq == null) return this;
+    if (bySeq == null) {
+      return this;
+    }
     return _copy(
       bySeq: Map.unmodifiable(bySeq),
       seqs: added ? List.unmodifiable(bySeq.keys.sorted(_ascending)) : seqs,

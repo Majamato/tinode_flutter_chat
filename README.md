@@ -55,7 +55,6 @@ from `../tinode-tests` (`docker compose up -d`) and log in as `alice` / `alice12
 
 This release covers the online happy path. Not built yet:
 
-- automatic reconnect (a dropped connection shows a Reconnect button);
 - offline cache and message search (waiting on the client);
 - typing indicators, read receipts per message, sender names in groups;
 - attachments, rich Drafty rendering (messages show their plain text);
