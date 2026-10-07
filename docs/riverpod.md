@@ -51,7 +51,9 @@ Application files import `package:riverpod_annotation/riverpod_annotation.dart`,
 `package:riverpod/riverpod.dart` when they need `select` (the annotation package doesn't export
 it). Never `flutter_riverpod` there: application code must not depend on Flutter.
 
-After any change to a provider: `fvm dart run build_runner build`, then `fvm dart format .`.
+After any change to a provider: `fvm dart run build_runner build --force-jit`, then
+`fvm dart format .`. (`--force-jit` because `flutter_webrtc` pulls in `objective_c`, whose build
+hook the default AOT compile of the builders refuses.)
 Generated files are committed (hosts don't run our generator), and CI fails if they're stale.
 
 ### Choosing the kind

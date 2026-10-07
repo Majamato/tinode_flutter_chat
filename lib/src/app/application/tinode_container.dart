@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/calls/application/call_inputs.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
@@ -14,6 +16,7 @@ ProviderContainer createTinodeContainer({
   TinodeCredentials? credentials,
   SessionConnector? connector,
   NetworkMonitor? network,
+  CallMediaFactory? callMedia,
 }) => ProviderContainer(
   overrides: [
     tinodeConfigProvider.overrideWithValue(config),
@@ -21,6 +24,8 @@ ProviderContainer createTinodeContainer({
     if (connector != null)
       sessionConnectorProvider.overrideWithValue(connector),
     if (network != null) networkMonitorProvider.overrideWithValue(network),
+    if (callMedia != null)
+      callMediaFactoryProvider.overrideWithValue(callMedia),
   ],
   retry: (_, _) => null,
 );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/session_gate.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
 import 'package:tinode_flutter_chat/src/session/application/network_policy.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
@@ -42,15 +43,18 @@ class TinodeChat extends StatefulWidget {
     this.strings = const TinodeChatStrings(),
     super.key,
   }) : connector = null,
-       network = null;
+       network = null,
+       callMedia = null;
 
   /// Like the default constructor, with sessions opened by [connector]
-  /// instead of a real connection, and network reports from [network].
+  /// instead of a real connection, network reports from [network] and the
+  /// media of calls from [callMedia].
   @visibleForTesting
   const TinodeChat.withConnector({
     required this.config,
     required SessionConnector this.connector,
     this.network,
+    this.callMedia,
     this.credentials,
     this.onLoggedIn,
     this.strings = const TinodeChatStrings(),
@@ -79,6 +83,10 @@ class TinodeChat extends StatefulWidget {
   @visibleForTesting
   final NetworkMonitor? network;
 
+  /// Creates the media of calls; null for WebRTC.
+  @visibleForTesting
+  final CallMediaFactory? callMedia;
+
   @override
   State<TinodeChat> createState() => _TinodeChatState();
 }
@@ -89,6 +97,7 @@ class _TinodeChatState extends State<TinodeChat> {
     credentials: widget.credentials,
     connector: widget.connector,
     network: widget.network,
+    callMedia: widget.callMedia,
   );
 
   late final AppLifecycleListener _lifecycle;

@@ -15,3 +15,13 @@ extension ChatTimeFormat on MaterialLocalizations {
         : formatShortMonthDay(local);
   }
 }
+
+/// The length of a call, e.g. `0:42`, `12:05` or `1:02:09`.
+String formatCallDuration(Duration duration) {
+  String twoDigits(int n) => n.toString().padLeft(2, '0');
+  final minutes = duration.inMinutes.remainder(60);
+  final seconds = twoDigits(duration.inSeconds.remainder(60));
+  return duration.inHours > 0
+      ? '${duration.inHours}:${twoDigits(minutes)}:$seconds'
+      : '$minutes:$seconds';
+}

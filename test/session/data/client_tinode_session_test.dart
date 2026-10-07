@@ -25,6 +25,12 @@ final class _Server {
   /// How many `sub` requests to answer with `503 locked` first.
   int lockedReplies = 0;
 
+  /// How many `sub` requests to refuse with `403` first.
+  int refusedReplies = 0;
+
+  /// Every request as `<type> <topic>`, e.g. `sub usrBob`.
+  final requests = <String>[];
+
   void send(Map<String, Object?> packet) => socket.sendText(jsonEncode(packet));
 
   void _answer(Map<String, Object?> packet) {
@@ -32,6 +38,7 @@ final class _Server {
     final body = value! as Map<String, Object?>;
     final id = body['id'];
     final ts = DateTime.utc(2026).toIso8601String();
+    requests.add('$key ${body['topic'] ?? ''}'.trim());
     switch (key) {
       case 'hi':
         send({
@@ -48,7 +55,12 @@ final class _Server {
         send({
           'ctrl': {'id': id, 'code': 503, 'text': 'locked', 'ts': ts},
         });
-      case 'sub':
+      case 'sub' when refusedReplies > 0:
+        refusedReplies--;
+        send({
+          'ctrl': {'id': id, 'code': 403, 'text': 'forbidden', 'ts': ts},
+        });
+      case 'sub' || 'leave':
         send({
           'ctrl': {'id': id, 'code': 200, 'text': 'ok', 'ts': ts},
         });
@@ -129,6 +141,38 @@ void main() {
 
     expect(await session.attach('usrBob'), 'usrBob');
     expect(server.lockedReplies, 0);
+  });
+
+  group('attaches are counted', () {
+    test('a second attach and the first detach stay local', () async {
+      await session.attach('usrBob');
+      await session.attach('usrBob');
+      await session.detach('usrBob');
+      expect(server.requests, ['hi', 'sub usrBob']);
+
+      await session.detach('usrBob');
+      expect(server.requests.last, 'leave usrBob');
+    });
+
+    test('overlapping attaches share one request', () async {
+      await Future.wait([session.attach('usrBob'), session.attach('usrBob')]);
+      expect(server.requests.where((r) => r == 'sub usrBob'), hasLength(1));
+
+      await session.detach('usrBob');
+      expect(server.requests.last, 'sub usrBob');
+    });
+
+    test('a failed attach holds nothing', () async {
+      server.refusedReplies = 1;
+      await expectLater(
+        session.attach('usrBob'),
+        throwsA(isA<ServerException>()),
+      );
+
+      await session.attach('usrBob');
+      await session.detach('usrBob');
+      expect(server.requests.last, 'leave usrBob');
+    });
   });
 
   test('a dropped socket shows as reconnecting, not as the end', () async {

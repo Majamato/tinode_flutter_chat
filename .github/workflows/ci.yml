@@ -29,7 +29,9 @@ jobs:
       - run: flutter pub get
       # Regenerate and format; any diff means stale generated code or
       # unformatted sources were committed.
-      - run: dart run build_runner build
+      # --force-jit: flutter_webrtc pulls in objective_c, whose build hook
+      # the AOT builder compile refuses.
+      - run: dart run build_runner build --force-jit
       - run: dart format .
       - run: git diff --exit-code
       # `dart analyze`, not `flutter analyze`: only it reports riverpod_lint.

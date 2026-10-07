@@ -17,7 +17,7 @@ The Flutter version is pinned in `.fvmrc`, so prefix commands with `fvm`.
 
 ```sh
 fvm flutter pub get
-fvm dart run build_runner build          # after changing any @riverpod code
+fvm dart run build_runner build --force-jit   # after changing any @riverpod code
 fvm dart format .
 fvm dart analyze --fatal-infos           # also reports riverpod_lint; `flutter analyze` does not
 fvm flutter test                         # unit + widget tests

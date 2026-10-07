@@ -12,6 +12,9 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 - Opens direct chats, groups and channels. Channel followers get a read-only view.
 - Loads history, pages older messages in on scroll, and merges live messages as they arrive.
 - Sends plain text and marks what the user sees as read.
+- 1:1 voice and video calls with `flutter_webrtc`, while the app is open: call buttons in direct
+  chats, a ringing screen over any route, mute, camera on/off, front/back camera and speaker.
+  Calls show in the chat with how they went. They need a server with ICE (STUN/TURN) servers.
 - Restyle it with a `TinodeChatTheme` theme extension, and translate or reword it with
   `TinodeChatStrings`.
 - Needs no `ProviderScope` or other setup in your app.
@@ -51,6 +54,34 @@ ThemeData(
 See [`example/`](example/lib/main.dart) for a runnable app. To try it locally, start the server
 from `../tinode-tests` (`docker compose up -d`) and log in as `alice` / `alice123`.
 
+## Calls: platform setup
+
+Calls use the microphone and camera, so the host app must declare them.
+
+**Android** (`android/app/src/main/AndroidManifest.xml`):
+
+```xml
+<uses-feature android:name="android.hardware.camera" android:required="false"/>
+<uses-permission android:name="android.permission.CAMERA"/>
+<uses-permission android:name="android.permission.RECORD_AUDIO"/>
+<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+<uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+<uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+```
+
+For release builds, keep WebRTC from R8: `-keep class org.webrtc.** { *; }` in
+`proguard-rules.pro`.
+
+**iOS** (`ios/Runner/Info.plist`): `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`,
+and `UIBackgroundModes` with `audio` so a call keeps its sound when the screen locks. The Podfile
+needs `platform :ios, '13.0'` or later.
+
+The OS asks the user for access when the first call starts. See [`example/`](example/) for a
+complete setup.
+
 ## Current limits
 
 This release covers the online happy path. Not built yet:
@@ -58,7 +89,10 @@ This release covers the online happy path. Not built yet:
 - offline cache and message search (waiting on the client);
 - typing indicators, read receipts per message, sender names in groups;
 - attachments, rich Drafty rendering (messages show their plain text);
-- creating chats, finding users (`fnd`).
+- creating chats, finding users (`fnd`);
+- calls ring only while the app is open and connected: no push, CallKit or ConnectionService yet.
+  On Android a call may lose the microphone and camera while the app is in the background. No
+  group calls, no switching between voice and video during a call.
 
 ## Development
 

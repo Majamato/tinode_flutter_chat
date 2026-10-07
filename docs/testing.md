@@ -44,8 +44,30 @@ expect(session.calls, contains('markRead $bob 3'));   // what the app sent
 - Passwords default to `alice` / `alice123`; the token is `token-<userId>`.
 - `publish` assigns the next seq and echoes the message back like the server (`echo = false` to
   turn that off).
+- `startCall` publishes a call message like `publish`; `sendCallEvent` logs `call <topic> <seq>
+  <event>` (payloads in `callPayloads`) and throws while not connected. `emitInfo` pushes call
+  events, `serverInfo` sets the ICE servers (one fake STUN server by default), and
+  `attachCount(topic)` shows how many attaches hold a topic.
 - Its streams and `closed` deliver synchronously. A fake made in `setUp` lives outside a widget
   test's fake-async zone, where async callbacks would never run.
+
+## Fake call media
+
+Calls get `FakeCallMedia` instead of WebRTC: `createTestContainer`, `loggedInContainer` and
+`pumpTinodeChat` pass `FakeCallMedia.new` unless you give them a `callMedia`. Use a
+`FakeCallMediaFactory` to reach the media a call created:
+
+```dart
+final media = FakeCallMediaFactory();
+final container = await loggedInContainer(session, callMedia: media.call);
+await container.read(callControllerProvider.notifier).start(bob, audioOnly: true);
+
+media.last.emitLink(CallLinkState.connected);    // what WebRTC would report
+expect(media.last.log, contains('open audio'));  // what the call asked of it
+```
+
+Its offer and answer are the fixed strings `local offer` and `local answer`. `CallVideoView` draws
+nothing in widget tests (the plugin isn't there), so call screens can be pumped like any other.
 
 ## Widget tests
 
@@ -75,6 +97,9 @@ fvm flutter test --tags integration --run-skipped
 - API key: `AQEAAAABAAD_rAp4DJh05a1HAwFT3A6K`.
 - From the Android emulator the host is `10.0.2.2`, not `localhost`.
 - Use plain `test()`, not `testWidgets()`: widget tests block real network access.
+- `call_test.dart` needs the server's ICE servers (`ICE_SERVERS_FILE` in `../tinode-tests`). It
+  places real calls between alice and bob with fake media: the server only relays the WebRTC setup,
+  so the whole call flow runs without audio.
 
 ## Manual check with the example app
 
@@ -88,3 +113,13 @@ cd example && fvm flutter run -d linux
    and the chat moves to the top.
 3. Open the chat: the message is there, and the badge clears.
 4. Reply from the app: bob sees it in the web UI.
+
+Calls need two devices, or one device and the web UI (http://localhost:6060/ on the computer that
+runs the server; browsers only give camera and microphone to `localhost` or https):
+
+5. From the app, start a voice call to bob: the web UI rings. Accept it there and talk; hang up
+   from either side. The chat shows the call with its duration.
+6. Call alice from the web UI while the app shows the chat list: the app rings. Decline: the web
+   UI shows the call as declined.
+7. A video call on a phone on mobile data, to the web UI on Wi-Fi, goes through the TURN server;
+   its traffic shows in the TURN provider's dashboard.

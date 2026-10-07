@@ -10,6 +10,8 @@ terms here too, with the same "avoid" rules:
   relationship; don't say "subscribe" when you mean attach.
 - **Profile**, not "card" (Tinode's docs call it theCard).
 - **Direct** chat for P2P (`TopicKind.direct`).
+- **Call**, **call event**, **call state**, **ICE server**: as in the client's glossary, section
+  Calls. Calls exist only in direct chats.
 
 ## UI terms
 
@@ -65,3 +67,36 @@ How long the socket stays open after the app is hidden (15 s) before the session
 **Live model**
 A provider whose state follows server events as they arrive (chat list, open chat), as opposed to a
 one-shot load.
+
+## Calls
+
+**Call stage**
+Where this device's call stands: preparing, calling, ringing, incoming, connecting, connected,
+ended. Not the server's **call state**, which the call message records.
+*In code:* `CallStage`, `ActiveCall.stage`.
+
+**Accept / decline**
+What the user does with a ringing call. Declining is a hang-up before the call was accepted.
+*Avoid:* "answer" for the user's action; the **answer** is the callee's WebRTC reply to the offer.
+
+**Invite check**
+How a call reaches a chat this session isn't attached to: `pres msg` on `me` makes the call
+controller attach that chat and read the new message; if it starts a call nobody answered yet, it
+rings and keeps the chat attached. *In code:* `CallController`, `CallInvite.findIn`.
+
+**Call layer**
+The ringing screen or the call screen, drawn over every chat route. *In code:* `CallLayer`,
+`IncomingCallView`, `CallView`.
+
+**Call record / call bubble**
+How a call message shows in the chat: direction, voice or video, and how it went (duration,
+missed, no answer, declined). The server's updates change this bubble instead of adding new ones.
+*In code:* `CallRecord`, `ChatMessage.call`, `CallBubbleContent`.
+
+**Call media**
+The microphone, camera and WebRTC link of one call. *In code:* `CallMedia` (interface),
+`WebRtcCallMedia`, `FakeCallMedia` in tests.
+
+**Answered elsewhere**
+Another device of the same user took the call; this one stops ringing without showing an ended
+call.

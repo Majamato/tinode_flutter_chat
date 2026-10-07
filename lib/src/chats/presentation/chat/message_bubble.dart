@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/call_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// One message: own messages on the right, others on the left.
+/// One message: own messages on the right, others on the left. A call
+/// message shows the call instead of its text.
 class MessageBubble extends ConsumerWidget {
   const MessageBubble({required this.topic, required this.seq, super.key});
 
@@ -42,10 +44,13 @@ class MessageBubble extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                message.content.text,
-                style: textTheme.bodyMedium?.copyWith(color: foreground),
-              ),
+              if (message.call case final call?)
+                CallBubbleContent(call: call, outgoing: own, color: foreground)
+              else
+                Text(
+                  message.content.text,
+                  style: textTheme.bodyMedium?.copyWith(color: foreground),
+                ),
               const SizedBox(height: 2),
               Text(
                 MaterialLocalizations.of(context).messageTime(message.time),

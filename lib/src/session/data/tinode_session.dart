@@ -14,9 +14,14 @@ abstract interface class TinodeSession {
   Future<LoginResult> loginToken(String token);
 
   /// Starts receiving the topic's live traffic; returns its real name.
+  ///
+  /// Attaches are counted: a chat screen and a call can hold the same
+  /// topic, and it stays attached until every attach has been matched by a
+  /// [detach]. A failed attach holds nothing.
   Future<String> attach(String topic);
 
-  /// Stops receiving the topic's live traffic; the subscription stays.
+  /// Releases one [attach]; the last one stops the topic's live traffic.
+  /// The subscription stays.
   Future<void> detach(String topic);
 
   /// The chat list: the subscriptions of `me` that name a topic.
@@ -36,6 +41,16 @@ abstract interface class TinodeSession {
   void sendTyping(String topic);
 
   void markRead(String topic, int seq);
+
+  /// The server's reply to the latest `hi`, with its ICE servers for calls.
+  ServerInfo get serverInfo;
+
+  /// Calls the peer of the 1:1 [topic]; the result's seq names the call.
+  Future<PublishResult> startCall(String topic, {required bool audioOnly});
+
+  /// Sends one step of call [seq]. Throws `ConnectionClosedException`
+  /// while not connected, rather than dropping it.
+  void sendCallEvent(String topic, int seq, CallEvent event, {Json? payload});
 
   Stream<DataMessage> get messages;
 

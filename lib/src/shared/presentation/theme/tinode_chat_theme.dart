@@ -18,6 +18,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.bubbleRadius,
     required this.unreadBadgeColor,
     required this.onUnreadBadgeColor,
+    required this.missedCallColor,
   });
 
   /// A chat theme derived from [theme]'s color scheme.
@@ -31,6 +32,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       bubbleRadius: 16,
       unreadBadgeColor: colors.primary,
       onUnreadBadgeColor: colors.onPrimary,
+      missedCallColor: colors.error,
     );
   }
 
@@ -62,6 +64,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// Text on [unreadBadgeColor].
   final Color onUnreadBadgeColor;
 
+  /// Icon and status of calls that did not happen: missed, declined or
+  /// not connected.
+  final Color missedCallColor;
+
   @override
   TinodeChatTheme copyWith({
     Color? ownBubbleColor,
@@ -71,6 +77,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     double? bubbleRadius,
     Color? unreadBadgeColor,
     Color? onUnreadBadgeColor,
+    Color? missedCallColor,
   }) => TinodeChatTheme(
     ownBubbleColor: ownBubbleColor ?? this.ownBubbleColor,
     onOwnBubbleColor: onOwnBubbleColor ?? this.onOwnBubbleColor,
@@ -79,6 +86,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     bubbleRadius: bubbleRadius ?? this.bubbleRadius,
     unreadBadgeColor: unreadBadgeColor ?? this.unreadBadgeColor,
     onUnreadBadgeColor: onUnreadBadgeColor ?? this.onUnreadBadgeColor,
+    missedCallColor: missedCallColor ?? this.missedCallColor,
   );
 
   @override
@@ -110,6 +118,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
         other.onUnreadBadgeColor,
         t,
       )!,
+      missedCallColor: Color.lerp(missedCallColor, other.missedCallColor, t)!,
     );
   }
 }
