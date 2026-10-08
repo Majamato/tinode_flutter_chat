@@ -12,6 +12,8 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 - Opens direct chats, groups and channels. Channel followers get a read-only view.
 - Loads history, pages older messages in on scroll, and merges live messages as they arrive.
 - Sends plain text and marks what the user sees as read.
+- Finds people and groups by login, email, phone or tag, opens 1:1 chats with them, and creates
+  groups with members. This needs the network.
 - 1:1 voice and video calls with `flutter_webrtc`, while the app is open: call buttons in direct
   chats, a ringing screen over any route, mute, camera on/off, front/back camera and speaker.
   Calls show in the chat with how they went. They need a server with ICE (STUN/TURN) servers.
@@ -111,18 +113,26 @@ TinodeChat(
 await chat.logOut();
 ```
 
-## Current limits
+## Roadmap
 
-Not built yet:
+Built so far: the happy path, reconnection, calls, offline, finding people and starting chats.
+Next, in this order. Each feature lands in [`tinode_dart_client`](../tinode_dart_client) first
+where it needs the protocol:
 
-- message search;
-- pruning the cache, or encrypting it at rest (it is a plain SQLite file per user);
-- typing indicators, read receipts per message, sender names in groups;
-- attachments, rich Drafty rendering (messages show their plain text);
-- creating chats, finding users (`fnd`);
-- calls ring only while the app is open and connected: no push, CallKit or ConnectionService yet.
-  On Android a call may lose the microphone and camera while the app is in the background. No
-  group calls, no switching between voice and video during a call.
+1. ~~**Find people and start chats**~~: done (search, 1:1 chats, new groups with members).
+2. **Group chat essentials**: sender names and avatars in groups, typing indicators, read
+   receipts per message.
+3. **Attachments**: send and show images and files, rich Drafty rendering (messages show only
+   their plain text today).
+4. **Account and profile**: sign up, edit name and avatar, change password, leave or delete
+   chats.
+5. **Push and background calls**: push notifications, CallKit and ConnectionService. Today calls
+   ring only while the app is open and connected, and on Android a call may lose the microphone
+   and camera in the background. Later still: group calls, switching between voice and video
+   during a call.
+6. **Search and cache upkeep**: message search, pruning the cache, encrypting it at rest (today
+   it is a plain SQLite file per user).
+7. **UI/UX improvements.**
 
 ## Development
 

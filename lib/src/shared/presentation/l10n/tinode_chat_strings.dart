@@ -71,6 +71,16 @@ class TinodeChatStrings {
     this.discardMessage = 'Discard',
     this.deleteForMe = 'Delete for me',
     this.deleteForEveryone = 'Delete for everyone',
+    this.newChat = 'New chat',
+    this.findHint = 'Search by login, email or phone',
+    this.nobodyFound = 'Nobody found',
+    this.groupLabel = 'Group',
+    this.channelLabel = 'Channel',
+    this.newGroup = 'New group',
+    this.groupNameField = 'Group name',
+    this.addMembersHint = 'Add members',
+    this.createGroup = 'Create',
+    this.membersNotAdded = 'Some members could not be added.',
   });
 
   /// The texts of the nearest `TinodeChat`, or the defaults outside one.
@@ -245,4 +255,34 @@ class TinodeChatStrings {
 
   /// Label of the action that deletes a message for everyone in the chat.
   final String deleteForEveryone;
+
+  /// Tooltip of the chat list's button that finds people to chat with.
+  final String newChat;
+
+  /// Hint of the search field, saying what a search can match.
+  final String findHint;
+
+  /// A search that found no one.
+  final String nobodyFound;
+
+  /// Under a search result that is a group.
+  final String groupLabel;
+
+  /// Under a search result that is a channel.
+  final String channelLabel;
+
+  /// Title of the screen that creates a group, and of the entry opening it.
+  final String newGroup;
+
+  /// Label of the new group's name field.
+  final String groupNameField;
+
+  /// Hint of the field that finds people to add to a new group.
+  final String addMembersHint;
+
+  /// Label of the button that creates the new group.
+  final String createGroup;
+
+  /// The group was created, but the server refused some of its members.
+  final String membersNotAdded;
 }

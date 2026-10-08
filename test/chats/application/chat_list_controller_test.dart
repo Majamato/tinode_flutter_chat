@@ -101,6 +101,48 @@ void main() {
     expect(container.read(chatSummaryProvider(bob))?.unread, 0);
   });
 
+  test('pres acs for an unknown chat reloads the list', () async {
+    await loadList();
+    session.chats.add(chat(carol, name: 'Hikers', lastMessageAt: at(9)));
+
+    // Someone added the user to a group: no seq yet.
+    session.emitPresence(
+      const PresMessage(
+        topic: 'me',
+        event: PresenceEvent.access,
+        source: carol,
+      ),
+    );
+    await settle();
+
+    expect(container.read(chatSummaryProvider(carol))?.title, 'Hikers');
+    expect(container.read(chatListControllerProvider).order.first, carol);
+  });
+
+  test('pres acs for a known chat changes nothing', () async {
+    final list = await loadList();
+    session.calls.clear();
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.access, source: bob),
+    );
+    await settle();
+    expect(session.calls, isEmpty);
+    expect(identical(container.read(chatListControllerProvider), list), isTrue);
+  });
+
+  test('refresh syncs and keeps the list shown meanwhile', () async {
+    await loadList();
+    session
+      ..calls.clear()
+      ..chats.add(chat(carol, name: 'Carol', lastMessageAt: at(9)));
+    container.read(chatListControllerProvider.notifier).refresh();
+    expect(container.read(chatListControllerProvider).status, LoadStatus.ready);
+    await settle();
+
+    expect(session.calls, ['chatList']);
+    expect(container.read(chatListControllerProvider).order.first, carol);
+  });
+
   test('pres msg for an unknown chat reloads the list', () async {
     await loadList();
     session.chats.add(chat(carol, name: 'Carol', lastSeq: 1));

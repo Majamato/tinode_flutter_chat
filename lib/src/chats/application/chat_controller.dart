@@ -160,6 +160,11 @@ class ChatController extends _$ChatController {
           return;
         }
         link.attached = true;
+        // A chat the user just started, e.g. with someone they found: the
+        // server sends its creator no presence for it.
+        if (!ref.read(chatListControllerProvider).contains(topic)) {
+          ref.read(chatListControllerProvider.notifier).refresh();
+        }
       }
 
       if (state.status != LoadStatus.ready || state.lastSeq == null) {

@@ -98,6 +98,18 @@ final class CachedTinodeSession implements ChatSession {
   void sendTyping(String topic) => _remote.sendTyping(topic);
 
   @override
+  Future<List<FoundTopic>> find(String query) => _remote.find(query);
+
+  /// The group reaches the cache with the next chat list sync.
+  @override
+  Future<String> createGroup({required Profile public}) =>
+      _remote.createGroup(public: public);
+
+  @override
+  Future<void> addMember(String topic, String userId) =>
+      _remote.addMember(topic, userId);
+
+  @override
   Future<PublishResult> publish(
     String topic,
     MessageContent content, {

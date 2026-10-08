@@ -35,6 +35,20 @@ abstract interface class TinodeSession {
   /// `TinodeClient.getSubscriptions`.
   Future<List<Subscription>> chatList({DateTime? ifModifiedSince});
 
+  /// Users and groups whose tags match [query], best first; see
+  /// `TinodeClient.find`. A user's result is named by their user ID,
+  /// which [attach] opens as the 1:1 chat with them.
+  Future<List<FoundTopic>> find(String query);
+
+  /// Creates a group named in [public], with this user as its owner, and
+  /// returns its `grp…` name. The new group is attached as by [attach]:
+  /// release it with [detach].
+  Future<String> createGroup({required Profile public});
+
+  /// Adds the user [userId] to the group [topic] with the group's default
+  /// access. Needs the `S` permission.
+  Future<void> addMember(String topic, String userId);
+
   /// Up to [limit] messages with `since <= seq < before`, the newest of
   /// them, oldest first.
   Future<List<DataMessage>> history(

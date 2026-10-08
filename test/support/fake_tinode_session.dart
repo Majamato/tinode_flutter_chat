@@ -41,6 +41,24 @@ final class FakeTinodeSession implements TinodeSession {
   Exception? failPublish;
   Exception? failDelete;
 
+  /// What `find` answers, by the query it is sent. Unknown queries find
+  /// nothing.
+  final found = <String, List<FoundTopic>>{};
+
+  /// When set, `find` waits for it before answering.
+  Completer<void>? holdFind;
+
+  /// When set, the next `find` or `createGroup` throws it.
+  Exception? failFind;
+  Exception? failCreateGroup;
+
+  /// Users that `addMember` refuses to add, as a server would without `S`.
+  final refuseMembers = <String>{};
+
+  /// The members `addMember` added, by group.
+  final members = <String, List<String>>{};
+  var _groups = 0;
+
   /// The `ifModifiedSince` of the latest `chatList`.
   DateTime? lastChatListSince;
 
@@ -182,6 +200,55 @@ final class FakeTinodeSession implements TinodeSession {
       throw error;
     }
     return List.of(chats);
+  }
+
+  @override
+  Future<List<FoundTopic>> find(String query) async {
+    calls.add('find $query');
+    await holdFind?.future;
+    _requireConnected();
+    if (failFind case final error?) {
+      failFind = null;
+      throw error;
+    }
+    return found[query] ?? const [];
+  }
+
+  /// Names the groups `grpNew1`, `grpNew2`… and adds each to [chats], as
+  /// the next chat list sync would show it.
+  @override
+  Future<String> createGroup({required Profile public}) async {
+    calls.add('createGroup ${public.name}');
+    _requireConnected();
+    if (failCreateGroup case final error?) {
+      failCreateGroup = null;
+      throw error;
+    }
+    final topic = 'grpNew${++_groups}';
+    chats.add(
+      Subscription(
+        topic: topic,
+        public: public,
+        lastMessageAt: DateTime.utc(2026, 10, 4, 12),
+        access: Access(
+          want: AccessMode.parse('JRWPASDO'),
+          given: AccessMode.parse('JRWPASDO'),
+          mode: AccessMode.parse('JRWPASDO'),
+        ),
+      ),
+    );
+    _holds.update(topic, (holds) => holds + 1, ifAbsent: () => 1);
+    return topic;
+  }
+
+  @override
+  Future<void> addMember(String topic, String userId) async {
+    calls.add('addMember $topic $userId');
+    _requireConnected();
+    if (refuseMembers.contains(userId)) {
+      throw const ServerException(403, 'permission denied');
+    }
+    members.putIfAbsent(topic, () => []).add(userId);
   }
 
   @override

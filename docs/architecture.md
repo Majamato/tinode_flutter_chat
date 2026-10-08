@@ -36,6 +36,10 @@ lib/
       data/                       ChatDatabase (drift), ChatStore, ChatStoreOpener,
                                   ChatSession, CachedTinodeSession
       application/                chatStoreOpener
+    new_chat/                     finding people and starting chats
+      domain/                     findQuery, SearchResult, FindState, NewGroup
+      application/                FindController(scope), NewGroupController
+      presentation/               search and new group screens, the chat list's new chat button
     calls/                        1:1 voice and video calls
       domain/                     ActiveCall, CallInvite, CallFailure, the CallMedia interface
       data/                       WebRtcCallMedia (flutter_webrtc)
@@ -49,7 +53,8 @@ lib/
 
 A feature is something the user *does* (connect, chat), not a screen. New work goes into an
 existing feature when it shares its state, otherwise into a new folder with the same four layers.
-Expected next features: `search` (local FTS and `fnd`), `profile`, `attachments`.
+Expected next features, in the README's roadmap order: group chat essentials (in `chats`),
+`attachments`, `profile`, push, then `search` (local message search).
 
 ## Layers
 
@@ -101,7 +106,9 @@ TinodeChat                      owns the container
         ├ LoginScreen
         ├ SessionErrorView      "Reconnect"
         └ ChatNavigator         nested Navigator, only while logged in
-          ├ ChatListScreen      first route
+          ├ ChatListScreen      first route; NewChatButton
+          ├ FindPeopleScreen    pushed by NewChatButton
+          ├ NewGroupScreen      pushed from the search
           ├ ChatScreen(topic)   pushed per chat; CallButtons in its app bar
           ├ CallLayer           over the routes: IncomingCallView or CallView
           └ ReconnectingBanner  below the routes, while the link is restored
@@ -221,8 +228,28 @@ cache. `CachedTinodeSession` decorates the server session:
    page brings the target. `firstSeq` and `lastSeq` count every seq seen, updates included, so
    catching up and marking read don't stall on them.
 
+**Starting a chat** (`FindController(scope)`, autoDispose, sync `Notifier<FindState>`):
+
+1. Each change of the input goes to `search`; after `findDebounce` (300 ms) without changes it asks
+   the server (`find`). Answers to older input are dropped. Input shorter than 2 letters searches
+   nothing.
+2. `findQuery` turns the input into a `fnd` query: each word may match (OR), as a tag and as a
+   login (`basic:`). Emails, phone numbers and prefixed words go as typed.
+3. Each screen keeps its own search (`FindScope`): the new group's member search leaves out groups,
+   and both leave out the user.
+4. Searching needs the server. Offline it fails, and a failed search runs again on `Connected`.
+5. Tapping a result opens its chat over the chat list (`ChatScreen.openOverList`). For a user, the
+   chat screen's attach creates the 1:1 chat the first time.
+6. `NewGroupController.create` creates the group, adds the members in parallel and releases the
+   attach that creating took. A member the server refuses doesn't undo the group: the screen says
+   so and opens it anyway.
+7. The server sends no presence to whoever started a chat. So `ChatListController.refresh` syncs
+   the list after a group is created, and `ChatController` asks for it when it attaches a chat the
+   list doesn't have. A user added to a group gets `pres acs` on `me`, which syncs their list.
+
 **Attaches are counted** (`ClientTinodeSession`): a chat screen and a call can hold the same
-topic, and it stays attached until every attach has been matched by a detach. Closing the chat
+topic, and it stays attached until every attach has been matched by a detach. Creating a group
+counts as one attach. Closing the chat
 during a call doesn't end the call.
 
 **Calls** (`CallController`, keepAlive, sync `Notifier<ActiveCall?>`):
@@ -272,6 +299,8 @@ Only a local failure (no session) keeps the text and shows a snack bar.
 | The server refuses a message, or it keeps failing | Error mark on its bubble; long press to retry or discard |
 | The server refuses a deletion | The messages come back |
 | A call fails (permission, busy, link) | Snack bar from `CallLayer`; the call screen says why for 2 s |
+| A search fails, e.g. offline | `ErrorRetryView` in place of the results; it searches again on connect |
+| The server refuses a new group, or some of its members | Snack bar; the group screen stays, or the group opens |
 
 Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); widgets never catch.
 

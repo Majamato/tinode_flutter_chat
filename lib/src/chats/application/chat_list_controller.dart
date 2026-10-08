@@ -22,6 +22,7 @@ part 'chat_list_controller.g.dart';
 @Riverpod(keepAlive: true)
 class ChatListController extends _$ChatListController {
   late BuildLifetime _lifetime;
+  ChatSession? _session;
 
   /// Whether this build attached `me`; the client keeps it attached
   /// across reconnects from then on.
@@ -32,9 +33,11 @@ class ChatListController extends _$ChatListController {
     final lifetime = _lifetime = BuildLifetime(ref);
     final session = ref.watch(activeSessionProvider);
     final me = ref.watch(currentUserIdProvider);
+    _session = session;
     if (session == null || me == null) {
       return const ChatListState.loading().failed(ChatFailure.connectionLost);
     }
+
     _attachedMe = false;
     final subscriptions = [
       session.presence
@@ -57,6 +60,15 @@ class ChatListController extends _$ChatListController {
 
   /// Loads the list again, e.g. after a failure.
   void reload() => ref.invalidateSelf();
+
+  /// Syncs the list with the server, keeping what it shows meanwhile, e.g.
+  /// after this user started a chat: the server sends its creator no
+  /// presence for it.
+  void refresh() {
+    if (_session case final session?) {
+      unawaited(_sync(session, _lifetime));
+    }
+  }
 
   /// The user read [topic] up to [seq] on this device.
   void markRead(String topic, int seq) =>
@@ -98,20 +110,21 @@ class ChatListController extends _$ChatListController {
 
   void _onPresence(ChatSession session, PresMessage presence) {
     final topic = presence.source;
-    final seq = presence.seq;
-    if (topic == null || seq == null) {
+    if (topic == null) {
       return;
     }
-    switch (presence.event) {
-      case PresenceEvent.message when !state.contains(topic):
-        // A chat this list has not seen yet: someone started it.
+    switch ((presence.event, presence.seq)) {
+      case (PresenceEvent.message || PresenceEvent.access, _)
+          when !state.contains(topic):
+        // A chat this list has not seen yet: someone started it, or added
+        // the user to it (`acs`, which carries no seq).
         unawaited(_sync(session, _lifetime));
-      case PresenceEvent.message:
+      case (PresenceEvent.message, final seq?):
         state = state.update(
           topic,
           (chat) => chat.withMessage(seq, DateTime.now()),
         );
-      case PresenceEvent.read:
+      case (PresenceEvent.read, final seq?):
         // Read on another of the user's devices.
         markRead(topic, seq);
       case _:

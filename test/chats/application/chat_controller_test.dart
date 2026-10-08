@@ -169,6 +169,24 @@ void main() {
     expect(session.calls, contains('history $bob before 6'));
   });
 
+  test('opening a chat the list lacks syncs the list', () async {
+    // The server makes the 1:1 chat on attach; its creator gets no pres.
+    session.chats.add(chat(carol, name: 'Carol', lastMessageAt: at(9)));
+    session.calls.clear();
+    openChat(carol);
+    await settle();
+
+    expect(session.calls, containsAllInOrder(['attach $carol', 'chatList']));
+    expect(container.read(chatSummaryProvider(carol))?.title, 'Carol');
+  });
+
+  test('opening a listed chat does not sync the list', () async {
+    session.calls.clear();
+    openChat();
+    await settle();
+    expect(session.calls, isNot(contains('chatList')));
+  });
+
   test('detaches when the chat closes', () async {
     final chat = openChat();
     await settle();

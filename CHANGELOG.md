@@ -1,5 +1,13 @@
 ## Unreleased
 
+- Finding people and starting chats, from `tinode_dart_client` 0.5.0: a button on the chat list
+  opens a search for people and groups (by login, email, phone or tag). Tapping a result opens the
+  chat, creating a 1:1 chat the first time. "New group" creates a group with a name and members
+  picked from the same search. Searching needs the server: offline it says so and searches again
+  once the link is back.
+- The chat list picks up a chat the user was added to (`pres acs`), and one the user just started.
+- New `TinodeChatStrings`: `newChat`, `findHint`, `nobodyFound`, `groupLabel`, `channelLabel`,
+  `newGroup`, `groupNameField`, `addMembersHint`, `createGroup`, `membersNotAdded`.
 - Offline, from `tinode_dart_client` 0.4.0: each user's chats are kept on the device (SQLite via
   `drift`, one file per server and user). The chat list and the chats show from the cache at once
   and then sync only what changed: new messages, deletions (the delete log), updated chats

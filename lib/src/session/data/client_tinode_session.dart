@@ -88,6 +88,20 @@ final class ClientTinodeSession implements TinodeSession {
   ];
 
   @override
+  Future<List<FoundTopic>> find(String query) => _client.find(query);
+
+  @override
+  Future<String> createGroup({required Profile public}) async {
+    final name = await _client.createGroup(public: public);
+    _holds.update(name, (holds) => holds + 1, ifAbsent: () => 1);
+    return name;
+  }
+
+  @override
+  Future<void> addMember(String topic, String userId) =>
+      _client.setSubscription(topic, userId: userId);
+
+  @override
   Future<List<DataMessage>> history(
     String topic, {
     required int limit,

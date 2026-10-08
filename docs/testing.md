@@ -52,8 +52,14 @@ expect(session.calls, contains('markRead $bob 3'));   // what the app sent
   `recordDeletion` does the same as another device would, and `deleteLog` answers from it.
   `failDelete` refuses the next one. `publishHeads` keeps each `publish` head; `loseNextAck`
   stores a message but throws instead of answering, like a drop before the ack.
-- While not `Connected`, `attach`, `chatList`, `history`, `publish`, `deleteMessages` and
-  `deleteLog` throw `ConnectionClosedException`, like the client.
+- `found[query]` is what `find` answers for the exact `fnd` query (`bob,basic:bob` for the input
+  `bob`); `holdFind` holds it and `failFind` refuses the next one. `createGroup` names groups
+  `grpNew1`, `grpNew2`…, adds them to `chats` (as the next sync would show them) and holds one
+  attach; `failCreateGroup` refuses the next one. `addMember` records `members[topic]`, and refuses
+  the users in `refuseMembers` with a 403.
+- While not `Connected`, `attach`, `chatList`, `history`, `publish`, `deleteMessages`,
+  `deleteLog`, `find`, `createGroup` and `addMember` throw `ConnectionClosedException`, like the
+  client.
 - `restoreWith(token)` starts it like `TinodeClient.restore`: reconnecting, then logged in once
   `reachable` (the default) or when the test calls `comeOnline()`. `restoreTo(session)` makes a
   `SessionRestorer` of it.

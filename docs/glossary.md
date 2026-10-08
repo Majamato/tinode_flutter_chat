@@ -126,6 +126,29 @@ members and needs the `D` permission. Both show at once and go to the server thr
 Ends the session for good: deletes the user's cache, including unsent messages, and forgets the
 credentials. *In code:* `SessionController.logout`, `TinodeChatController.logOut`, `onLoggedOut`.
 
+## Starting chats
+
+**Search**
+Finding people and groups to chat with, by their tags, as the user types. It needs the server.
+*In code:* `FindController`, `FindState`. The client's term is `fnd`; see its glossary.
+*Avoid:* "contacts". A result isn't in the chat list until a chat with it exists.
+
+**Search result**
+A user or group the search found, shown as a tile. A user's result is named by their user ID,
+which also names the 1:1 chat with them. *In code:* `SearchResult`, from the client's `FoundTopic`.
+
+**Find scope**
+Which screen a search belongs to: the new chat search, or the member search of a new group.
+*In code:* `FindScope`.
+
+**New group**
+A group the user creates with a name and members picked from a search; the user owns it.
+*In code:* `NewGroupController`, `NewGroup` (with the members not added).
+
+**Add a member**
+Making a user a member of a group (`set sub` on the wire), which needs `S`. The member can read the
+group at once. *Avoid:* "invite"; Tinode's docs use it, but nothing waits for an answer.
+
 ## Calls
 
 **Call stage**

@@ -14,6 +14,15 @@ class ChatScreen extends StatelessWidget {
     context,
   ).push(MaterialPageRoute<void>(builder: (_) => ChatScreen(topic: topic)));
 
+  /// Opens the chat named [topic] right over the chat list, closing the
+  /// screens in between, e.g. the search that found it.
+  static Future<void> openOverList(BuildContext context, String topic) {
+    final navigator = Navigator.of(context)..popUntil((route) => route.isFirst);
+    return navigator.push(
+      MaterialPageRoute<void>(builder: (_) => ChatScreen(topic: topic)),
+    );
+  }
+
   final String topic;
 
   @override

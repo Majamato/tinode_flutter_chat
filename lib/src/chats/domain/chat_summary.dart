@@ -1,4 +1,5 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/initials.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 
 /// One entry of the chat list, as the list tile shows it.
@@ -50,14 +51,8 @@ final class ChatSummary with ValueObject {
 
   int get unread => lastSeq > read ? lastSeq - read : 0;
 
-  /// Up to two letters for the avatar: the first letters of the first two
-  /// words of [title].
-  String get initials => title
-      .split(RegExp(r'\s+'))
-      .where((word) => word.isNotEmpty)
-      .take(2)
-      .map((word) => String.fromCharCode(word.runes.first).toUpperCase())
-      .join();
+  /// Up to two letters for the avatar; see [initialsOf].
+  String get initials => initialsOf(title);
 
   /// A new message [seq] arrived at [time]. Older news changes nothing.
   ChatSummary withMessage(int seq, DateTime time) => seq <= lastSeq
