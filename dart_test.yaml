@@ -1,6 +1,7 @@
 # Integration tests need a running Tinode server (../tinode-tests). They are
-# skipped by default; run them with:
-#   flutter test --tags integration --run-skipped
+# skipped by default. The suites share alice and bob's chat, so run them one
+# at a time:
+#   flutter test --tags integration --run-skipped --concurrency=1
 tags:
   integration:
     skip: Needs a Tinode server, run with --tags integration --run-skipped.

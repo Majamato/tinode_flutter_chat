@@ -31,6 +31,11 @@ lib/
       application/                providers: chat list, chat, send
       presentation/chat_list/     list screen and its tile parts
       presentation/chat/          chat screen, message list, bubbles, composer
+    offline/                      the cache, catching up and the outbox
+      domain/                     SeqRanges, OutgoingMessage, outbox events, merge and retry rules
+      data/                       ChatDatabase (drift), ChatStore, ChatStoreOpener,
+                                  ChatSession, CachedTinodeSession
+      application/                chatStoreOpener
     calls/                        1:1 voice and video calls
       domain/                     ActiveCall, CallInvite, CallFailure, the CallMedia interface
       data/                       WebRtcCallMedia (flutter_webrtc)
@@ -51,7 +56,7 @@ Expected next features: `search` (local FTS and `fnd`), `profile`, `attachments`
 | Layer | Holds | May import | Must not import |
 |-------|-------|------------|-----------------|
 | `domain` | Immutable models and pure rules (merging, counters) | Dart, `collection`, `meta`, `tinode_dart_client` models, `webrtc_interface` types | Flutter, Riverpod, other layers |
-| `data` | Talking to the outside world: the server, the OS's network reports, WebRTC; a local store later | `domain`, `tinode_dart_client`, `web_socket`, platform plugins behind an interface (`connectivity_plus`, `flutter_webrtc`) | Flutter itself, Riverpod, `application`, `presentation` |
+| `data` | Talking to the outside world: the server, the OS's network reports, WebRTC, the local cache | `domain`, `tinode_dart_client`, `web_socket`, `drift`, platform plugins behind an interface (`connectivity_plus`, `flutter_webrtc`, `drift_flutter`, `path_provider`) | Flutter itself, Riverpod, `application`, `presentation` |
 | `application` | Riverpod providers: state, use cases, the glue between data and UI | `domain`, `data`, `riverpod`, `riverpod_annotation` | Flutter, `flutter_riverpod`, `presentation` |
 | `presentation` | Widgets only | `domain`, `application`, Flutter, `flutter_riverpod` | `data` (except the composition root in `app/`) |
 
@@ -75,7 +80,8 @@ provider.
 - The session lives exactly as long as the widget: removing `TinodeChat` disposes the container,
   which closes the connection.
 - The container overrides the inputs: `tinodeConfigProvider`, `initialCredentialsProvider` and,
-  in tests, `sessionConnectorProvider`, `networkMonitorProvider` and `callMediaFactoryProvider`.
+  in tests, `sessionConnectorProvider`, `sessionRestorerProvider`, `chatStoreOpenerProvider`
+  (`MemoryChatStoreOpener`), `networkMonitorProvider` and `callMediaFactoryProvider`.
 - Automatic retry is off for the whole container. Retrying a rejected login or a failed connect
   would hide errors the user has to act on, so every retry is a button.
 - `config` and `credentials` are read once. To switch server or user, give `TinodeChat` a new `Key`.
@@ -110,12 +116,15 @@ incoming call must show whichever chat is open, and system back does nothing dur
 ## Session lifecycle
 
 ```
+connecting ── token of the last user ─► loggedIn        offline start: cache now, login later
 connecting ── no credentials ─────────► awaitingLogin ── login() ──► loggedIn
 connecting ── credentials accepted ───► loggedIn
 connecting ── token rejected (401) ───► awaitingLogin(lastFailure)
 connecting ── unreachable ────────────► failed
 loggedIn   ── socket drops ───────────► loggedIn        the client reconnects; banner meanwhile
-loggedIn   ── Disconnected(401/404) ──► awaitingLogin   token forgotten, controller rebuilt
+loggedIn   ── Disconnected(401) ──────► awaitingLogin   token forgotten, cache kept
+loggedIn   ── Disconnected(404) ──────► awaitingLogin   the user is gone: cache deleted
+loggedIn   ── logout() ───────────────► awaitingLogin   cache deleted, credentials forgotten
 loggedIn   ── Disconnected(other) ────► failed
 failed     ── reconnect() ────────────► connecting      old session closed, token login
 ```
@@ -125,6 +134,17 @@ failed     ── reconnect() ────────────► connecting
   connecting, an error means failed. `SessionPhase.of` turns that into the gate's four screens.
 - `CredentialsController` remembers what to log in with. After any login it holds the session
   token, so a reconnect never needs the password.
+- **Per-user cache.** After a login the controller opens that user's cache
+  (`ChatStoreOpener.open(server, userId)`, one SQLite file each), remembers them as the server's
+  last user and wraps the session in a `CachedTinodeSession`. A failed open falls back to a cache in
+  memory, so the chat still works online.
+- **Offline start.** With a token and a remembered user for the server, the controller opens their
+  cache and starts the session with `TinodeClient.restore`, which connects and logs in in the
+  background. The state is `SessionLoggedIn` at once, with `login` null until the server answers;
+  a token of another user rebuilds on that user's cache, a refused one goes to the login screen.
+  A password login always connects first.
+- **Logout** (`logout()`, the chat list's menu, `TinodeChatController.logOut`) closes the session,
+  deletes the cache and forgets the credentials; `onLoggedOut` tells the host, also after a 401.
 - A dropped socket is the client's business: it reconnects with backoff, logs in with the token
   and re-attaches topics. `SessionController` follows `TinodeSession.statusChanges` and acts only
   on two cases: `Connected(login:)` (the client logged in again, so the renewed token replaces the
@@ -146,29 +166,56 @@ failed     ── reconnect() ────────────► connecting
 `TinodeSession` (in `session/data`) is the only gateway to the server. It wraps `TinodeClient`
 (a `final` class that can't be faked), splits its events into typed streams, drops malformed
 packets. Retrying an attach the server answers with `503 locked` (both sides of a P2P chat
-attaching at once) is the client's job. A cached or offline session will implement the same
-interface.
+attaching at once) is the client's job.
+
+`ChatSession` (in `offline/data`) is what the logged-in app sees: a `TinodeSession` with the user's
+cache. `CachedTinodeSession` decorates the server session:
+
+- **Write-through.** Every `data` packet, `pres msg`/`read` on `me`, `pres del` and history page is
+  written to the store in arrival order; reads wait for those writes. Controllers never watch the
+  database: they read the cache once, then follow the session's streams, plus `outbox` and
+  `deletions`.
+- **Coverage.** A history page covers the seqs it answered for; a live message extends coverage
+  only when it follows it. `olderPage` serves covered seqs from the cache and fetches only gaps;
+  `catchUp` fetches after the newest covered seq, then the delete log since the last applied delete
+  ID (`get what=del`).
+- **Chat list sync.** `chatList()` asks `get sub` with "if modified since" the newest change the
+  cache holds and merges the answer: counters never move back, a `public`/`private` left out is
+  unchanged, a chat with `deleted` goes.
+- **Outbox.** `send`, `delete` and offline read markers are rows in the `outbox` table, drained in
+  order per topic whenever the link is up (at start, on `Connected`, after a change, after a
+  backoff). A message carries its client ID in its head; one sent without a reply (`in_flight`) is
+  looked up on the server before it is sent again. Errors: a closed link waits for the next
+  connect; a timeout looks first; 5xx/408/409/429 back off (up to a minute, failed after 5 tries);
+  other 4xx fail the message, which the user can retry or discard. A refused deletion brings its
+  messages back.
 
 **Chat list** (`ChatListController`, keepAlive, sync `Notifier<ChatListState>`):
 
-1. Subscribes to `presence` on `me` and to `messages`, **then** attaches `me` and loads the list,
-   so nothing that arrives during the load is lost.
+1. Subscribes to `presence` on `me` and to `messages`, **then** shows the cached list, attaches
+   `me` and syncs the list, so nothing that arrives during the load is lost. Offline, the cached
+   list stays ready; the next `Connected` attaches and syncs.
 2. `pres msg` raises a chat's `lastSeq`; an unknown topic reloads the list (a new chat).
    `pres read` (another device read it) raises `read`. A `data` message in an attached chat raises
    `lastSeq`, and also `read` when the user sent it.
-3. After a reconnect the list reloads: presence sent while the link was down is never replayed.
+3. After a reconnect the list syncs again: presence sent while the link was down is never
+   replayed.
 4. `unread = lastSeq − read`. Order is by `lastMessageAt`, newest first.
 
 **Chat** (`ChatController(topic)`, autoDispose, sync `Notifier<ChatState>`):
 
-1. Subscribes to the topic's live messages, attaches, loads the newest page of history.
-2. History pages, live messages and the sender's publish ack all merge through
-   `ChatState.withMessages`, keyed by seq: the ack and the server's echo of the same message dedup.
+1. Subscribes to the topic's live messages, the outbox and deletions; shows the cached messages and
+   the outbox at once; then attaches and catches up (or loads the newest page when nothing is
+   cached). Offline, a cached chat stays ready and syncs on the next `Connected`.
+2. History pages, live messages and sent outbox messages all merge through
+   `ChatState.withMessages`, keyed by seq; a numbered copy of an outgoing message (the outbox's ack
+   or the server's echo, whichever comes first) replaces it by client ID.
 3. What the user sees is marked read on the server and in the chat list.
 4. Scrolling to the top calls `loadOlder()`. Closing the screen disposes the provider, which
    detaches from the topic.
-5. After a reconnect it fetches `since: lastSeq + 1`. A full page may hide a bigger gap, and a
-   failed fetch leaves one, so both reload the chat instead.
+5. After a reconnect it catches up. When a full page came back the gap is too wide to show:
+   `ChatState.restartedWith` starts over from that page, keeping the outbox, and older pages fill
+   in from the cache and the server. Deletions remove their bubbles (`withoutSeqs`).
 6. A message that replaces another (`head.replace`, as the server does to record a call's progress)
    is no bubble of its own: it updates its target, or waits in `ChatState.pending` until an older
    page brings the target. `firstSeq` and `lastSeq` count every seq seen, updates included, so
@@ -202,8 +249,13 @@ during a call doesn't end the call.
    events, the held-back candidates and the setup timer. Ending the call releases it in one step,
    and work started for the call checks `isReleased` after every `await`.
 
-**Sending** (`SendController(topic)`): publishes plain text, then adds the message from the ack
-right away. On failure the composer keeps the text and shows a snack bar.
+**Sending** (`SendController(topic)`): puts plain text in the outbox and clears the composer; the
+chat shows it with a clock until the server numbers it, or with an error mark if it refuses it.
+Only a local failure (no session) keeps the text and shows a snack bar.
+
+**Deleting** (`ChatController.delete`): a long press on a message offers "Delete for me", and
+"Delete for everyone" where the user has `D`. A long press on an outgoing message offers Retry
+(once failed) and Discard.
 
 ## Errors
 
@@ -214,17 +266,19 @@ right away. On failure the composer keeps the text and shows a snack bar.
 | Where | Shown as |
 |-------|----------|
 | Connect fails, or the link ends for good | `SessionErrorView` with Reconnect |
-| The socket drops and the client is reconnecting | `ReconnectingBanner`; sends fail meanwhile |
+| The socket drops and the client is reconnecting | `ReconnectingBanner`; sends wait in the outbox |
 | Login fails | Text under the login form; the session keeps waiting for a login |
-| Chat list or history fails to load | `ErrorRetryView` in place of the list |
-| Send fails | Snack bar; the text stays in the field |
+| Chat list or history fails to load, with nothing cached | `ErrorRetryView` in place of the list |
+| The server refuses a message, or it keeps failing | Error mark on its bubble; long press to retry or discard |
+| The server refuses a deletion | The messages come back |
 | A call fails (permission, busy, link) | Snack bar from `CallLayer`; the call screen says why for 2 s |
 
 Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); widgets never catch.
 
 ## Public API
 
-Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `TinodeCredentials`
+Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `TinodeChatController`,
+`TinodeCredentials`
 (`PasswordCredentials`, `TokenCredentials`), `TinodeChatTheme`, `TinodeChatStrings`, and the
 client's `TinodeConfig` and `LoginResult`. Everything else may change freely. Every exported symbol
 carries dartdoc. Adding an export is an API decision: keep the list short.

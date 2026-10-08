@@ -34,10 +34,30 @@ final class FakeTinodeSession implements TinodeSession {
   /// When set, `history` waits for it before answering.
   Completer<void>? holdHistory;
 
-  /// When set, the next `chatList`, `history` or `publish` throws it.
+  /// When set, the next `chatList`, `history`, `publish` or
+  /// `deleteMessages` throws it.
   Exception? failChatList;
   Exception? failHistory;
   Exception? failPublish;
+  Exception? failDelete;
+
+  /// The `ifModifiedSince` of the latest `chatList`.
+  DateTime? lastChatListSince;
+
+  /// The `head` of each `publish`, in order.
+  final publishHeads = <Json?>[];
+
+  /// When set, `publish` stores the message, then throws this instead of
+  /// answering: the reply was lost with the link.
+  Exception? loseNextAck;
+
+  /// The deletions made through `deleteMessages`, by delete ID.
+  final deleteLogs = <String, Map<int, List<SeqRange>>>{};
+
+  /// For a restored session: whether the server answers. While false the
+  /// session stays reconnecting until [comeOnline].
+  bool reachable = true;
+  String? _restoreToken;
   Exception? failStartCall;
 
   /// When set, `startCall` waits for it before answering.
@@ -138,6 +158,7 @@ final class FakeTinodeSession implements TinodeSession {
   @override
   Future<String> attach(String topic) async {
     calls.add('attach $topic');
+    _requireConnected();
     _holds.update(topic, (holds) => holds + 1, ifAbsent: () => 1);
     return topic;
   }
@@ -152,8 +173,10 @@ final class FakeTinodeSession implements TinodeSession {
   }
 
   @override
-  Future<List<Subscription>> chatList() async {
+  Future<List<Subscription>> chatList({DateTime? ifModifiedSince}) async {
     calls.add('chatList');
+    lastChatListSince = ifModifiedSince;
+    _requireConnected();
     if (failChatList case final error?) {
       failChatList = null;
       throw error;
@@ -174,6 +197,7 @@ final class FakeTinodeSession implements TinodeSession {
       '${before == null ? '' : ' before $before'}',
     );
     await holdHistory?.future;
+    _requireConnected();
     if (failHistory case final error?) {
       failHistory = null;
       throw error;
@@ -188,13 +212,107 @@ final class FakeTinodeSession implements TinodeSession {
   }
 
   @override
-  Future<PublishResult> publish(String topic, MessageContent content) async {
+  Future<PublishResult> publish(
+    String topic,
+    MessageContent content, {
+    Json? head,
+  }) async {
     calls.add('publish $topic ${content.text}');
+    publishHeads.add(head);
+    _requireConnected();
     if (failPublish case final error?) {
       failPublish = null;
       throw error;
     }
-    return _store(topic, content);
+    final ack = _store(
+      topic,
+      content,
+      head: head == null ? null : MessageHead.fromJson(head),
+    );
+    if (loseNextAck case final error?) {
+      loseNextAck = null;
+      throw error;
+    }
+    return ack;
+  }
+
+  @override
+  Future<int> deleteMessages(
+    String topic,
+    List<SeqRange> ranges, {
+    required bool hard,
+  }) async {
+    calls.add(
+      'delete $topic ${ranges.map((r) => '${r.low}-${r.high}').join(',')}'
+      '${hard ? ' hard' : ''}',
+    );
+    _requireConnected();
+    if (failDelete case final error?) {
+      failDelete = null;
+      throw error;
+    }
+    return recordDeletion(topic, ranges);
+  }
+
+  /// Deletes [ranges] from [topic]'s history as the server would, and
+  /// returns the new delete ID.
+  int recordDeletion(String topic, List<SeqRange> ranges) {
+    histories[topic]?.removeWhere((m) => ranges.any((r) => r.contains(m.seq)));
+    final log = deleteLogs.putIfAbsent(topic, () => {});
+    final id = log.keys.fold(0, (max, id) => id > max ? id : max) + 1;
+    log[id] = ranges;
+    return id;
+  }
+
+  @override
+  Future<DeleteLog> deleteLog(String topic, {int? since, int? limit}) async {
+    calls.add('deleteLog $topic${since == null ? '' : ' since $since'}');
+    _requireConnected();
+    final entries = [
+      for (final MapEntry(key: id, value: ranges)
+          in (deleteLogs[topic] ?? const <int, List<SeqRange>>{}).entries)
+        if (id >= (since ?? 0)) (id, ranges),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+    if (entries.isEmpty) {
+      return DeleteLog.empty;
+    }
+    return DeleteLog(
+      lastDeleteId: entries.last.$1,
+      ranges: [for (final (_, ranges) in entries) ...ranges],
+    );
+  }
+
+  /// Starts like `TinodeClient.restore`: reconnecting, then logged in with
+  /// [token] once [reachable].
+  void restoreWith(String token) {
+    calls.add('restore');
+    _restoreToken = token;
+    _status = const Reconnecting(attempt: 1, retryIn: Duration.zero);
+    if (reachable) {
+      Timer.run(comeOnline);
+    }
+  }
+
+  /// The server answers a restored session: it logs in with the token.
+  void comeOnline() {
+    final token = _restoreToken;
+    if (token == null || isClosed) {
+      return;
+    }
+    emitStatus(
+      token == this.token
+          ? Connected(
+              login: LoginResult(userId: userId, token: token),
+            )
+          : const Disconnected(cause: ServerException(401, 'expired')),
+    );
+  }
+
+  /// Like the client, requests fail fast while the link is down.
+  void _requireConnected() {
+    if (_status is! Connected) {
+      throw const ConnectionClosedException('not connected');
+    }
   }
 
   @override
@@ -270,3 +388,7 @@ final class FakeTinodeSession implements TinodeSession {
 /// A connector that hands out [session], or fails with [error].
 SessionConnector connectTo(FakeTinodeSession session, {Exception? error}) =>
     (_) async => error == null ? session : throw error;
+
+/// A restorer that hands out [session], started as `TinodeClient.restore`.
+SessionRestorer restoreTo(FakeTinodeSession session) =>
+    (_, token) async => session..restoreWith(token);

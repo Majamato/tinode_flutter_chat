@@ -3,6 +3,12 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 /// Opens a [TinodeSession] to the server described by a [TinodeConfig].
 typedef SessionConnector = Future<TinodeSession> Function(TinodeConfig config);
 
+/// Starts a [TinodeSession] for a user who logged in before, without
+/// waiting for the server: it connects and logs in with [token] in the
+/// background, see `TinodeClient.restore`.
+typedef SessionRestorer =
+    Future<TinodeSession> Function(TinodeConfig config, String token);
+
 /// The link to a Tinode server, as the rest of the package sees it.
 ///
 /// It wraps `TinodeClient` (a final class that cannot be faked) so that
@@ -24,8 +30,10 @@ abstract interface class TinodeSession {
   /// The subscription stays.
   Future<void> detach(String topic);
 
-  /// The chat list: the subscriptions of `me` that name a topic.
-  Future<List<Subscription>> chatList();
+  /// The chat list: the subscriptions of `me` that name a topic. With
+  /// [ifModifiedSince], only the chats changed since; see
+  /// `TinodeClient.getSubscriptions`.
+  Future<List<Subscription>> chatList({DateTime? ifModifiedSince});
 
   /// Up to [limit] messages with `since <= seq < before`, the newest of
   /// them, oldest first.
@@ -36,7 +44,23 @@ abstract interface class TinodeSession {
     int? before,
   });
 
-  Future<PublishResult> publish(String topic, MessageContent content);
+  /// [head] adds headers, e.g. the outbox's client ID.
+  Future<PublishResult> publish(
+    String topic,
+    MessageContent content, {
+    Json? head,
+  });
+
+  /// Deletes messages for this user, or with [hard] for everyone; returns
+  /// the delete ID.
+  Future<int> deleteMessages(
+    String topic,
+    List<SeqRange> ranges, {
+    required bool hard,
+  });
+
+  /// The deletions with delete IDs from [since] on.
+  Future<DeleteLog> deleteLog(String topic, {int? since, int? limit});
 
   void sendTyping(String topic);
 

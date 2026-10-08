@@ -11,6 +11,7 @@ final class ChatSummary with ValueObject {
     this.lastSeq = 0,
     this.read = 0,
     this.canWrite = true,
+    this.canDeleteForEveryone = false,
   });
 
   factory ChatSummary.fromSubscription(Subscription subscription) {
@@ -24,6 +25,8 @@ final class ChatSummary with ValueObject {
       lastSeq: subscription.lastSeq,
       read: subscription.read,
       canWrite: subscription.access?.mode.has(Permission.write) ?? true,
+      canDeleteForEveryone:
+          subscription.access?.mode.has(Permission.delete) ?? false,
     );
   }
 
@@ -40,6 +43,10 @@ final class ChatSummary with ValueObject {
 
   /// False for channel followers, who can only read.
   final bool canWrite;
+
+  /// The user may delete messages for everyone (`D`), e.g. a group's
+  /// owner. Others can delete only for themselves.
+  final bool canDeleteForEveryone;
 
   int get unread => lastSeq > read ? lastSeq - read : 0;
 
@@ -74,6 +81,7 @@ final class ChatSummary with ValueObject {
         lastSeq: lastSeq ?? this.lastSeq,
         read: read ?? this.read,
         canWrite: canWrite,
+        canDeleteForEveryone: canDeleteForEveryone,
       );
 
   @override
@@ -85,5 +93,6 @@ final class ChatSummary with ValueObject {
     lastSeq,
     read,
     canWrite,
+    canDeleteForEveryone,
   ];
 }

@@ -8,6 +8,8 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.d
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_state.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -69,26 +71,40 @@ void main() {
 
       expect(session.calls.where((c) => c.contains(bob)), [
         'history $bob since 4',
+        'deleteLog $bob since 1',
         'markRead $bob 5',
       ]);
       expect(chatState().seqs, [1, 2, 3, 4, 5]);
     });
 
-    test('a full page of missed messages reloads the chat', () async {
+    test('a full page of missed messages starts over from it', () async {
       session.histories[bob]!.addAll([
         for (var seq = 4; seq < 4 + historyPageSize; seq++) message(bob, seq),
       ]);
 
       session.emitStatus(const Connected());
       await settle();
+
+      expect(session.calls, isNot(contains('detach $bob')));
+      expect(chatState().seqs.first, 4);
+      expect(chatState().seqs.last, 3 + historyPageSize);
+      expect(chatState().hasOlder, isTrue);
+
+      // The older page comes from the cache: no request for it.
+      session.calls.clear();
+      await container.read(chatControllerProvider(bob).notifier).loadOlder();
+      expect(chatState().seqs.first, 1);
+      expect(chatState().hasOlder, isFalse);
+      expect(session.calls.where((c) => c.startsWith('history')), isEmpty);
+    });
+
+    test('deletions made meanwhile are applied', () async {
+      session
+        ..recordDeletion(bob, const [SeqRange.single(2)])
+        ..emitStatus(const Connected());
       await settle();
 
-      expect(
-        session.calls,
-        containsAllInOrder(['detach $bob', 'attach $bob', 'history $bob']),
-      );
-      expect(chatState().seqs.last, 3 + historyPageSize);
-      expect(chatState().seqs, hasLength(historyPageSize));
+      expect(chatState().seqs, [1, 3]);
     });
   });
 
@@ -195,7 +211,7 @@ void main() {
       expect(session.calls, isNot(contains(startsWith('publish'))));
     });
 
-    test('a failure is reported and nothing is added', () async {
+    test('a refused message is marked failed and can be retried', () async {
       openChat();
       container.listen(sendControllerProvider(bob), (_, _) {});
       await settle();
@@ -204,9 +220,185 @@ void main() {
       final sent = await container
           .read(sendControllerProvider(bob).notifier)
           .send('hello');
+      await settle();
 
-      expect(sent, isFalse);
-      expect(container.read(sendControllerProvider(bob)).hasError, isTrue);
+      expect(sent, isTrue);
+      expect(chatState().seqs, [1, 2, 3]);
+      final id = chatState().outgoingIds.single;
+      expect(chatState().outgoingById[id]!.status, OutgoingStatus.failed);
+      expect(chatState().outgoingById[id]!.failure, ChatFailure.rejected);
+
+      await container.read(chatControllerProvider(bob).notifier).retry(id);
+      await settle();
+
+      expect(chatState().outgoingIds, isEmpty);
+      expect(chatState().bySeq[4]!.content.text, 'hello');
+      expect(chatState().bySeq[4]!.clientId, id);
+    });
+
+    test('a failed message can be discarded', () async {
+      openChat();
+      await settle();
+      session.failPublish = const ServerException(403, 'denied');
+      await container.read(sendControllerProvider(bob).notifier).send('hi');
+      await settle();
+
+      final id = chatState().outgoingIds.single;
+      await container.read(chatControllerProvider(bob).notifier).discard(id);
+
+      expect(chatState().outgoingIds, isEmpty);
+      expect(session.calls.where((c) => c.startsWith('publish')), hasLength(1));
+    });
+
+    test('offline it waits in the outbox and goes out on connect', () async {
+      openChat();
+      await settle();
+      session.emitStatus(
+        const Reconnecting(attempt: 1, retryIn: Duration(seconds: 1)),
+      );
+
+      final sent = await container
+          .read(sendControllerProvider(bob).notifier)
+          .send('later');
+      await settle();
+
+      expect(sent, isTrue);
+      final id = chatState().outgoingIds.single;
+      expect(chatState().outgoingById[id]!.status, OutgoingStatus.queued);
+      expect(session.calls, isNot(contains('publish $bob later')));
+
+      session.emitStatus(const Connected());
+      await settle();
+      await settle();
+
+      expect(
+        session.calls.where((c) => c == 'publish $bob later'),
+        hasLength(1),
+      );
+      expect(session.publishHeads.last, {clientIdHeadKey: id});
+      expect(chatState().outgoingIds, isEmpty);
+      expect(chatState().bySeq[4]!.content.text, 'later');
+    });
+
+    test('a lost ack is found on the server, not sent twice', () async {
+      openChat();
+      await settle();
+      // No echo either: only a look at the server can tell it arrived.
+      session
+        ..echo = false
+        ..loseNextAck = const ConnectionClosedException('dropped');
+
+      await container.read(sendControllerProvider(bob).notifier).send('once');
+      await settle();
+      expect(chatState().outgoingIds, hasLength(1));
+
+      session.emitStatus(const Connected());
+      await settle();
+      await settle();
+
+      expect(
+        session.calls.where((c) => c == 'publish $bob once'),
+        hasLength(1),
+      );
+      expect(session.calls, contains('history $bob since 4'));
+      expect(chatState().outgoingIds, isEmpty);
+      expect(chatState().bySeq[4]!.content.text, 'once');
+    });
+  });
+
+  group('delete', () {
+    test('hides the messages at once and tells the server', () async {
+      openChat();
+      await settle();
+
+      await container.read(chatControllerProvider(bob).notifier).delete({
+        1,
+        2,
+      }, forEveryone: false);
+      expect(chatState().seqs, [3]);
+      await settle();
+
+      expect(session.calls, contains('delete $bob 1-3'));
+    });
+
+    test('for everyone asks for a hard delete', () async {
+      openChat();
+      await settle();
+
+      await container.read(chatControllerProvider(bob).notifier).delete({
+        3,
+      }, forEveryone: true);
+      await settle();
+
+      expect(session.calls, contains('delete $bob 3-4 hard'));
+    });
+
+    test('a refused delete brings the messages back', () async {
+      openChat();
+      await settle();
+      session.failDelete = const ServerException(403, 'denied');
+
+      await container.read(chatControllerProvider(bob).notifier).delete({
+        3,
+      }, forEveryone: true);
+      expect(chatState().seqs, [1, 2]);
+      await settle();
+      await settle();
+
+      expect(chatState().seqs, [1, 2, 3]);
+    });
+
+    test('pres del from another session is applied', () async {
+      openChat();
+      await settle();
+
+      session.emitPresence(
+        const PresMessage(
+          topic: bob,
+          event: PresenceEvent.deleted,
+          lastDeleteId: 1,
+          deletedRanges: [SeqRange.single(1)],
+        ),
+      );
+      await settle();
+
+      expect(chatState().seqs, [2, 3]);
+    });
+  });
+
+  group('from the cache', () {
+    test('a reopened chat shows before the server answers', () async {
+      final first = openChat();
+      await settle();
+      first.close();
+      await settle();
+
+      final hold = session.holdHistory = Completer<void>();
+      session.histories[bob]!.add(message(bob, 4));
+      openChat();
+      await settle();
+
+      expect(chatState().status, LoadStatus.ready);
+      expect(chatState().seqs, [1, 2, 3]);
+
+      hold.complete();
+      await settle();
+      expect(chatState().seqs, [1, 2, 3, 4]);
+    });
+
+    test('offline, a cached chat stays ready', () async {
+      final first = openChat();
+      await settle();
+      first.close();
+      await settle();
+
+      session.emitStatus(
+        const Reconnecting(attempt: 1, retryIn: Duration(seconds: 1)),
+      );
+      openChat();
+      await settle();
+
+      expect(chatState().status, LoadStatus.ready);
       expect(chatState().seqs, [1, 2, 3]);
     });
   });

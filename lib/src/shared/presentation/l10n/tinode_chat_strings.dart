@@ -64,6 +64,13 @@ class TinodeChatStrings {
     this.callPermissionDenied =
         'Allow access to the microphone and camera to make calls.',
     this.callFailed = 'The call could not be connected.',
+    this.logOut = 'Log out',
+    this.messageWaiting = 'Waiting to send',
+    this.messageSent = 'Sent',
+    this.messageNotSent = 'Not sent',
+    this.discardMessage = 'Discard',
+    this.deleteForMe = 'Delete for me',
+    this.deleteForEveryone = 'Delete for everyone',
   });
 
   /// The texts of the nearest `TinodeChat`, or the defaults outside one.
@@ -216,4 +223,26 @@ class TinodeChatStrings {
 
   /// A call failed to connect or dropped.
   final String callFailed;
+
+  /// Label of the menu item that logs out and deletes the chats kept on
+  /// the device.
+  final String logOut;
+
+  /// A message in the outbox, waiting for the link or on its way.
+  final String messageWaiting;
+
+  /// A message the server took.
+  final String messageSent;
+
+  /// A message the server refused; the user can retry or discard it.
+  final String messageNotSent;
+
+  /// Label of the action that drops a message that was not sent.
+  final String discardMessage;
+
+  /// Label of the action that deletes a message for the user only.
+  final String deleteForMe;
+
+  /// Label of the action that deletes a message for everyone in the chat.
+  final String deleteForEveryone;
 }

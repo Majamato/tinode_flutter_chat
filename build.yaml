@@ -1,7 +1,13 @@
-# Providers may only live in application layers (docs/riverpod.md).
+# Providers may only live in application layers (docs/riverpod.md), and
+# drift tables only in the offline data layer.
 targets:
   $default:
     builders:
       riverpod_generator:
         generate_for:
           - lib/src/**/application/*.dart
+      drift_dev:
+        generate_for:
+          - lib/src/offline/data/chat_database.dart
+        options:
+          store_date_time_values_as_text: true

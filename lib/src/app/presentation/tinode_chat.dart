@@ -4,7 +4,9 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/session_gate.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
+import 'package:tinode_flutter_chat/src/session/application/credentials_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/network_policy.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_state.dart';
@@ -20,8 +22,13 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_theme_sco
 /// Place it anywhere below a `MaterialApp`; it needs no `ProviderScope`.
 /// It connects when first built and closes the connection when removed.
 ///
-/// [config], [credentials] and [onLoggedIn] are read once. To switch
-/// server or user, give the widget a new [key].
+/// It keeps each user's chats on the device, so they open without waiting
+/// for the server, even offline, and what the user sends meanwhile goes out
+/// once the link is back. With [credentials] holding the token of the user
+/// who last logged in, it opens their chats right away.
+///
+/// [config], [credentials], [controller] and the callbacks are read once.
+/// To switch server or user, give the widget a new [key].
 ///
 /// ```dart
 /// MaterialApp(
@@ -35,28 +42,36 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_theme_sco
 /// )
 /// ```
 class TinodeChat extends StatefulWidget {
-  /// Creates the chat UI for the server in [config].
   const TinodeChat({
     required this.config,
     this.credentials,
     this.onLoggedIn,
+    this.onLoggedOut,
+    this.controller,
     this.strings = const TinodeChatStrings(),
     super.key,
   }) : connector = null,
+       restorer = null,
+       storeOpener = null,
        network = null,
        callMedia = null;
 
   /// Like the default constructor, with sessions opened by [connector]
-  /// instead of a real connection, network reports from [network] and the
+  /// (or [restorer] for a remembered user) instead of a real connection,
+  /// caches from [storeOpener], network reports from [network] and the
   /// media of calls from [callMedia].
   @visibleForTesting
   const TinodeChat.withConnector({
     required this.config,
     required SessionConnector this.connector,
+    this.restorer,
+    this.storeOpener,
     this.network,
     this.callMedia,
     this.credentials,
     this.onLoggedIn,
+    this.onLoggedOut,
+    this.controller,
     this.strings = const TinodeChatStrings(),
     super.key,
   });
@@ -72,12 +87,27 @@ class TinodeChat extends StatefulWidget {
   /// `TinodeCredentials.token` next time.
   final ValueChanged<LoginResult>? onLoggedIn;
 
+  /// Called when the user logs out, or when the server refuses the token:
+  /// forget the token you kept.
+  final VoidCallback? onLoggedOut;
+
+  /// Lets the host act on the chat, e.g. log out from its own settings.
+  final TinodeChatController? controller;
+
   /// The texts the chat shows.
   final TinodeChatStrings strings;
 
   /// Opens sessions; null for a real connection.
   @visibleForTesting
   final SessionConnector? connector;
+
+  /// Starts a remembered user's session; null for a real connection.
+  @visibleForTesting
+  final SessionRestorer? restorer;
+
+  /// Opens the per-user caches; null for files on the device.
+  @visibleForTesting
+  final ChatStoreOpener? storeOpener;
 
   /// Reports network changes; null for the OS's.
   @visibleForTesting
@@ -96,6 +126,8 @@ class _TinodeChatState extends State<TinodeChat> {
     config: widget.config,
     credentials: widget.credentials,
     connector: widget.connector,
+    restorer: widget.restorer,
+    storeOpener: widget.storeOpener,
     network: widget.network,
     callMedia: widget.callMedia,
   );
@@ -123,11 +155,19 @@ class _TinodeChatState extends State<TinodeChat> {
             widget.onLoggedIn?.call(login);
           }
         },
-      );
+      )
+      ..listen(credentialsControllerProvider, (previous, next) {
+        if (previous != null && next == null) {
+          widget.onLoggedOut?.call();
+        }
+      });
+    widget.controller?._logOut = () =>
+        _container.read(sessionControllerProvider.notifier).logout();
   }
 
   @override
   void dispose() {
+    widget.controller?._logOut = null;
     _lifecycle.dispose();
     _container.dispose();
     super.dispose();
@@ -143,4 +183,16 @@ class _TinodeChatState extends State<TinodeChat> {
       ),
     );
   }
+}
+
+/// Acts on a [TinodeChat] from outside it: pass it to the widget, then call
+/// its methods, e.g. from the host app's own settings screen.
+class TinodeChatController {
+  Future<void> Function()? _logOut;
+
+  /// Logs the user out: deletes the chats kept on the device, including
+  /// messages not sent yet, and shows the login screen. Does nothing while
+  /// no user is logged in, or before the controller is given to a
+  /// [TinodeChat].
+  Future<void> logOut() async => _logOut?.call();
 }

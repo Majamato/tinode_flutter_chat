@@ -20,6 +20,11 @@ TinodeCredentials? initialCredentials(Ref ref) => null;
 @Riverpod(keepAlive: true)
 SessionConnector sessionConnector(Ref ref) => ClientTinodeSession.connect;
 
+/// How a remembered user's session starts without waiting for the server;
+/// tests override it with a fake.
+@Riverpod(keepAlive: true)
+SessionRestorer sessionRestorer(Ref ref) => ClientTinodeSession.restore;
+
 /// The OS's network reports; tests override it with a fake.
 @Riverpod(keepAlive: true)
 NetworkMonitor networkMonitor(Ref ref) => ConnectivityNetworkMonitor();

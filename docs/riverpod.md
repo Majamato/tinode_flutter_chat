@@ -30,7 +30,9 @@ in `.fvmrc` moves up, bump all four together, run `build_runner`, and commit the
 ## Declaring providers
 
 Code generation only, and only in `application/` folders (`build.yaml` runs the generator nowhere
-else; `test/architecture/` rejects `@riverpod` in `presentation/`).
+else; `test/architecture/` rejects `@riverpod` in `presentation/`). The same `build_runner` run
+generates the drift tables of `lib/src/offline/data/chat_database.dart`; its output is committed
+like the providers'.
 
 ```dart
 part 'chat_controller.g.dart';

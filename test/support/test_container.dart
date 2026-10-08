@@ -3,6 +3,7 @@ import 'package:riverpod/riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
@@ -18,9 +19,14 @@ final testConfig = TinodeConfig(
 );
 
 /// The package's container, wired to [connector], disposed after the test.
-/// Calls get fake media unless [callMedia] says otherwise.
+/// A remembered user's session comes from [restorer], by default the
+/// session [connector] hands out, restored. Caches live in [storeOpener],
+/// by default a fresh one in memory. Calls get fake media unless
+/// [callMedia] says otherwise.
 ProviderContainer createTestContainer({
   required SessionConnector connector,
+  SessionRestorer? restorer,
+  ChatStoreOpener? storeOpener,
   TinodeCredentials? credentials,
   CallMediaFactory? callMedia,
 }) {
@@ -28,6 +34,11 @@ ProviderContainer createTestContainer({
     config: testConfig,
     credentials: credentials,
     connector: connector,
+    restorer:
+        restorer ??
+        (config, token) async =>
+            (await connector(config) as FakeTinodeSession)..restoreWith(token),
+    storeOpener: storeOpener ?? MemoryChatStoreOpener(),
     network: FakeNetworkMonitor(),
     callMedia: callMedia ?? FakeCallMedia.new,
   );

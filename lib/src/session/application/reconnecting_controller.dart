@@ -19,6 +19,7 @@ class ReconnectingController extends _$ReconnectingController {
       (status) => state = status is Reconnecting,
     );
     ref.onDispose(() => unawaited(statuses.cancel()));
-    return false;
+    // A session started offline is reconnecting from the start.
+    return session.status is Reconnecting;
   }
 }

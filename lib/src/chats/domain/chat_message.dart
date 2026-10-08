@@ -1,5 +1,6 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/call_record.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 
 /// One message of a chat, as a bubble shows it.
@@ -12,6 +13,7 @@ final class ChatMessage with ValueObject {
     this.from,
     this.call,
     this.replaces,
+    this.clientId,
     int? revision,
   }) : revision = revision ?? seq;
 
@@ -25,6 +27,7 @@ final class ChatMessage with ValueObject {
         isOwn: message.from == me,
         call: CallRecord.fromHead(message.head),
         replaces: message.head?.replacesSeq,
+        clientId: clientIdOf(message.head),
       );
 
   final int seq;
@@ -43,6 +46,9 @@ final class ChatMessage with ValueObject {
   /// The seq of the message this one updates. Such a message is no bubble
   /// of its own: it changes that one, see [updatedBy].
   final int? replaces;
+
+  /// Set on messages this package sent: the outbox entry it was.
+  final String? clientId;
 
   /// The seq of the newest update applied, or [seq] when there is none.
   final int revision;
@@ -65,6 +71,7 @@ final class ChatMessage with ValueObject {
         (_, final update) => update,
       },
       replaces: replaces,
+      clientId: clientId,
       revision: later.seq,
     );
   }
@@ -78,6 +85,7 @@ final class ChatMessage with ValueObject {
     isOwn,
     call,
     replaces,
+    clientId,
     revision,
   ];
 }

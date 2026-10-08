@@ -16,6 +16,12 @@ final class ClientTinodeSession implements TinodeSession {
   static Future<TinodeSession> connect(TinodeConfig config) async =>
       ClientTinodeSession(await TinodeClient.connect(config));
 
+  /// Connects and logs in with [token] in the background.
+  static Future<TinodeSession> restore(
+    TinodeConfig config,
+    String token,
+  ) async => ClientTinodeSession(TinodeClient.restore(config, token: token));
+
   final TinodeClient _client;
   late final StreamSubscription<ServerMessage> _events;
   late final StreamSubscription<ConnectionStatus> _statuses;
@@ -73,8 +79,11 @@ final class ClientTinodeSession implements TinodeSession {
   }
 
   @override
-  Future<List<Subscription>> chatList() async => [
-    for (final s in await _client.getSubscriptions('me'))
+  Future<List<Subscription>> chatList({DateTime? ifModifiedSince}) async => [
+    for (final s in await _client.getSubscriptions(
+      'me',
+      ifModifiedSince: ifModifiedSince,
+    ))
       if (s.topic != null) s,
   ];
 
@@ -87,8 +96,22 @@ final class ClientTinodeSession implements TinodeSession {
   }) => _client.getMessages(topic, since: since, before: before, limit: limit);
 
   @override
-  Future<PublishResult> publish(String topic, MessageContent content) =>
-      _client.publish(topic, content);
+  Future<PublishResult> publish(
+    String topic,
+    MessageContent content, {
+    Json? head,
+  }) => _client.publish(topic, content, head: head);
+
+  @override
+  Future<int> deleteMessages(
+    String topic,
+    List<SeqRange> ranges, {
+    required bool hard,
+  }) => _client.deleteMessages(topic, ranges, hard: hard);
+
+  @override
+  Future<DeleteLog> deleteLog(String topic, {int? since, int? limit}) =>
+      _client.getDeleteLog(topic, since: since, limit: limit);
 
   @override
   void sendTyping(String topic) => _client.sendTyping(topic);

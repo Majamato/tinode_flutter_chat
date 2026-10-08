@@ -9,6 +9,7 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_state.dart';
@@ -16,7 +17,7 @@ import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
 // Runs against ../tinode-tests (sample users alice and bob):
 //   (cd ../tinode-tests && docker compose up -d)
-//   flutter test --tags integration --run-skipped
+//   flutter test --tags integration --run-skipped --concurrency=1
 final config = TinodeConfig(
   server: Uri.parse('ws://localhost:6060'),
   apiKey: 'AQEAAAABAAD_rAp4DJh05a1HAwFT3A6K',
@@ -27,6 +28,7 @@ Future<(ProviderContainer, String)> loginAs(String user) async {
   final container = createTinodeContainer(
     config: config,
     credentials: TinodeCredentials.password(user, '${user}123'),
+    storeOpener: MemoryChatStoreOpener(),
   );
   addTearDown(container.dispose);
   container.listen(sessionControllerProvider, (_, _) {});
@@ -81,8 +83,15 @@ void main() {
         .send(text);
     expect(sent, isTrue);
 
+    // It goes through the outbox: shown at once, numbered once sent.
+    await eventually(
+      'the outbox sends it',
+      () => alice.read(chatControllerProvider(bobId)).outgoingIds.isEmpty,
+    );
     final aliceChat = alice.read(chatControllerProvider(bobId));
-    final seq = aliceChat.lastSeq!;
+    final seq = aliceChat.bySeq.values
+        .singleWhere((m) => m.content.text == text)
+        .seq;
     expect(aliceChat.bySeq[seq]!.content.text, text);
     expect(aliceChat.bySeq[seq]!.isOwn, isTrue);
 
@@ -104,6 +113,7 @@ void main() {
     final container = createTinodeContainer(
       config: config,
       credentials: const TinodeCredentials.password('alice', 'nope'),
+      storeOpener: MemoryChatStoreOpener(),
     );
     addTearDown(container.dispose);
     container.listen(sessionControllerProvider, (_, _) {});

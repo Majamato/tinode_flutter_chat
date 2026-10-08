@@ -7,8 +7,10 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.d
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_state.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
-import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/shared/application/build_lifetime.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
@@ -17,12 +19,12 @@ part 'chat_controller.g.dart';
 /// Messages fetched per history request.
 const historyPageSize = 32;
 
-/// One open chat: attaches to the topic, loads its history, merges live
-/// messages, catches up after a reconnect and marks what the user sees as
-/// read. Detaches when the chat screen closes.
+/// One open chat: shows what the cache holds, attaches to the topic,
+/// catches up with the server, merges live messages and the outbox, and
+/// marks what the user sees as read. Detaches when the chat screen closes.
 @riverpod
 class ChatController extends _$ChatController {
-  late TinodeSession _session;
+  late ChatSession _session;
   late String _me;
   late BuildLifetime _lifetime;
   var _lastMarkedRead = 0;
@@ -40,23 +42,30 @@ class ChatController extends _$ChatController {
     _session = session;
     _me = me;
     _lastMarkedRead = 0;
+    final link = _Link();
 
-    final live = session.messages
-        .where((m) => m.topic == topic)
-        .listen(_onLive);
-    final reconnects = session.statusChanges
-        .where((s) => s is Connected)
-        .listen((_) => unawaited(_catchUp(lifetime)));
+    final subscriptions = [
+      session.messages.where((m) => m.topic == topic).listen(_onLive),
+      session.outbox.where((e) => e.topic == topic).listen(_onOutbox),
+      session.deletions.where((d) => d.topic == topic).listen(_onDeletion),
+      session.statusChanges
+          .where((s) => s is Connected)
+          .listen((_) => _sync(lifetime, link)),
+    ];
     ref.onDispose(() {
-      unawaited(live.cancel());
-      unawaited(reconnects.cancel());
-      unawaited(session.detach(topic).then((_) {}, onError: (_) {}));
+      for (final subscription in subscriptions) {
+        unawaited(subscription.cancel());
+      }
+      if (link.attached) {
+        unawaited(session.detach(topic).then((_) {}, onError: (_) {}));
+      }
     });
-    unawaited(_load(lifetime));
+    unawaited(_load(lifetime, link));
     return const ChatState.loading();
   }
 
-  /// Loads the page before the oldest loaded message.
+  /// Loads the page before the oldest loaded message: from the cache, or
+  /// from the server for what it lacks.
   Future<void> loadOlder() async {
     final before = state.firstSeq;
     if (!state.hasOlder || state.loadingOlder || before == null) {
@@ -66,7 +75,7 @@ class ChatController extends _$ChatController {
     final lifetime = _lifetime;
     state = state.withLoadingOlder(loading: true);
     try {
-      final page = await _session.history(
+      final page = await _session.olderPage(
         topic,
         before: before,
         limit: historyPageSize,
@@ -75,8 +84,8 @@ class ChatController extends _$ChatController {
         return;
       }
       state = state
-          .withMessages(page.map(_toMessage))
-          .withLoadingOlder(loading: false, hasOlder: _hasOlder(page));
+          .withMessages(page.messages.map(_toMessage))
+          .withLoadingOlder(loading: false, hasOlder: !page.reachedStart);
     } on Object {
       if (lifetime.isActive) {
         state = state.withLoadingOlder(loading: false);
@@ -87,71 +96,98 @@ class ChatController extends _$ChatController {
   /// Loads the chat again, e.g. after a failure.
   void reload() => ref.invalidateSelf();
 
-  /// Shows a message this user just published, before its echo arrives.
-  void addOwn(PublishResult rs, MessageContent content) {
-    state = state.withMessages([
-      ChatMessage(
-        seq: rs.seq,
-        time: rs.time,
-        content: content,
-        from: _me,
-        isOwn: true,
-      ),
-    ]);
-    _markRead(rs.seq);
-  }
+  /// Deletes the messages [seqs], for this user or for everyone.
+  Future<void> delete(Set<int> seqs, {required bool forEveryone}) =>
+      _session.delete(topic, _ranges(seqs), forEveryone: forEveryone);
 
-  Future<void> _load(BuildLifetime lifetime) async {
+  /// Queues a failed message again.
+  Future<void> retry(String clientId) => _session.retry(clientId);
+
+  /// Drops a message that was not sent.
+  Future<void> discard(String clientId) => _session.discard(clientId);
+
+  Future<void> _load(BuildLifetime lifetime, _Link link) async {
     try {
-      await _session.attach(topic);
+      final stored = await _session.storedPage(topic, limit: historyPageSize);
+      final outgoing = await _session.storedOutgoing(topic);
       if (!lifetime.isActive) {
         return;
       }
-
-      final page = await _session.history(topic, limit: historyPageSize);
-      if (!lifetime.isActive) {
-        return;
-      }
-
-      state = state
-          .withMessages(page.map(_toMessage))
-          .ready(hasOlder: _hasOlder(page));
-      if (state.lastSeq case final seq?) {
-        _markRead(seq);
-      }
-    } on Object catch (e) {
-      if (lifetime.isActive) {
-        state = state.failed(ChatFailure.of(e));
-      }
-    }
-  }
-
-  /// Fetches what arrived while the link was down. A full page may hide
-  /// a bigger gap, and a failure leaves one, so both reload the chat.
-  Future<void> _catchUp(BuildLifetime lifetime) async {
-    final last = state.lastSeq;
-    if (state.status != LoadStatus.ready || last == null) {
-      return reload();
-    }
-    try {
-      final page = await _session.history(
-        topic,
-        since: last + 1,
-        limit: historyPageSize,
-      );
-      if (!lifetime.isActive) {
-        return;
-      }
-      if (page.length >= historyPageSize) {
-        return reload();
-      }
-      state = state.withMessages(page.map(_toMessage));
-      if (state.lastSeq case final seq?) {
-        _markRead(seq);
+      if (stored.messages.isNotEmpty || outgoing.isNotEmpty) {
+        state = outgoing
+            .fold(state, (chat, message) => chat.withOutgoing(message))
+            .withMessages(stored.messages.map(_toMessage))
+            .ready(hasOlder: !stored.reachedStart);
+        _markLastRead();
       }
     } on Object {
-      if (lifetime.isActive) {
-        reload();
+      // The cache is a convenience: the server fills the chat instead.
+    }
+    if (lifetime.isActive) {
+      _sync(lifetime, link);
+    }
+  }
+
+  /// Brings the chat up to date with the server: one run at a time, and
+  /// one more when asked during a run.
+  void _sync(BuildLifetime lifetime, _Link link) {
+    if (link.syncing) {
+      link.syncAgain = true;
+      return;
+    }
+    link.syncing = true;
+    unawaited(() async {
+      try {
+        do {
+          link.syncAgain = false;
+          await _syncOnce(lifetime, link);
+        } while (link.syncAgain && lifetime.isActive);
+      } finally {
+        link.syncing = false;
+      }
+    }());
+  }
+
+  /// Attaches if needed, then fetches the newest page, or what arrived
+  /// after the cached messages. Offline, a chat shown from the cache stays
+  /// as it is until the next connect.
+  Future<void> _syncOnce(BuildLifetime lifetime, _Link link) async {
+    try {
+      if (!link.attached) {
+        await _session.attach(topic);
+        if (!lifetime.isActive) {
+          unawaited(_session.detach(topic).then((_) {}, onError: (_) {}));
+          return;
+        }
+        link.attached = true;
+      }
+
+      if (state.status != LoadStatus.ready || state.lastSeq == null) {
+        final page = await _session.history(topic, limit: historyPageSize);
+        if (!lifetime.isActive) {
+          return;
+        }
+        state = state
+            .withMessages(page.map(_toMessage))
+            .ready(hasOlder: _hasOlder(page));
+      } else {
+        final caughtUp = await _session.catchUp(topic, limit: historyPageSize);
+        if (!lifetime.isActive) {
+          return;
+        }
+        final messages = caughtUp.messages.map(_toMessage);
+        state = caughtUp.gap
+            // Too much arrived to show at once: start over from the newest
+            // page; older ones load from there, cached or not.
+            ? state
+                  .restartedWith(messages)
+                  .ready(hasOlder: _startsAfterFirst(caughtUp.messages))
+            : state.withMessages(messages);
+      }
+      _markLastRead();
+    } on Object catch (e) {
+      if (lifetime.isActive && state.status != LoadStatus.ready) {
+        state = state.failed(ChatFailure.of(e));
       }
     }
   }
@@ -159,6 +195,34 @@ class ChatController extends _$ChatController {
   void _onLive(DataMessage message) {
     state = state.withMessages([_toMessage(message)]);
     _markRead(message.seq);
+  }
+
+  void _onOutbox(OutboxEvent event) {
+    switch (event) {
+      case OutgoingChanged(:final message):
+        state = state.withOutgoing(message);
+      case OutgoingSent(:final clientId, :final message):
+        state = state.withoutOutgoing(clientId).withMessages([
+          _toMessage(message),
+        ]);
+        _markRead(message.seq);
+      case OutgoingDiscarded(:final clientId):
+        state = state.withoutOutgoing(clientId);
+    }
+  }
+
+  void _onDeletion(TopicDeletion deletion) {
+    if (deletion.restored) {
+      // A deletion of this user's failed: the messages are back.
+      return reload();
+    }
+    state = state.withoutSeqs(deletion.ranges);
+  }
+
+  void _markLastRead() {
+    if (state.lastSeq case final seq?) {
+      _markRead(seq);
+    }
   }
 
   void _markRead(int seq) {
@@ -175,9 +239,42 @@ class ChatController extends _$ChatController {
 
   static bool _hasOlder(List<DataMessage> page) =>
       page.length >= historyPageSize && page.first.seq > 1;
+
+  static bool _startsAfterFirst(List<DataMessage> page) =>
+      page.isNotEmpty && page.first.seq > 1;
+
+  /// [seqs] as ranges, neighbours joined.
+  static List<SeqRange> _ranges(Set<int> seqs) {
+    final sorted = seqs.toList()..sort();
+    final ranges = <SeqRange>[];
+    for (final seq in sorted) {
+      if (ranges.lastOrNull case final last? when last.high == seq) {
+        ranges.last = SeqRange(last.low, seq + 1);
+      } else {
+        ranges.add(SeqRange.single(seq));
+      }
+    }
+    return ranges;
+  }
+}
+
+/// One build's hold on the topic and its sync runs.
+final class _Link {
+  bool attached = false;
+  bool syncing = false;
+  bool syncAgain = false;
 }
 
 /// One message of an open chat. Each bubble watches its own.
 @riverpod
 ChatMessage? chatMessage(Ref ref, String topic, int seq) =>
     ref.watch(chatControllerProvider(topic).select((chat) => chat.bySeq[seq]));
+
+/// One message of an open chat that waits in the outbox.
+@riverpod
+OutgoingMessage? outgoingMessage(Ref ref, String topic, String clientId) =>
+    ref.watch(
+      chatControllerProvider(
+        topic,
+      ).select((chat) => chat.outgoingById[clientId]),
+    );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
@@ -97,7 +99,9 @@ void main() {
     expect(session.calls, contains('detach $bob'));
   });
 
-  testWidgets('a failed send keeps the text and shows why', (tester) async {
+  testWidgets('a refused message shows as not sent and can be retried', (
+    tester,
+  ) async {
     await pumpTinodeChat(
       tester,
       session,
@@ -112,11 +116,109 @@ void main() {
     await tester.tap(find.byIcon(Icons.send));
     await tester.pumpAndSettle();
 
-    expect(find.text('The chat server refused the request.'), findsOneWidget);
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller?.text,
-      'Hello?',
+      isEmpty,
     );
+    expect(find.text('Hello?'), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+
+    await tester.longPress(find.text('Hello?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.error_outline), findsNothing);
+    expect(find.text('Hello?'), findsOneWidget);
+    expect(
+      session.calls.where((c) => c == 'publish $bob Hello?'),
+      hasLength(2),
+    );
+  });
+
+  testWidgets('offline, a message waits with a clock and goes out later', (
+    tester,
+  ) async {
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+    );
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+    session.emitStatus(
+      const Reconnecting(attempt: 1, retryIn: Duration(seconds: 5)),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'See you');
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pumpAndSettle();
+
+    expect(find.text('See you'), findsOneWidget);
+    expect(find.byIcon(Icons.schedule), findsOneWidget);
+
+    session.emitStatus(const Connected());
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.schedule), findsNothing);
+    expect(find.text('See you'), findsOneWidget);
+  });
+
+  testWidgets('a long press deletes a message for me', (tester) async {
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+    );
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+    final text = session.histories[bob]!.last.content.text;
+
+    await tester.longPress(find.text(text));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete for everyone'), findsNothing);
+    await tester.tap(find.text('Delete for me'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(text), findsNothing);
+    expect(session.calls, contains(startsWith('delete $bob')));
+  });
+
+  testWidgets('logging out shows the login screen and tells the host', (
+    tester,
+  ) async {
+    var loggedOut = 0;
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+      onLoggedOut: () => loggedOut++,
+    );
+
+    await tester.tap(find.byType(PopupMenuButton<void>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Log out'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(loggedOut, 1);
+  });
+
+  testWidgets('the host can log out through the controller', (tester) async {
+    final controller = TinodeChatController();
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+      controller: controller,
+    );
+
+    unawaited(controller.logOut());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
   });
 
   testWidgets('channel followers see a read-only notice', (tester) async {

@@ -17,7 +17,7 @@
 |------|-------|-------|
 | Domain | Pure rules: merging, counters, ordering, identity of unchanged state | plain `test` |
 | Application | Providers with a fake session: loading, live updates, errors, lifecycle | `createTestContainer`, `loggedInContainer` |
-| Data | `ClientTinodeSession` over an in-memory WebSocket | `package:web_socket/testing.dart` `fakes()` |
+| Data | `ClientTinodeSession` over an in-memory WebSocket; `ChatStore` and `CachedTinodeSession` over an in-memory SQLite | `package:web_socket/testing.dart` `fakes()`, `NativeDatabase.memory()` |
 | Widget | Screens and flows through `TinodeChat`, rebuild scope | `pumpTinodeChat`, `testWidgets` |
 | Integration | The real client against a real server | `@Tags(['integration'])` |
 
@@ -48,6 +48,15 @@ expect(session.calls, contains('markRead $bob 3'));   // what the app sent
   <event>` (payloads in `callPayloads`) and throws while not connected. `emitInfo` pushes call
   events, `serverInfo` sets the ICE servers (one fake STUN server by default), and
   `attachCount(topic)` shows how many attaches hold a topic.
+- `deleteMessages` deletes from the history and logs `delete <topic> <low>-<high>[ hard]`;
+  `recordDeletion` does the same as another device would, and `deleteLog` answers from it.
+  `failDelete` refuses the next one. `publishHeads` keeps each `publish` head; `loseNextAck`
+  stores a message but throws instead of answering, like a drop before the ack.
+- While not `Connected`, `attach`, `chatList`, `history`, `publish`, `deleteMessages` and
+  `deleteLog` throw `ConnectionClosedException`, like the client.
+- `restoreWith(token)` starts it like `TinodeClient.restore`: reconnecting, then logged in once
+  `reachable` (the default) or when the test calls `comeOnline()`. `restoreTo(session)` makes a
+  `SessionRestorer` of it.
 - Its streams and `closed` deliver synchronously. A fake made in `setUp` lives outside a widget
   test's fake-async zone, where async callbacks would never run.
 
@@ -68,6 +77,19 @@ expect(media.last.log, contains('open audio'));  // what the call asked of it
 
 Its offer and answer are the fixed strings `local offer` and `local answer`. `CallVideoView` draws
 nothing in widget tests (the plugin isn't there), so call screens can be pumped like any other.
+
+## The cache in tests
+
+Every container gets its own `MemoryChatStoreOpener` (`createTestContainer`, `pumpTinodeChat`),
+so tests run through `CachedTinodeSession` like the app. Share one opener between two containers
+to test an offline start: remember the user with `rememberUser`, open a first container online to
+fill the cache, then a second with `session.reachable = false` (see
+`test/offline/cold_start_test.dart`). `test/flutter_test_config.dart` silences drift's warning about
+several in-memory databases.
+
+`drift_schemas/` holds the schema of each version (`dart run drift_dev schema dump
+lib/src/offline/data/chat_database.dart drift_schemas/`). Dump it again when the schema version
+goes up, and add a migration test for the step.
 
 ## Widget tests
 
@@ -90,7 +112,7 @@ They run against the local server from `../tinode-tests` and are skipped by defa
 
 ```sh
 (cd ../tinode-tests && docker compose up -d)    # web UI at http://localhost:6060/
-fvm flutter test --tags integration --run-skipped
+fvm flutter test --tags integration --run-skipped --concurrency=1
 ```
 
 - Users: `alice` / `alice123`, `bob` / `bob123`, … (password = name + `123`).

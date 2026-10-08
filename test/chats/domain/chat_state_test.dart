@@ -4,6 +4,7 @@ import 'package:tinode_flutter_chat/src/chats/domain/call_record.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_state.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
 import '../../support/fixtures.dart';
@@ -172,5 +173,81 @@ void main() {
       loading.withLoadingOlder(loading: false, hasOlder: false).loadingOlder,
       isFalse,
     );
+  });
+
+  group('outbox', () {
+    OutgoingMessage outgoing(String id, {String text = 'hi'}) =>
+        OutgoingMessage(
+          clientId: id,
+          topic: bob,
+          content: PlainText(text),
+          createdAt: at(0),
+        );
+
+    ChatMessage sentAs(int seq, String id) => ChatMessage(
+      seq: seq,
+      time: at(seq),
+      content: const PlainText('hi'),
+      isOwn: true,
+      from: alice,
+      clientId: id,
+    );
+
+    test('outgoing messages keep their order; a status change keeps ids', () {
+      final queued = const ChatState.loading()
+          .withOutgoing(outgoing('a'))
+          .withOutgoing(outgoing('b'));
+      expect(queued.outgoingIds, ['a', 'b']);
+
+      final failed = queued.withOutgoing(
+        outgoing(
+          'a',
+        ).withStatus(OutgoingStatus.failed, failure: ChatFailure.rejected),
+      );
+      expect(failed.outgoingIds, same(queued.outgoingIds));
+      expect(failed.outgoingById['a']!.status, OutgoingStatus.failed);
+      expect(failed.withOutgoing(failed.outgoingById['a']!), same(failed));
+    });
+
+    test('a numbered copy replaces the outgoing message', () {
+      final queued = const ChatState.loading().withOutgoing(outgoing('a'));
+      final sent = queued.withMessages([sentAs(4, 'a')]);
+      expect(sent.outgoingIds, isEmpty);
+      expect(sent.seqs, [4]);
+      // The echo after the ack changes nothing.
+      expect(sent.withMessages([sentAs(4, 'a')]), same(sent));
+    });
+
+    test('a restart keeps the outbox', () {
+      final state = const ChatState.loading()
+          .withMessages([msg(1), msg(2)])
+          .withOutgoing(outgoing('a'))
+          .ready(hasOlder: false);
+      final restarted = state.restartedWith([msg(40), msg(41)]);
+      expect(restarted.seqs, [40, 41]);
+      expect(restarted.firstSeq, 40);
+      expect(restarted.outgoingIds, ['a']);
+      expect(restarted.status, LoadStatus.ready);
+    });
+  });
+
+  group('withoutSeqs', () {
+    test('drops the messages but keeps the bounds', () {
+      final state = const ChatState.loading().withMessages([
+        msg(1),
+        msg(2),
+        msg(3),
+      ]);
+      final deleted = state.withoutSeqs(const [SeqRange(1, 3)]);
+      expect(deleted.seqs, [3]);
+      expect(deleted.bySeq.keys, [3]);
+      expect(deleted.firstSeq, 1);
+      expect(deleted.lastSeq, 3);
+    });
+
+    test('nothing deleted returns the same state', () {
+      final state = const ChatState.loading().withMessages([msg(1)]);
+      expect(state.withoutSeqs(const [SeqRange(5, 9)]), same(state));
+    });
   });
 }

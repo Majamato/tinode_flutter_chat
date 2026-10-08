@@ -591,6 +591,8 @@ class CallController extends _$CallController {
 @riverpod
 bool callsAvailable(Ref ref, String topic) {
   final session = ref.watch(activeSessionProvider);
+  // After an offline start the server's ICE servers come with the login.
+  ref.watch(currentLoginProvider);
   final chat = ref.watch(
     chatSummaryProvider(
       topic,

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/session/application/credentials_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
@@ -44,7 +45,8 @@ void main() {
 
     expect(state, isA<SessionLoggedIn>());
     expect(container.read(currentUserIdProvider), session.userId);
-    expect(container.read(activeSessionProvider), same(session));
+    expect(container.read(activeSessionProvider)?.userId, session.userId);
+    expect(container.read(currentLoginProvider)?.token, session.token);
   });
 
   test('a rejected token falls back to the login screen', () async {
@@ -197,7 +199,7 @@ void main() {
     });
   });
 
-  test('reconnect closes the old session and reuses the token', () async {
+  test('reconnect closes the old session and restores the user', () async {
     final second = FakeTinodeSession();
     final sessions = [session, second];
     final container = createTestContainer(
@@ -213,8 +215,11 @@ void main() {
 
     expect(session.isClosed, isTrue);
     expect(state, isA<SessionLoggedIn>());
-    expect(state.session, same(second));
-    expect(second.calls, contains('loginToken'));
+    // The user is remembered now, so the new session opens their cache at
+    // once and logs in with the token in the background.
+    expect(second.calls, contains('restore'));
+    await settle();
+    expect(container.read(currentLoginProvider)?.token, second.token);
   });
 
   test('disposing the container closes the session', () async {
@@ -225,5 +230,109 @@ void main() {
 
     expect(session.isClosed, isTrue);
     expect(session.calls, contains('close'));
+  });
+
+  group('a remembered user', () {
+    late MemoryChatStoreOpener stores;
+
+    setUp(() async {
+      stores = MemoryChatStoreOpener();
+      await stores.rememberUser(testConfig.server, session.userId);
+    });
+
+    ProviderContainer restoring({String? token}) => createTestContainer(
+      connector: connectTo(session),
+      restorer: restoreTo(session),
+      storeOpener: stores,
+      credentials: TinodeCredentials.token(token ?? session.token),
+    );
+
+    test('opens their cache before the server answers', () async {
+      session.reachable = false;
+      final container = restoring();
+
+      final state = await connect(container);
+
+      expect(
+        state,
+        isA<SessionLoggedIn>()
+            .having((s) => s.userId, 'userId', session.userId)
+            .having((s) => s.login, 'login', isNull),
+      );
+      expect(session.calls, ['restore']);
+      expect(container.read(currentUserIdProvider), session.userId);
+
+      session.comeOnline();
+      await settle();
+      expect(container.read(currentLoginProvider)?.token, session.token);
+    });
+
+    test('a refused token goes back to the login screen', () async {
+      final container = restoring(token: 'expired');
+      await connect(container);
+
+      await settle();
+      final state = await container.read(sessionControllerProvider.future);
+
+      expect(state, isA<SessionAwaitingLogin>());
+      expect(container.read(credentialsControllerProvider), isNull);
+      // The cache stays for when the same user logs in again.
+      expect(await stores.lastUser(testConfig.server), session.userId);
+    });
+
+    test('a token of another user opens their cache instead', () async {
+      await stores.rememberUser(testConfig.server, 'usrSomeoneElse');
+      final container = restoring();
+      expect(
+        (await connect(container) as SessionLoggedIn).userId,
+        'usrSomeoneElse',
+      );
+
+      await settle();
+      await settle();
+      final state = await container.read(sessionControllerProvider.future);
+
+      expect((state as SessionLoggedIn).userId, session.userId);
+      expect(await stores.lastUser(testConfig.server), session.userId);
+    });
+  });
+
+  group('logout', () {
+    test('wipes the cache and asks for a login', () async {
+      final stores = MemoryChatStoreOpener();
+      final container = createTestContainer(
+        connector: connectTo(session),
+        storeOpener: stores,
+        credentials: TinodeCredentials.token(session.token),
+      );
+      await connect(container);
+      expect(await stores.lastUser(testConfig.server), session.userId);
+
+      await container.read(sessionControllerProvider.notifier).logout();
+      final state = await container.read(sessionControllerProvider.future);
+
+      expect(state, isA<SessionAwaitingLogin>());
+      expect(container.read(credentialsControllerProvider), isNull);
+      expect(await stores.lastUser(testConfig.server), isNull);
+      expect(session.calls, contains('close'));
+    });
+
+    test('a deleted user ends like a logout', () async {
+      final stores = MemoryChatStoreOpener();
+      final container = createTestContainer(
+        connector: connectTo(session),
+        storeOpener: stores,
+        credentials: TinodeCredentials.token(session.token),
+      );
+      await connect(container);
+
+      session.emitStatus(
+        const Disconnected(cause: ServerException(404, 'user not found')),
+      );
+      await settle();
+
+      expect(container.read(credentialsControllerProvider), isNull);
+      expect(await stores.lastUser(testConfig.server), isNull);
+    });
   });
 }

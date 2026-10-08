@@ -11,6 +11,7 @@ import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
@@ -36,6 +37,7 @@ final class User {
       config: config,
       credentials: TinodeCredentials.password(name, '${name}123'),
       callMedia: media.call,
+      storeOpener: MemoryChatStoreOpener(),
     );
     addTearDown(container.dispose);
     container

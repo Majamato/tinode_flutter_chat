@@ -2,8 +2,10 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
 /// The messages of one open chat, by seq, plus loading flags.
@@ -16,6 +18,9 @@ import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 /// A message that updates another (`replace`, as the server does for calls)
 /// changes that bubble instead of adding one. If its target is not loaded
 /// yet, it waits in [pending] until the target arrives with an older page.
+///
+/// Messages still in the outbox have no seq yet: they are [outgoingIds],
+/// shown after the numbered ones until the server numbers them.
 @immutable
 final class ChatState {
   const ChatState.loading()
@@ -27,7 +32,9 @@ final class ChatState {
       firstSeq = null,
       lastSeq = null,
       hasOlder = false,
-      loadingOlder = false;
+      loadingOlder = false,
+      outgoingIds = const [],
+      outgoingById = const {};
 
   const ChatState._({
     required this.status,
@@ -39,6 +46,8 @@ final class ChatState {
     required this.lastSeq,
     required this.hasOlder,
     required this.loadingOlder,
+    required this.outgoingIds,
+    required this.outgoingById,
   });
 
   final LoadStatus status;
@@ -62,6 +71,11 @@ final class ChatState {
   /// The server may have messages before [firstSeq].
   final bool hasOlder;
   final bool loadingOlder;
+
+  /// The client IDs of the messages in the outbox, oldest first. The same
+  /// instance until one is added or removed.
+  final List<String> outgoingIds;
+  final Map<String, OutgoingMessage> outgoingById;
 
   ChatState withMessages(Iterable<ChatMessage> messages) {
     Map<int, ChatMessage>? bySeq;
@@ -101,18 +115,87 @@ final class ChatState {
       (bySeq ??= Map.of(this.bySeq))[message.seq] = incoming;
       added |= existing == null;
     }
+    // A numbered copy of an outbox message replaces it, whether the
+    // server's echo or the outbox's own ack came first.
+    final sent = {
+      for (final message in messages)
+        if (outgoingById.containsKey(message.clientId)) message.clientId!,
+    };
     if (bySeq == null &&
         pending == null &&
+        sent.isEmpty &&
         first == firstSeq &&
         last == lastSeq) {
       return this;
     }
-    return _copy(
+    return _withoutOutgoing(sent)._copy(
       bySeq: bySeq == null ? null : Map.unmodifiable(bySeq),
       seqs: added ? List.unmodifiable(bySeq!.keys.sorted(_ascending)) : seqs,
       pending: pending == null ? null : Map.unmodifiable(pending),
       firstSeq: first,
       lastSeq: last,
+    );
+  }
+
+  /// Adds an outbox message, or updates its status.
+  ChatState withOutgoing(OutgoingMessage message) {
+    final id = message.clientId;
+    if (outgoingById[id] == message) {
+      return this;
+    }
+    return _copy(
+      outgoingIds: outgoingById.containsKey(id)
+          ? outgoingIds
+          : List.unmodifiable([...outgoingIds, id]),
+      outgoingById: Map.unmodifiable({...outgoingById, id: message}),
+    );
+  }
+
+  /// Drops an outbox message, e.g. one the user discarded.
+  ChatState withoutOutgoing(String clientId) => _withoutOutgoing({clientId});
+
+  /// Drops the messages in [ranges], e.g. deleted ones. The seq bounds stay,
+  /// so catching up and paging go on from where they were.
+  ChatState withoutSeqs(Iterable<SeqRange> ranges) {
+    bool deleted(int seq) => ranges.any((r) => r.contains(seq));
+    if (!seqs.any(deleted) && !pending.keys.any(deleted)) {
+      return this;
+    }
+    return _copy(
+      bySeq: Map.unmodifiable({
+        for (final MapEntry(:key, :value) in bySeq.entries)
+          if (!deleted(key)) key: value,
+      }),
+      seqs: List.unmodifiable(seqs.where((seq) => !deleted(seq))),
+      pending: Map.unmodifiable({
+        for (final MapEntry(:key, :value) in pending.entries)
+          if (!deleted(key)) key: value,
+      }),
+    );
+  }
+
+  /// Starts over from [messages], keeping the outbox: after a gap too wide
+  /// to fill at once, older pages load from there.
+  ChatState restartedWith(Iterable<ChatMessage> messages) {
+    var restarted = const ChatState.loading();
+    for (final id in outgoingIds) {
+      restarted = restarted.withOutgoing(outgoingById[id]!);
+    }
+    return restarted.withMessages(messages)._copy(status: status);
+  }
+
+  ChatState _withoutOutgoing(Set<String> ids) {
+    if (!ids.any(outgoingById.containsKey)) {
+      return this;
+    }
+    return _copy(
+      outgoingIds: List.unmodifiable(
+        outgoingIds.where((id) => !ids.contains(id)),
+      ),
+      outgoingById: Map.unmodifiable({
+        for (final MapEntry(:key, :value) in outgoingById.entries)
+          if (!ids.contains(key)) key: value,
+      }),
     );
   }
 
@@ -139,6 +222,8 @@ final class ChatState {
     int? lastSeq,
     bool? hasOlder,
     bool? loadingOlder,
+    List<String>? outgoingIds,
+    Map<String, OutgoingMessage>? outgoingById,
   }) => ChatState._(
     status: status ?? this.status,
     failure: failure ?? this.failure,
@@ -149,5 +234,7 @@ final class ChatState {
     lastSeq: lastSeq ?? this.lastSeq,
     hasOlder: hasOlder ?? this.hasOlder,
     loadingOlder: loadingOlder ?? this.loadingOlder,
+    outgoingIds: outgoingIds ?? this.outgoingIds,
+    outgoingById: outgoingById ?? this.outgoingById,
   );
 }

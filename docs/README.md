@@ -17,10 +17,10 @@ The Flutter version is pinned in `.fvmrc`, so prefix commands with `fvm`.
 
 ```sh
 fvm flutter pub get
-fvm dart run build_runner build --force-jit   # after changing any @riverpod code
+fvm dart run build_runner build --force-jit   # after changing @riverpod code or drift tables; commit the .g.dart files
 fvm dart format .
 fvm dart analyze --fatal-infos           # also reports riverpod_lint; `flutter analyze` does not
 fvm flutter test                         # unit + widget tests
-fvm flutter test --tags integration --run-skipped   # needs ../tinode-tests running
+fvm flutter test --tags integration --run-skipped --concurrency=1   # needs ../tinode-tests running
 cd example && fvm flutter run            # the example app
 ```

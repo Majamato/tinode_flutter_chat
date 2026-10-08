@@ -82,11 +82,41 @@ needs `platform :ios, '13.0'` or later.
 The OS asks the user for access when the first call starts. See [`example/`](example/) for a
 complete setup.
 
+## Offline
+
+Each user's chats are kept on the device, so they open without waiting for the server:
+
+- the chat list and the messages already seen show at once, even in airplane mode;
+- back online, only what changed is fetched: new messages, deletions, updated chats;
+- messages sent offline wait in an outbox with a clock, and go out once the link is back,
+  never twice. One the server refuses shows an error mark; a long press retries or discards it;
+- a long press on a message deletes it for the user, or for everyone where they may.
+
+Pass the token of the user who last logged in as `TinodeCredentials.token`, and the app opens
+their chats even with no network, logging in once the server answers. Logging out, from the chat
+list's menu or with a `TinodeChatController`, deletes the user's cache:
+
+```dart
+final chat = TinodeChatController();
+
+TinodeChat(
+  config: config,
+  credentials: savedToken == null ? null : TinodeCredentials.token(savedToken),
+  controller: chat,
+  onLoggedIn: (login) => saveToken(login.token),
+  onLoggedOut: deleteSavedToken, // also when the server refuses the token
+);
+
+// From the host's own settings screen:
+await chat.logOut();
+```
+
 ## Current limits
 
-This release covers the online happy path. Not built yet:
+Not built yet:
 
-- offline cache and message search (waiting on the client);
+- message search;
+- pruning the cache, or encrypting it at rest (it is a plain SQLite file per user);
 - typing indicators, read receipts per message, sender names in groups;
 - attachments, rich Drafty rendering (messages show their plain text);
 - creating chats, finding users (`fnd`);

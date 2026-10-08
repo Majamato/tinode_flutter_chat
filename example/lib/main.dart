@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 /// The Tinode server; the default suits `../tinode-tests` on this machine.
@@ -18,13 +19,25 @@ const apiKey = String.fromEnvironment(
   defaultValue: 'AQEAAAABAAD_rAp4DJh05a1HAwFT3A6K',
 );
 
-void main() => runApp(const ExampleApp());
+/// Where the example keeps the login token, so the next start logs in by
+/// itself, and opens the cached chats even offline. A real app should
+/// keep it in secure storage instead.
+const _tokenKey = 'tinode_token';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final preferences = await SharedPreferences.getInstance();
+  runApp(ExampleApp(preferences: preferences));
+}
 
 class ExampleApp extends StatelessWidget {
-  const ExampleApp({super.key});
+  const ExampleApp({required this.preferences, super.key});
+
+  final SharedPreferences preferences;
 
   @override
   Widget build(BuildContext context) {
+    final token = preferences.getString(_tokenKey);
     return MaterialApp(
       title: 'Tinode chat',
       theme: ThemeData(colorSchemeSeed: Colors.teal),
@@ -38,6 +51,9 @@ class ExampleApp extends StatelessWidget {
           apiKey: apiKey,
           userAgent: 'tinode_flutter_chat-example/0.1',
         ),
+        credentials: token == null ? null : TinodeCredentials.token(token),
+        onLoggedIn: (login) => preferences.setString(_tokenKey, login.token),
+        onLoggedOut: () => preferences.remove(_tokenKey),
       ),
     );
   }

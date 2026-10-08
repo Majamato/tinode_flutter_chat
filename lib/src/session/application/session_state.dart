@@ -1,22 +1,26 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 
-/// A connected session, before or after login. While connecting, or after
-/// the connection failed, `SessionController` is loading or in error.
+/// A session before or after login. While connecting, or after the
+/// connection failed, `SessionController` is loading or in error.
 ///
 /// It lives in the application layer because it carries the data-layer
 /// [session]; widgets never touch that field.
 sealed class SessionState with ValueObject {
-  const SessionState(this.session);
+  const SessionState();
 
-  final TinodeSession session;
+  TinodeSession get session;
 }
 
 final class SessionAwaitingLogin extends SessionState {
-  const SessionAwaitingLogin(super.session, {this.lastFailure});
+  const SessionAwaitingLogin(this.session, {this.lastFailure});
+
+  @override
+  final TinodeSession session;
 
   /// Why the automatic login with the host's credentials failed.
   final ChatFailure? lastFailure;
@@ -25,13 +29,20 @@ final class SessionAwaitingLogin extends SessionState {
   List<Object?> get props => [session, lastFailure];
 }
 
+/// A user's session with their cache. After an offline start the server
+/// may not have answered yet: [login] is null until it does.
 final class SessionLoggedIn extends SessionState {
-  const SessionLoggedIn(super.session, this.login);
-
-  final LoginResult login;
+  const SessionLoggedIn(this.session, {required this.userId, this.login});
 
   @override
-  List<Object?> get props => [session, login];
+  final ChatSession session;
+  final String userId;
+
+  /// The latest login, with the token to keep.
+  final LoginResult? login;
+
+  @override
+  List<Object?> get props => [session, userId, login];
 }
 
 /// The screen the session gate shows.
