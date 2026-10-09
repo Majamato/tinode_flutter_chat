@@ -10,19 +10,22 @@ part of 'chat_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// One open chat: shows what the cache holds, attaches to the topic,
 /// catches up with the server, merges live messages and the outbox, and
-/// marks what the user sees as read. Detaches when the chat screen closes.
+/// marks what the user sees as read. Each attach also syncs the chat's
+/// members. Detaches when the chat screen closes.
 
 @ProviderFor(ChatController)
 final chatControllerProvider = ChatControllerFamily._();
 
 /// One open chat: shows what the cache holds, attaches to the topic,
 /// catches up with the server, merges live messages and the outbox, and
-/// marks what the user sees as read. Detaches when the chat screen closes.
+/// marks what the user sees as read. Each attach also syncs the chat's
+/// members. Detaches when the chat screen closes.
 final class ChatControllerProvider
     extends $NotifierProvider<ChatController, ChatState> {
   /// One open chat: shows what the cache holds, attaches to the topic,
   /// catches up with the server, merges live messages and the outbox, and
-  /// marks what the user sees as read. Detaches when the chat screen closes.
+  /// marks what the user sees as read. Each attach also syncs the chat's
+  /// members. Detaches when the chat screen closes.
   ChatControllerProvider._({
     required ChatControllerFamily super.from,
     required String super.argument,
@@ -67,11 +70,12 @@ final class ChatControllerProvider
   }
 }
 
-String _$chatControllerHash() => r'0ccd146f9217afce02609d864ff012ebbca7bc4e';
+String _$chatControllerHash() => r'aa68a8d993e5a39045609b74e6cea21102fe1417';
 
 /// One open chat: shows what the cache holds, attaches to the topic,
 /// catches up with the server, merges live messages and the outbox, and
-/// marks what the user sees as read. Detaches when the chat screen closes.
+/// marks what the user sees as read. Each attach also syncs the chat's
+/// members. Detaches when the chat screen closes.
 
 final class ChatControllerFamily extends $Family
     with
@@ -93,7 +97,8 @@ final class ChatControllerFamily extends $Family
 
   /// One open chat: shows what the cache holds, attaches to the topic,
   /// catches up with the server, merges live messages and the outbox, and
-  /// marks what the user sees as read. Detaches when the chat screen closes.
+  /// marks what the user sees as read. Each attach also syncs the chat's
+  /// members. Detaches when the chat screen closes.
 
   ChatControllerProvider call(String topic) =>
       ChatControllerProvider._(argument: topic, from: this);
@@ -104,7 +109,8 @@ final class ChatControllerFamily extends $Family
 
 /// One open chat: shows what the cache holds, attaches to the topic,
 /// catches up with the server, merges live messages and the outbox, and
-/// marks what the user sees as read. Detaches when the chat screen closes.
+/// marks what the user sees as read. Each attach also syncs the chat's
+/// members. Detaches when the chat screen closes.
 
 abstract class _$ChatController extends $Notifier<ChatState> {
   late final _$args = ref.$arg as String;

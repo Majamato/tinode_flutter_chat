@@ -8,6 +8,9 @@ import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
+/// The longest pause between two messages of one run.
+const runGap = Duration(minutes: 5);
+
 /// The messages of one open chat, by seq, plus loading flags.
 ///
 /// History pages, live messages and publish acks all merge through
@@ -198,6 +201,32 @@ final class ChatState {
       }),
     );
   }
+
+  /// Message [seq] is the first of a **run**: messages from one sender in
+  /// a row, each within [runGap] of the one before. Its bubble names the
+  /// sender.
+  bool startsRun(int seq) {
+    final index = binarySearch(seqs, seq);
+    if (index < 0) {
+      return false;
+    }
+    return index == 0 || !_sameRun(bySeq[seqs[index - 1]]!, bySeq[seq]!);
+  }
+
+  /// Message [seq] is the last of a run. Its bubble shows the sender's
+  /// avatar.
+  bool endsRun(int seq) {
+    final index = binarySearch(seqs, seq);
+    if (index < 0) {
+      return false;
+    }
+    return index == seqs.length - 1 ||
+        !_sameRun(bySeq[seq]!, bySeq[seqs[index + 1]]!);
+  }
+
+  static bool _sameRun(ChatMessage earlier, ChatMessage later) =>
+      earlier.from == later.from &&
+      later.time.difference(earlier.time) <= runGap;
 
   ChatState ready({required bool hasOlder}) =>
       _copy(status: LoadStatus.ready, hasOlder: hasOlder);

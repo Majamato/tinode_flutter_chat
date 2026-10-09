@@ -53,7 +53,8 @@ void main() {
       ..emitStatus(const Connected());
     await settle();
 
-    expect(session.calls, ['chatList']);
+    // Carol's message reached this device while it was away.
+    expect(session.calls, ['chatList', 'markReceived $carol 1']);
     expect(container.read(chatListControllerProvider).order.first, carol);
   });
 
@@ -128,6 +129,28 @@ void main() {
     await settle();
     expect(session.calls, isEmpty);
     expect(identical(container.read(chatListControllerProvider), list), isTrue);
+  });
+
+  test('messages from others are marked received as they arrive', () async {
+    await loadList();
+    session.calls.clear();
+    session
+      ..emitPresence(
+        const PresMessage(
+          topic: 'me',
+          event: PresenceEvent.message,
+          source: bob,
+          seq: 7,
+        ),
+      )
+      ..emitMessage(message(friends, 9, from: carol))
+      ..emitMessage(message(friends, 10, from: alice));
+    await settle();
+
+    expect(session.calls.where((c) => c.startsWith('markReceived')), [
+      'markReceived $bob 7',
+      'markReceived $friends 9',
+    ]);
   });
 
   test('refresh syncs and keeps the list shown meanwhile', () async {

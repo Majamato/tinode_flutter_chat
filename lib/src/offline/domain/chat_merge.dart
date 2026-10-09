@@ -21,11 +21,13 @@ Subscription mergeChat(Subscription stored, Subscription patch) => Subscription(
   seen: patch.seen ?? stored.seen,
 );
 
-/// [chat] with news that arrived live: a new message, or a read marker.
+/// [chat] with news that arrived live: a new message, or a read or
+/// received marker. Also raises a member's counters.
 Subscription advanceChat(
   Subscription chat, {
   int? lastSeq,
   int? read,
+  int? received,
   DateTime? lastMessageAt,
 }) => Subscription(
   topic: chat.topic,
@@ -36,7 +38,7 @@ Subscription advanceChat(
   online: chat.online,
   lastSeq: max(chat.lastSeq, lastSeq ?? 0),
   read: max(chat.read, read ?? 0),
-  received: chat.received,
+  received: max(chat.received, received ?? 0),
   lastDeleteId: chat.lastDeleteId,
   public: chat.public,
   private: chat.private,

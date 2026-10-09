@@ -11,6 +11,10 @@ import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_str
 ///   strings: const TinodeChatStrings(chatListTitle: 'Conversaciones'),
 /// )
 /// ```
+///
+/// Texts that name someone or count something are functions, e.g.
+/// [typingOne]; pass a top-level function or a static method, so the
+/// strings can stay `const`.
 @immutable
 class TinodeChatStrings {
   /// Creates the texts; any left out keep their English default.
@@ -81,6 +85,16 @@ class TinodeChatStrings {
     this.addMembersHint = 'Add members',
     this.createGroup = 'Create',
     this.membersNotAdded = 'Some members could not be added.',
+    this.messageDelivered = 'Delivered',
+    this.messageRead = 'Read',
+    this.readBy = 'Read by',
+    this.deliveredTo = 'Delivered to',
+    this.notReadYet = 'Nobody has read it yet',
+    this.unknownMember = 'Unknown',
+    this.typingDirect = 'typing…',
+    this.typingOne = _typingOne,
+    this.typingTwo = _typingTwo,
+    this.typingMany = _typingMany,
   });
 
   /// The texts of the nearest `TinodeChat`, or the defaults outside one.
@@ -285,4 +299,44 @@ class TinodeChatStrings {
 
   /// The group was created, but the server refused some of its members.
   final String membersNotAdded;
+
+  /// Status of one of the user's messages that every other member
+  /// received.
+  final String messageDelivered;
+
+  /// Status of one of the user's messages that every other member read.
+  final String messageRead;
+
+  /// The entry that lists who read one of the user's group messages, and
+  /// the heading of those who did.
+  final String readBy;
+
+  /// Heading of the members who received the message but haven't read it.
+  final String deliveredTo;
+
+  /// Shown in the read-by list while no other member read the message.
+  final String notReadYet;
+
+  /// In place of the name of a member whose profile isn't known yet.
+  final String unknownMember;
+
+  /// Under a direct chat's title while the peer types.
+  final String typingDirect;
+
+  /// Under a group's title while one member types.
+  final String Function(String name) typingOne;
+
+  /// Under a group's title while two members type.
+  final String Function(String first, String second) typingTwo;
+
+  /// Under a group's title while three or more members type, given how
+  /// many.
+  final String Function(int count) typingMany;
 }
+
+String _typingOne(String name) => '$name is typing…';
+
+String _typingTwo(String first, String second) =>
+    '$first and $second are typing…';
+
+String _typingMany(int count) => '$count people are typing…';

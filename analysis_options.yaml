@@ -10,6 +10,7 @@ analyzer:
     strict-raw-types: true
   exclude:
     - "**/*.g.dart"
+    - "test/offline/data/generated_migrations/**"
 
 plugins:
   riverpod_lint: 3.1.4

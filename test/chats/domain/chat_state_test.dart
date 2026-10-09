@@ -250,4 +250,53 @@ void main() {
       expect(state.withoutSeqs(const [SeqRange(5, 9)]), same(state));
     });
   });
+
+  group('runs', () {
+    ChatMessage from(String sender, int seq, {int? minute}) => ChatMessage(
+      seq: seq,
+      time: at(minute ?? seq),
+      content: const PlainText('hi'),
+      isOwn: sender == alice,
+      from: sender,
+    );
+
+    test("a sender's messages in a row make one run", () {
+      final state = empty.withMessages([
+        from(bob, 1),
+        from(bob, 2),
+        from(carol, 3),
+        from(bob, 4),
+      ]);
+      expect(
+        [for (final s in state.seqs) state.startsRun(s)],
+        [true, false, true, true],
+      );
+      expect(
+        [for (final s in state.seqs) state.endsRun(s)],
+        [false, true, true, true],
+      );
+    });
+
+    test('a long pause starts a new run', () {
+      final state = empty.withMessages([
+        from(bob, 1, minute: 1),
+        from(bob, 2, minute: 1 + runGap.inMinutes + 1),
+      ]);
+      expect(state.endsRun(1), isTrue);
+      expect(state.startsRun(2), isTrue);
+    });
+
+    test('updates are no part of runs; unknown seqs are neither', () {
+      final state = empty.withMessages([
+        callMsg(1),
+        from(bob, 2),
+        update(3, 1, CallState.accepted),
+      ]);
+      expect(state.startsRun(2), isFalse);
+      expect(state.endsRun(2), isTrue);
+      expect(state.startsRun(3), isFalse);
+      expect(state.endsRun(9), isFalse);
+      expect(empty.endsRun(1), isFalse);
+    });
+  });
 }

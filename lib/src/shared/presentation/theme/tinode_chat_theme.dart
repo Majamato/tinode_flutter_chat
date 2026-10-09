@@ -19,6 +19,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.unreadBadgeColor,
     required this.onUnreadBadgeColor,
     required this.missedCallColor,
+    required this.readReceiptColor,
+    required this.senderNameColors,
   });
 
   /// A chat theme derived from [theme]'s color scheme.
@@ -33,6 +35,13 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       unreadBadgeColor: colors.primary,
       onUnreadBadgeColor: colors.onPrimary,
       missedCallColor: colors.error,
+      readReceiptColor: colors.primary,
+      senderNameColors: [
+        for (final swatch in _senderSwatches)
+          theme.brightness == Brightness.dark
+              ? swatch.shade300
+              : swatch.shade700,
+      ],
     );
   }
 
@@ -42,6 +51,18 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     return theme.extension<TinodeChatTheme>() ??
         TinodeChatTheme.fallback(theme);
   }
+
+  static const List<MaterialColor> _senderSwatches = [
+    Colors.red,
+    Colors.pink,
+    Colors.purple,
+    Colors.indigo,
+    Colors.blue,
+    Colors.teal,
+    Colors.green,
+    Colors.orange,
+    Colors.brown,
+  ];
 
   /// Background of the user's own messages.
   final Color ownBubbleColor;
@@ -68,6 +89,17 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// not connected.
   final Color missedCallColor;
 
+  /// The ticks of one of the user's messages that every other member read.
+  final Color readReceiptColor;
+
+  /// Sender names in groups; each member keeps one of these, picked from
+  /// their user ID. Must not be empty.
+  final List<Color> senderNameColors;
+
+  /// The colour of the member [colorIndex] names, from [senderNameColors].
+  Color senderNameColor(int colorIndex) =>
+      senderNameColors[colorIndex % senderNameColors.length];
+
   @override
   TinodeChatTheme copyWith({
     Color? ownBubbleColor,
@@ -78,6 +110,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     Color? unreadBadgeColor,
     Color? onUnreadBadgeColor,
     Color? missedCallColor,
+    Color? readReceiptColor,
+    List<Color>? senderNameColors,
   }) => TinodeChatTheme(
     ownBubbleColor: ownBubbleColor ?? this.ownBubbleColor,
     onOwnBubbleColor: onOwnBubbleColor ?? this.onOwnBubbleColor,
@@ -87,6 +121,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     unreadBadgeColor: unreadBadgeColor ?? this.unreadBadgeColor,
     onUnreadBadgeColor: onUnreadBadgeColor ?? this.onUnreadBadgeColor,
     missedCallColor: missedCallColor ?? this.missedCallColor,
+    readReceiptColor: readReceiptColor ?? this.readReceiptColor,
+    senderNameColors: senderNameColors ?? this.senderNameColors,
   );
 
   @override
@@ -119,6 +155,17 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
         t,
       )!,
       missedCallColor: Color.lerp(missedCallColor, other.missedCallColor, t)!,
+      readReceiptColor: Color.lerp(
+        readReceiptColor,
+        other.readReceiptColor,
+        t,
+      )!,
+      senderNameColors: senderNameColors.length == other.senderNameColors.length
+          ? [
+              for (var i = 0; i < senderNameColors.length; i++)
+                Color.lerp(senderNameColors[i], other.senderNameColors[i], t)!,
+            ]
+          : (t < 0.5 ? senderNameColors : other.senderNameColors),
     );
   }
 }

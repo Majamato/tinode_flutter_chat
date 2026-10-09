@@ -114,7 +114,7 @@ void main() {
     await tester.tap(create);
     await tester.pumpAndSettle();
     expect(session.calls, containsAllInOrder(['createGroup Hikers']));
-    expect(session.members['grpNew1'], [bob]);
+    expect(session.addedMembers['grpNew1'], [bob]);
     expect(find.byType(ChatScreen), findsOneWidget);
     expect(find.text('Hikers'), findsOneWidget);
 

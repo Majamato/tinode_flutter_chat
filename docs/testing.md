@@ -95,7 +95,10 @@ several in-memory databases.
 
 `drift_schemas/` holds the schema of each version (`dart run drift_dev schema dump
 lib/src/offline/data/chat_database.dart drift_schemas/`). Dump it again when the schema version
-goes up, and add a migration test for the step.
+goes up, regenerate the test helpers (`dart run drift_dev schema generate drift_schemas/
+test/offline/data/generated_migrations/`), and add the step to
+`test/offline/data/chat_database_migration_test.dart`: the schema it migrates to, and the data a
+cache of the older version keeps.
 
 ## Widget tests
 

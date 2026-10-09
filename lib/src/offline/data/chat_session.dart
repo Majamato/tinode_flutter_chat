@@ -17,6 +17,10 @@ abstract interface class ChatSession implements TinodeSession {
   /// with the server and returns the result.
   Future<List<Subscription>> storedChatList();
 
+  /// The cached members of [topic], without asking the server. [members]
+  /// fetches them and keeps them.
+  Future<List<Subscription>> storedMembers(String topic);
+
   /// The newest cached messages of [topic], without asking the server.
   Future<HistoryPage> storedPage(String topic, {required int limit});
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/chats/domain/message_receipt.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_status_icon.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dart';
@@ -10,6 +11,7 @@ class BubbleFooter extends StatelessWidget {
     required this.color,
     this.own = false,
     this.status,
+    this.receipt,
     super.key,
   });
 
@@ -18,9 +20,10 @@ class BubbleFooter extends StatelessWidget {
   /// The colour of the bubble's text.
   final Color color;
 
-  /// Shows the status: [status], or sent when null.
+  /// Shows the status: [status] while in the outbox, else [receipt].
   final bool own;
   final OutgoingStatus? status;
+  final MessageReceipt? receipt;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +37,7 @@ class BubbleFooter extends StatelessWidget {
         ),
         if (own) ...[
           const SizedBox(width: 4),
-          MessageStatusIcon(status: status, color: faded),
+          MessageStatusIcon(status: status, receipt: receipt, color: faded),
         ],
       ],
     );

@@ -32,6 +32,7 @@ final class CachedTinodeSession implements ChatSession {
     _subscriptions = [
       _remote.messages.listen(_onMessage),
       _remote.presence.listen(_onPresence),
+      _remote.info.listen(_onInfo),
       _remote.statusChanges.listen(_onStatus),
     ];
     if (_remote.status is Connected) {
@@ -174,6 +175,35 @@ final class CachedTinodeSession implements ChatSession {
       await _store.mergeChats(fetched);
     }
     return _store.chats();
+  }
+
+  // Members.
+
+  @override
+  Future<List<Subscription>> storedMembers(String topic) async {
+    await _writes;
+    return _store.members(topic);
+  }
+
+  /// Fetches the members and keeps them: a full list replaces the cached
+  /// one, a single member is put or, when not one any more, removed.
+  /// Returns what the cache then holds, merged.
+  @override
+  Future<List<Subscription>> members(String topic, {String? userId}) async {
+    final fetched = await _remote.members(topic, userId: userId);
+    await _write(() async {
+      if (userId == null) {
+        await _store.replaceMembers(topic, fetched);
+      } else if (fetched.isEmpty) {
+        await _store.removeMember(topic, userId);
+      } else {
+        await _store.putMember(topic, fetched.single);
+      }
+    });
+    if (userId == null) {
+      return _store.members(topic);
+    }
+    return [?await _store.member(topic, userId)];
   }
 
   // History.
@@ -402,6 +432,16 @@ final class CachedTinodeSession implements ChatSession {
       unawaited(
         _write(() => _store.enqueueRead(topic, seq, clock.now().toUtc())),
       );
+    }
+  }
+
+  /// Sent only while connected: a received marker isn't worth queueing,
+  /// the chat list's next sync marks what came meanwhile.
+  @override
+  void markReceived(String topic, int seq) {
+    if (_remote.status is Connected) {
+      _remote.markReceived(topic, seq);
+      unawaited(_write(() => _store.advanceChat(topic, received: seq)));
     }
   }
 
@@ -663,6 +703,15 @@ final class CachedTinodeSession implements ChatSession {
         read: own ? message.seq : null,
         lastMessageAt: message.time,
       );
+      // The server moves a sender's own counters to their message.
+      if (message.from case final from?) {
+        await _store.advanceMember(
+          message.topic,
+          from,
+          read: message.seq,
+          received: message.seq,
+        );
+      }
       // The echo of an outbox message may beat the server's ack.
       if (clientIdOf(message.head) case final id? when own) {
         if (await _store.outboxByClientId(id) case final entry?) {
@@ -696,6 +745,32 @@ final class CachedTinodeSession implements ChatSession {
           )
           when topic != 'me' && deletedRanges.isNotEmpty:
         unawaited(_write(() => _onDeleted(presence)));
+      case _:
+        break;
+    }
+  }
+
+  /// Another member read or received more.
+  void _onInfo(InfoMessage info) {
+    switch (info) {
+      case InfoMessage(
+            :final topic,
+            event: InfoEvent.read || InfoEvent.received,
+            :final from?,
+            :final seq?,
+          )
+          when topic != 'me':
+        final read = info.event == InfoEvent.read;
+        unawaited(
+          _write(
+            () => _store.advanceMember(
+              topic,
+              from,
+              read: read ? seq : null,
+              received: read ? null : seq,
+            ),
+          ),
+        );
       case _:
         break;
     }

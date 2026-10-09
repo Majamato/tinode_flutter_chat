@@ -56,7 +56,13 @@ final class FakeTinodeSession implements TinodeSession {
   final refuseMembers = <String>{};
 
   /// The members `addMember` added, by group.
-  final members = <String, List<String>>{};
+  final addedMembers = <String, List<String>>{};
+
+  /// What `members` answers, by topic: the topic's subscriptions.
+  final memberLists = <String, List<Subscription>>{};
+
+  /// When set, the next `members` throws it.
+  Exception? failMembers;
   var _groups = 0;
 
   /// The `ifModifiedSince` of the latest `chatList`.
@@ -203,6 +209,20 @@ final class FakeTinodeSession implements TinodeSession {
   }
 
   @override
+  Future<List<Subscription>> members(String topic, {String? userId}) async {
+    calls.add('members $topic${userId == null ? '' : ' $userId'}');
+    _requireConnected();
+    if (failMembers case final error?) {
+      failMembers = null;
+      throw error;
+    }
+    return [
+      for (final member in memberLists[topic] ?? const <Subscription>[])
+        if (userId == null || member.userId == userId) member,
+    ];
+  }
+
+  @override
   Future<List<FoundTopic>> find(String query) async {
     calls.add('find $query');
     await holdFind?.future;
@@ -248,7 +268,7 @@ final class FakeTinodeSession implements TinodeSession {
     if (refuseMembers.contains(userId)) {
       throw const ServerException(403, 'permission denied');
     }
-    members.putIfAbsent(topic, () => []).add(userId);
+    addedMembers.putIfAbsent(topic, () => []).add(userId);
   }
 
   @override
@@ -442,6 +462,10 @@ final class FakeTinodeSession implements TinodeSession {
 
   @override
   void markRead(String topic, int seq) => calls.add('markRead $topic $seq');
+
+  @override
+  void markReceived(String topic, int seq) =>
+      calls.add('markReceived $topic $seq');
 
   @override
   Future<void> close() async {

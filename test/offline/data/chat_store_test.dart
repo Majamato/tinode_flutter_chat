@@ -17,6 +17,48 @@ void main() {
     addTearDown(store.close);
   });
 
+  group('members', () {
+    test('a full list replaces the members, merged', () async {
+      await store.replaceMembers(friends, [
+        member(bob, name: 'Bob', read: 4, received: 6),
+        member(carol, name: 'Carol'),
+      ]);
+      // A member entry without a profile, older counters, and carol gone.
+      await store.replaceMembers(friends, [member(bob, read: 2)]);
+
+      final [bobNow] = await store.members(friends);
+      expect(bobNow.userId, bob);
+      expect(bobNow.public?.name, 'Bob');
+      expect((bobNow.read, bobNow.received), (4, 6));
+    });
+
+    test('one member is put, advanced and removed', () async {
+      await store.putMember(friends, member(bob, name: 'Bob'));
+      await store.advanceMember(friends, bob, read: 5);
+      await store.advanceMember(friends, bob, received: 7);
+      await store.advanceMember(friends, carol, read: 9);
+
+      final bobNow = (await store.member(friends, bob))!;
+      expect((bobNow.read, bobNow.received), (5, 7));
+      expect(await store.member(friends, carol), isNull);
+
+      await store.removeMember(friends, bob);
+      expect(await store.members(friends), isEmpty);
+    });
+
+    test('members go with their chat', () async {
+      await store.replaceChats([chat(friends), chat(bob)]);
+      await store.putMember(friends, member(carol));
+      await store.putMember(bob, member(bob));
+
+      await store.mergeChats([Subscription(topic: friends, deleted: at(1))]);
+      expect(await store.members(friends), isEmpty);
+
+      await store.replaceChats([]);
+      expect(await store.members(bob), isEmpty);
+    });
+  });
+
   group('chats', () {
     test('a full sync replaces the list', () async {
       await store.replaceChats([chat(bob, name: 'Bob'), chat(friends)]);

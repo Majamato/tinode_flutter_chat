@@ -212,6 +212,267 @@ class ChatsCompanion extends UpdateCompanion<ChatRow> {
   }
 }
 
+class $MembersTable extends Members with TableInfo<$MembersTable, MemberRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MembersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _topicMeta = const VerificationMeta('topic');
+  @override
+  late final GeneratedColumn<String> topic = GeneratedColumn<String>(
+    'topic',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _jsonMeta = const VerificationMeta('json');
+  @override
+  late final GeneratedColumn<String> json = GeneratedColumn<String>(
+    'json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [topic, userId, json];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'members';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MemberRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('topic')) {
+      context.handle(
+        _topicMeta,
+        topic.isAcceptableOrUnknown(data['topic']!, _topicMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_topicMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('json')) {
+      context.handle(
+        _jsonMeta,
+        json.isAcceptableOrUnknown(data['json']!, _jsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_jsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {topic, userId};
+  @override
+  MemberRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MemberRow(
+      topic: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}topic'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      json: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}json'],
+      )!,
+    );
+  }
+
+  @override
+  $MembersTable createAlias(String alias) {
+    return $MembersTable(attachedDatabase, alias);
+  }
+}
+
+class MemberRow extends DataClass implements Insertable<MemberRow> {
+  final String topic;
+  final String userId;
+
+  /// `Subscription.toJson`.
+  final String json;
+  const MemberRow({
+    required this.topic,
+    required this.userId,
+    required this.json,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['topic'] = Variable<String>(topic);
+    map['user_id'] = Variable<String>(userId);
+    map['json'] = Variable<String>(json);
+    return map;
+  }
+
+  MembersCompanion toCompanion(bool nullToAbsent) {
+    return MembersCompanion(
+      topic: Value(topic),
+      userId: Value(userId),
+      json: Value(json),
+    );
+  }
+
+  factory MemberRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MemberRow(
+      topic: serializer.fromJson<String>(json['topic']),
+      userId: serializer.fromJson<String>(json['userId']),
+      json: serializer.fromJson<String>(json['json']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'topic': serializer.toJson<String>(topic),
+      'userId': serializer.toJson<String>(userId),
+      'json': serializer.toJson<String>(json),
+    };
+  }
+
+  MemberRow copyWith({String? topic, String? userId, String? json}) =>
+      MemberRow(
+        topic: topic ?? this.topic,
+        userId: userId ?? this.userId,
+        json: json ?? this.json,
+      );
+  MemberRow copyWithCompanion(MembersCompanion data) {
+    return MemberRow(
+      topic: data.topic.present ? data.topic.value : this.topic,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      json: data.json.present ? data.json.value : this.json,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MemberRow(')
+          ..write('topic: $topic, ')
+          ..write('userId: $userId, ')
+          ..write('json: $json')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(topic, userId, json);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MemberRow &&
+          other.topic == this.topic &&
+          other.userId == this.userId &&
+          other.json == this.json);
+}
+
+class MembersCompanion extends UpdateCompanion<MemberRow> {
+  final Value<String> topic;
+  final Value<String> userId;
+  final Value<String> json;
+  final Value<int> rowid;
+  const MembersCompanion({
+    this.topic = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.json = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MembersCompanion.insert({
+    required String topic,
+    required String userId,
+    required String json,
+    this.rowid = const Value.absent(),
+  }) : topic = Value(topic),
+       userId = Value(userId),
+       json = Value(json);
+  static Insertable<MemberRow> custom({
+    Expression<String>? topic,
+    Expression<String>? userId,
+    Expression<String>? json,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (topic != null) 'topic': topic,
+      if (userId != null) 'user_id': userId,
+      if (json != null) 'json': json,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MembersCompanion copyWith({
+    Value<String>? topic,
+    Value<String>? userId,
+    Value<String>? json,
+    Value<int>? rowid,
+  }) {
+    return MembersCompanion(
+      topic: topic ?? this.topic,
+      userId: userId ?? this.userId,
+      json: json ?? this.json,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (topic.present) {
+      map['topic'] = Variable<String>(topic.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (json.present) {
+      map['json'] = Variable<String>(json.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MembersCompanion(')
+          ..write('topic: $topic, ')
+          ..write('userId: $userId, ')
+          ..write('json: $json, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $TopicSyncsTable extends TopicSyncs
     with TableInfo<$TopicSyncsTable, TopicSyncRow> {
   @override
@@ -1415,6 +1676,7 @@ abstract class _$ChatDatabase extends GeneratedDatabase {
   _$ChatDatabase(QueryExecutor e) : super(e);
   $ChatDatabaseManager get managers => $ChatDatabaseManager(this);
   late final $ChatsTable chats = $ChatsTable(this);
+  late final $MembersTable members = $MembersTable(this);
   late final $TopicSyncsTable topicSyncs = $TopicSyncsTable(this);
   late final $MessagesTable messages = $MessagesTable(this);
   late final $OutboxTable outbox = $OutboxTable(this);
@@ -1428,6 +1690,7 @@ abstract class _$ChatDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     chats,
+    members,
     topicSyncs,
     messages,
     outbox,
@@ -1565,6 +1828,162 @@ typedef $$ChatsTableProcessedTableManager =
       $$ChatsTableUpdateCompanionBuilder,
       (ChatRow, BaseReferences<_$ChatDatabase, $ChatsTable, ChatRow>),
       ChatRow,
+      PrefetchHooks Function()
+    >;
+typedef $$MembersTableCreateCompanionBuilder =
+    MembersCompanion Function({
+      required String topic,
+      required String userId,
+      required String json,
+      Value<int> rowid,
+    });
+typedef $$MembersTableUpdateCompanionBuilder =
+    MembersCompanion Function({
+      Value<String> topic,
+      Value<String> userId,
+      Value<String> json,
+      Value<int> rowid,
+    });
+
+class $$MembersTableFilterComposer
+    extends Composer<_$ChatDatabase, $MembersTable> {
+  $$MembersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get topic => $composableBuilder(
+    column: $table.topic,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get json => $composableBuilder(
+    column: $table.json,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MembersTableOrderingComposer
+    extends Composer<_$ChatDatabase, $MembersTable> {
+  $$MembersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get topic => $composableBuilder(
+    column: $table.topic,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get json => $composableBuilder(
+    column: $table.json,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MembersTableAnnotationComposer
+    extends Composer<_$ChatDatabase, $MembersTable> {
+  $$MembersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get topic =>
+      $composableBuilder(column: $table.topic, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get json =>
+      $composableBuilder(column: $table.json, builder: (column) => column);
+}
+
+class $$MembersTableTableManager
+    extends
+        RootTableManager<
+          _$ChatDatabase,
+          $MembersTable,
+          MemberRow,
+          $$MembersTableFilterComposer,
+          $$MembersTableOrderingComposer,
+          $$MembersTableAnnotationComposer,
+          $$MembersTableCreateCompanionBuilder,
+          $$MembersTableUpdateCompanionBuilder,
+          (MemberRow, BaseReferences<_$ChatDatabase, $MembersTable, MemberRow>),
+          MemberRow,
+          PrefetchHooks Function()
+        > {
+  $$MembersTableTableManager(_$ChatDatabase db, $MembersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MembersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MembersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MembersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> topic = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> json = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MembersCompanion(
+                topic: topic,
+                userId: userId,
+                json: json,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String topic,
+                required String userId,
+                required String json,
+                Value<int> rowid = const Value.absent(),
+              }) => MembersCompanion.insert(
+                topic: topic,
+                userId: userId,
+                json: json,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MembersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ChatDatabase,
+      $MembersTable,
+      MemberRow,
+      $$MembersTableFilterComposer,
+      $$MembersTableOrderingComposer,
+      $$MembersTableAnnotationComposer,
+      $$MembersTableCreateCompanionBuilder,
+      $$MembersTableUpdateCompanionBuilder,
+      (MemberRow, BaseReferences<_$ChatDatabase, $MembersTable, MemberRow>),
+      MemberRow,
       PrefetchHooks Function()
     >;
 typedef $$TopicSyncsTableCreateCompanionBuilder =
@@ -2201,6 +2620,8 @@ class $ChatDatabaseManager {
   $ChatDatabaseManager(this._db);
   $$ChatsTableTableManager get chats =>
       $$ChatsTableTableManager(_db, _db.chats);
+  $$MembersTableTableManager get members =>
+      $$MembersTableTableManager(_db, _db.members);
   $$TopicSyncsTableTableManager get topicSyncs =>
       $$TopicSyncsTableTableManager(_db, _db.topicSyncs);
   $$MessagesTableTableManager get messages =>

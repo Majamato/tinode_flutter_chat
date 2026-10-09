@@ -12,6 +12,8 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 - Opens direct chats, groups and channels. Channel followers get a read-only view.
 - Loads history, pages older messages in on scroll, and merges live messages as they arrive.
 - Sends plain text and marks what the user sees as read.
+- In groups, names the sender of each run of messages and shows their avatar. Shows who is
+  typing. The user's own messages get delivered and read ticks, and a "Read by" list in groups.
 - Finds people and groups by login, email, phone or tag, opens 1:1 chats with them, and creates
   groups with members. This needs the network.
 - 1:1 voice and video calls with `flutter_webrtc`, while the app is open: call buttons in direct
@@ -115,13 +117,14 @@ await chat.logOut();
 
 ## Roadmap
 
-Built so far: the happy path, reconnection, calls, offline, finding people and starting chats.
+Built so far: the happy path, reconnection, calls, offline, finding people and starting chats,
+group chat essentials.
 Next, in this order. Each feature lands in [`tinode_dart_client`](../tinode_dart_client) first
 where it needs the protocol:
 
 1. ~~**Find people and start chats**~~: done (search, 1:1 chats, new groups with members).
-2. **Group chat essentials**: sender names and avatars in groups, typing indicators, read
-   receipts per message.
+2. ~~**Group chat essentials**~~: done (sender names and avatars in groups, typing indicators,
+   delivered and read ticks, a "Read by" list).
 3. **Attachments**: send and show images and files, rich Drafty rendering (messages show only
    their plain text today).
 4. **Account and profile**: sign up, edit name and avatar, change password, leave or delete

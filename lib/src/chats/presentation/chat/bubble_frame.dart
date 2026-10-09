@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// The shape every message shares: own messages on the right, others on
-/// the left, the [body] above a [footer] with the time and status.
+/// the left, the [body] above a [footer] with the time and status, and
+/// optionally a [header] above both, e.g. the sender's name.
 class BubbleFrame extends StatelessWidget {
   const BubbleFrame({
     required this.own,
     required this.body,
     required this.footer,
+    this.header,
     this.onLongPress,
     super.key,
   });
@@ -18,6 +20,7 @@ class BubbleFrame extends StatelessWidget {
   final bool own;
   final Widget body;
   final Widget footer;
+  final Widget? header;
 
   /// Opens the message's actions.
   final VoidCallback? onLongPress;
@@ -40,10 +43,28 @@ class BubbleFrame extends StatelessWidget {
               color: own ? theme.ownBubbleColor : theme.peerBubbleColor,
               borderRadius: BorderRadius.circular(theme.bubbleRadius),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [body, const SizedBox(height: 2), footer],
-            ),
+            child: switch (header) {
+              null => Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [body, const SizedBox(height: 2), footer],
+              ),
+              // As wide as the widest part, the header at the start and
+              // the footer at the end.
+              final header => IntrinsicWidth(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    header,
+                    body,
+                    const SizedBox(height: 2),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: footer,
+                    ),
+                  ],
+                ),
+              ),
+            },
           ),
         ),
       ),

@@ -27,13 +27,15 @@ lib/
       application/                providers: session, credentials, login
       presentation/               login screen, connecting and error views
     chats/                        chat list and open chats
-      domain/                     ChatSummary, ChatListState, ChatMessage, ChatState, CallRecord
-      application/                providers: chat list, chat, send
+      domain/                     ChatSummary, ChatListState, ChatMessage, ChatState, CallRecord,
+                                  ChatMembers, ChatMember, MessageReceipt, MessageSender,
+                                  TypingMembers
+      application/                providers: chat list, chat, send, members, typing
       presentation/chat_list/     list screen and its tile parts
       presentation/chat/          chat screen, message list, bubbles, composer
     offline/                      the cache, catching up and the outbox
       domain/                     SeqRanges, OutgoingMessage, outbox events, merge and retry rules
-      data/                       ChatDatabase (drift), ChatStore, ChatStoreOpener,
+      data/                       ChatDatabase (drift, v2), ChatStore, ChatStoreOpener,
                                   ChatSession, CachedTinodeSession
       application/                chatStoreOpener
     new_chat/                     finding people and starting chats
@@ -53,8 +55,8 @@ lib/
 
 A feature is something the user *does* (connect, chat), not a screen. New work goes into an
 existing feature when it shares its state, otherwise into a new folder with the same four layers.
-Expected next features, in the README's roadmap order: group chat essentials (in `chats`),
-`attachments`, `profile`, push, then `search` (local message search).
+Expected next features, in the README's roadmap order: `attachments`, `profile`, push, then
+`search` (local message search).
 
 ## Layers
 
@@ -186,6 +188,12 @@ cache. `CachedTinodeSession` decorates the server session:
   only when it follows it. `olderPage` serves covered seqs from the cache and fetches only gaps;
   `catchUp` fetches after the newest covered seq, then the delete log since the last applied delete
   ID (`get what=del`).
+- **Members.** `members(topic)` fetches a chat's members in full and replaces the cached ones
+  (merged: counters never move back, a left-out `public` is unchanged); with `userId`, one member
+  is put, or removed when the server says they aren't one. `info` read/received and each message
+  raise the member's counters in the cache. Always a full fetch: counter changes don't move a
+  member's `updated`, so "if modified since" can't be trusted for them. Chats leaving the list
+  take their members with them.
 - **Chat list sync.** `chatList()` asks `get sub` with "if modified since" the newest change the
   cache holds and merges the answer: counters never move back, a `public`/`private` left out is
   unchanged, a chat with `deleted` goes.
@@ -246,6 +254,28 @@ cache. `CachedTinodeSession` decorates the server session:
 7. The server sends no presence to whoever started a chat. So `ChatListController.refresh` syncs
    the list after a group is created, and `ChatController` asks for it when it attaches a chat the
    list doesn't have. A user added to a group gets `pres acs` on `me`, which syncs their list.
+
+**Members, receipts and typing** (`ChatMembersController(topic)`, `TypingController(topic)`,
+both autoDispose):
+
+1. The chat keeps its `ChatMembersController` alive and calls `sync()` after each attach, the
+   first and those after a reconnect (`get sub` needs the topic attached). Before that the cached
+   members show; a failed sync keeps them.
+2. Other members' `info` read/received raise their counters, and so does a message they send (the
+   server moves a sender's own counters to it). `pres acs` on the topic names a member who joined
+   or left, and a sender not known yet is fetched alone too. Channels have no members.
+3. `messageReceipt(topic, seq)` turns the members into the ticks of one own message: read or
+   delivered once every other member who may read has (`ChatMembers.receiptOf`). Only that
+   bubble's footer watches it, so a marker rebuilds just the ticks that change.
+   `messageSender(topic, seq)` gives a group bubble its sender label and avatar at the edges of a
+   run. `messageReadBy` feeds the Read by sheet.
+4. `ChatListController` sends the received markers (`note recv`): for each message from someone
+   else as it arrives, live or as `pres msg`, and after each sync for chats whose `lastSeq` is
+   past their `received`. The server takes them from a chat that isn't attached; read markers
+   count only from an attached one.
+5. `TypingController` lists the members typing (typing `info`), dropping each after
+   `typingTimeout` (5 s) or at their message; the composer's `typed()` sends a typing note at
+   most every `typingThrottle` (3 s).
 
 **Attaches are counted** (`ClientTinodeSession`): a chat screen and a call can hold the same
 topic, and it stays attached until every attach has been matched by a detach. Creating a group

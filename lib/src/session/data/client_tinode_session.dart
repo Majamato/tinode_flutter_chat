@@ -88,6 +88,10 @@ final class ClientTinodeSession implements TinodeSession {
   ];
 
   @override
+  Future<List<Subscription>> members(String topic, {String? userId}) =>
+      _client.getSubscriptions(topic, userId: userId);
+
+  @override
   Future<List<FoundTopic>> find(String query) => _client.find(query);
 
   @override
@@ -132,6 +136,9 @@ final class ClientTinodeSession implements TinodeSession {
 
   @override
   void markRead(String topic, int seq) => _client.markRead(topic, seq);
+
+  @override
+  void markReceived(String topic, int seq) => _client.markReceived(topic, seq);
 
   @override
   ServerInfo get serverInfo => _client.serverInfo;

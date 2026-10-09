@@ -17,6 +17,10 @@ part 'chat_list_controller.g.dart';
 /// synced with the server, kept current from `me` presence and from the
 /// messages of attached chats, and synced again after a reconnect.
 ///
+/// It also tells the senders their messages reached this device (`note
+/// recv`): as they arrive, live or as `pres msg`, and after each sync for
+/// what came while the link was down.
+///
 /// It subscribes to the streams before loading, so nothing that arrives
 /// during the load is lost. Offline, the cached list stays as it is.
 @Riverpod(keepAlive: true)
@@ -43,7 +47,7 @@ class ChatListController extends _$ChatListController {
       session.presence
           .where((p) => p.topic == 'me')
           .listen((p) => _onPresence(session, p)),
-      session.messages.listen((m) => _onMessage(m, me: me)),
+      session.messages.listen((m) => _onMessage(session, m, me: me)),
       // Presence missed while the link was down is never replayed.
       session.statusChanges
           .where((s) => s is Connected)
@@ -100,6 +104,11 @@ class ChatListController extends _$ChatListController {
       final chats = await session.chatList();
       if (lifetime.isActive) {
         state = state.loaded(chats.map(ChatSummary.fromSubscription));
+        for (final chat in chats) {
+          if (chat.lastSeq > chat.received) {
+            session.markReceived(chat.topic!, chat.lastSeq);
+          }
+        }
       }
     } on Object catch (e) {
       if (lifetime.isActive && state.status != LoadStatus.ready) {
@@ -112,6 +121,13 @@ class ChatListController extends _$ChatListController {
     final topic = presence.source;
     if (topic == null) {
       return;
+    }
+    if ((presence.event, presence.seq) case (
+      PresenceEvent.message,
+      final seq?,
+    )) {
+      // A message in a chat this device isn't attached to.
+      session.markReceived(topic, seq);
     }
     switch ((presence.event, presence.seq)) {
       case (PresenceEvent.message || PresenceEvent.access, _)
@@ -132,7 +148,14 @@ class ChatListController extends _$ChatListController {
     }
   }
 
-  void _onMessage(DataMessage message, {required String me}) {
+  void _onMessage(
+    ChatSession session,
+    DataMessage message, {
+    required String me,
+  }) {
+    if (message.from case final from? when from != me) {
+      session.markReceived(message.topic, message.seq);
+    }
     state = state.update(message.topic, (chat) {
       final updated = chat.withMessage(message.seq, message.time);
       return message.from == me ? updated.withRead(message.seq) : updated;

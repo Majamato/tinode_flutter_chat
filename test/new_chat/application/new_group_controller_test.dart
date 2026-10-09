@@ -44,7 +44,7 @@ void main() {
     await settle();
 
     expect(group, const NewGroup(topic: 'grpNew1'));
-    expect(session.members['grpNew1'], [bob, carol]);
+    expect(session.addedMembers['grpNew1'], [bob, carol]);
     expect(session.calls, containsAllInOrder(['createGroup Hikers']));
     // Creating held the group; the chat screen attaches it on its own.
     expect(session.calls, contains('detach grpNew1'));
@@ -57,7 +57,7 @@ void main() {
     session.refuseMembers.add(carol);
     final group = await controller().create('Hikers', [bobResult, carolResult]);
     expect(group?.notAdded, ['Carol']);
-    expect(session.members['grpNew1'], [bob]);
+    expect(session.addedMembers['grpNew1'], [bob]);
   });
 
   test('a refused group is an error', () async {

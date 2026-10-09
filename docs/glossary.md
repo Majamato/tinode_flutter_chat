@@ -149,6 +149,40 @@ A group the user creates with a name and members picked from a search; the user 
 Making a user a member of a group (`set sub` on the wire), which needs `S`. The member can read the
 group at once. *Avoid:* "invite"; Tinode's docs use it, but nothing waits for an answer.
 
+## Group chats
+
+**Members**
+The users of a chat, as the chat knows them: name, photo and read and received counters. Fetched
+in full each time the chat attaches, kept in the cache, and kept current from the other members'
+markers. *In code:* `ChatMembers`, `ChatMember`, `ChatMembersController`.
+
+**Run**
+Messages from one sender in a row, each within 5 minutes of the one before. In a group, the
+**sender label** (their name, in their colour) heads a run's first bubble and their avatar sits
+beside its last. *In code:* `ChatState.startsRun`, `endsRun`, `MessageSender`, `SenderName`,
+`SenderAvatar`.
+
+**Receipt**
+How far one of the user's own messages got, shown as ticks: **sent** (one), **delivered** (two:
+every other member who may read received it, or read it) and **read** (two in the read colour:
+every one of them read it). In a direct chat that is the peer; a channel's messages stay sent.
+*In code:* `MessageReceipt`, `ChatMembers.receiptOf`.
+*Avoid:* "seen".
+
+**Read by**
+The list, from a long press on the user's own group message, of the members who read it and of
+those who only received it. *In code:* `ReadBySheet`, `ChatMembers.readBy`.
+
+**Typing indicator**
+Who is typing, under the chat's title. A member stops typing 5 s after their last key press or
+when their message arrives; the user's own typing goes out at most every 3 s.
+*In code:* `TypingController`, `TypingMembers`, `TypingIndicator`.
+
+**Received marker**
+`note recv`: this device has the messages up to a seq. Sent for each message from someone else as
+it arrives (live, or as `pres msg` for a chat that isn't attached), and after each chat list sync
+for what came while away. Not queued offline. *In code:* `TinodeSession.markReceived`.
+
 ## Calls
 
 **Call stage**

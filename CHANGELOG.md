@@ -1,5 +1,21 @@
 ## Unreleased
 
+- Group chat essentials, from `tinode_dart_client` 0.6.0: in groups, the sender's name (in their
+  colour) heads each run of their messages and their avatar sits beside its last. The user's own
+  messages show two ticks once every other member received them, in the read colour once all of
+  them read them; a long press on one in a group lists who read it. Who is typing shows under the
+  chat's title, and the composer tells the others while the user types. Messages from others are
+  marked received as they arrive, also in chats that aren't open.
+- Profile photos sent inline show on chat list tiles, search results and sender avatars, in place
+  of the initials.
+- The cache keeps each chat's members (schema v2; existing caches migrate on open).
+- New `TinodeChatStrings`: `messageDelivered`, `messageRead`, `readBy`, `deliveredTo`,
+  `notReadYet`, `unknownMember`, `typingDirect`, and the functions `typingOne`, `typingTwo` and
+  `typingMany`.
+- **Breaking:** `TinodeChatTheme` has new required `readReceiptColor` and `senderNameColors`
+  (`TinodeChatTheme.fallback` uses the color scheme's `primary`, and a palette that suits light or
+  dark).
+
 - Finding people and starting chats, from `tinode_dart_client` 0.5.0: a button on the chat list
   opens a search for people and groups (by login, email, phone or tag). Tapping a result opens the
   chat, creating a 1:1 chat the first time. "New group" creates a group with a name and members

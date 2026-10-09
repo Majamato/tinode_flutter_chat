@@ -39,6 +39,7 @@ final class ChatStore {
   }
 
   /// Replaces the whole list, after a sync without "if modified since".
+  /// The members of chats no longer in it go too.
   Future<void> replaceChats(List<Subscription> chats) => _db.transaction(
     () async {
       await _db.delete(_db.chats).go();
@@ -46,6 +47,10 @@ final class ChatStore {
         (b) =>
             b.insertAll(_db.chats, [for (final chat in chats) _chatRow(chat)]),
       );
+      await (_db.delete(_db.members)..where(
+            (m) => m.topic.isNotIn([for (final chat in chats) chat.topic!]),
+          ))
+          .go();
     },
   );
 
@@ -57,6 +62,7 @@ final class ChatStore {
       final topic = change.topic!;
       if (change.deleted != null) {
         await (_db.delete(_db.chats)..where((c) => c.topic.equals(topic))).go();
+        await _deleteMembers(topic);
         continue;
       }
       final stored = await chat(topic);
@@ -73,6 +79,7 @@ final class ChatStore {
     String topic, {
     int? lastSeq,
     int? read,
+    int? received,
     DateTime? lastMessageAt,
   }) => _db.transaction(() async {
     if (await chat(topic) case final stored?) {
@@ -80,6 +87,7 @@ final class ChatStore {
         stored,
         lastSeq: lastSeq,
         read: read,
+        received: received,
         lastMessageAt: lastMessageAt,
       );
       if (updated != stored) {
@@ -87,6 +95,78 @@ final class ChatStore {
       }
     }
   });
+
+  // Members.
+
+  Future<List<Subscription>> members(String topic) async => [
+    for (final row in await (_db.select(
+      _db.members,
+    )..where((m) => m.topic.equals(topic))).get())
+      _member(row),
+  ];
+
+  Future<Subscription?> member(String topic, String userId) async {
+    final row =
+        await (_db.select(_db.members)
+              ..where((m) => m.topic.equals(topic) & m.userId.equals(userId)))
+            .getSingleOrNull();
+    return row == null ? null : _member(row);
+  }
+
+  /// The members from a full `get sub`: whoever it leaves out goes, the
+  /// others merge as chats do (a left-out `public` is unchanged, counters
+  /// never move back).
+  Future<void> replaceMembers(String topic, List<Subscription> members) =>
+      _db.transaction(() async {
+        final stored = {for (final m in await this.members(topic)) m.userId: m};
+        await _deleteMembers(topic);
+        await _db.batch(
+          (b) => b.insertAll(_db.members, [
+            for (final m in members)
+              _memberRow(topic, _mergedMember(stored[m.userId], m)),
+          ]),
+        );
+      });
+
+  /// One member, joined or read again.
+  Future<void> putMember(String topic, Subscription member) =>
+      _db.transaction(() async {
+        final stored = await this.member(topic, member.userId!);
+        await _db
+            .into(_db.members)
+            .insertOnConflictUpdate(
+              _memberRow(topic, _mergedMember(stored, member)),
+            );
+      });
+
+  Future<void> removeMember(String topic, String userId) => (_db.delete(
+    _db.members,
+  )..where((m) => m.topic.equals(topic) & m.userId.equals(userId))).go();
+
+  /// Raises a stored member's counters; unknown members are left alone.
+  Future<void> advanceMember(
+    String topic,
+    String userId, {
+    int? read,
+    int? received,
+  }) => _db.transaction(() async {
+    if (await member(topic, userId) case final stored?) {
+      final updated = merge.advanceChat(stored, read: read, received: received);
+      if (updated != stored) {
+        await _db
+            .into(_db.members)
+            .insertOnConflictUpdate(_memberRow(topic, updated));
+      }
+    }
+  });
+
+  Future<void> _deleteMembers(String topic) =>
+      (_db.delete(_db.members)..where((m) => m.topic.equals(topic))).go();
+
+  static Subscription _mergedMember(
+    Subscription? stored,
+    Subscription fetched,
+  ) => stored == null ? fetched : merge.mergeChat(stored, fetched);
 
   // Messages.
 
@@ -382,6 +462,16 @@ final class ChatStore {
     topic: chat.topic!,
     json: jsonEncode(chat.toJson()),
   );
+
+  static Subscription _member(MemberRow row) =>
+      Subscription.fromJson(jsonDecode(row.json) as Json, 'member');
+
+  static MembersCompanion _memberRow(String topic, Subscription member) =>
+      MembersCompanion.insert(
+        topic: topic,
+        userId: member.userId!,
+        json: jsonEncode(member.toJson()),
+      );
 
   static DataMessage _message(MessageRow row) =>
       DataMessage.fromJson(jsonDecode(row.json) as Json);

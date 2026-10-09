@@ -57,7 +57,10 @@ business logic in UI files. Flutter's own guidance is in
 ## Strings, theme, layout
 
 - No user-visible string literals in widgets: use `TinodeChatStrings.of(context)`. Add a field with
-  an English default for new text. (gen_l10n can back the same accessor later.)
+  an English default for new text. (gen_l10n can back the same accessor later.) Text that names
+  someone or counts something is a function field (`typingOne(name)`) whose default is a private
+  top-level function, so `TinodeChatStrings` stays `const`. Choosing between such texts (one name,
+  two, a count) is a plain function next to its widget, like `typingMessage`, not code in `build`.
 - No hard-coded colors: use `TinodeChatTheme.of(context)` or `Theme.of(context).colorScheme`. Add a
   field to `TinodeChatTheme` (and to `copyWith`, `lerp`, `fallback`) for new chat-specific colors.
 - Widgets must work at phone width and in dark mode.

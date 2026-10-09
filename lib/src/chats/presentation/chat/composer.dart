@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/application/typing_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/send_button.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// The message field and send button. Typing and sending never rebuild
-/// it: the button watches both on its own. A failed send shows a snack bar
-/// and keeps the text.
+/// it: the button watches both on its own. Typing tells the other members.
+/// A failed send shows a snack bar and keeps the text.
 class Composer extends ConsumerStatefulWidget {
   const Composer({required this.topic, super.key});
 
@@ -65,6 +66,9 @@ class _ComposerState extends ConsumerState<Composer> {
               maxLines: 5,
               textCapitalization: TextCapitalization.sentences,
               textInputAction: TextInputAction.send,
+              onChanged: (_) => ref
+                  .read(typingControllerProvider(widget.topic).notifier)
+                  .typed(),
               onSubmitted: (_) => _send(),
             ),
           ),

@@ -17,6 +17,20 @@ class Chats extends Table {
   Set<Column<Object>> get primaryKey => {topic};
 }
 
+/// The members of each chat (the subscriptions of the topic), in their
+/// wire form: names and avatars for sender labels, counters for receipts.
+@DataClassName('MemberRow')
+class Members extends Table {
+  TextColumn get topic => text()();
+  TextColumn get userId => text()();
+
+  /// `Subscription.toJson`.
+  TextColumn get json => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {topic, userId};
+}
+
 /// What the cache knows about a topic's history, beyond its messages.
 @DataClassName('TopicSyncRow')
 class TopicSyncs extends Table {
@@ -74,10 +88,20 @@ class Outbox extends Table {
 }
 
 /// One user's cache on one server.
-@DriftDatabase(tables: [Chats, TopicSyncs, Messages, Outbox])
+@DriftDatabase(tables: [Chats, Members, TopicSyncs, Messages, Outbox])
 final class ChatDatabase extends _$ChatDatabase {
   ChatDatabase(super.e);
 
+  /// 2: [Members].
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(members);
+      }
+    },
+  );
 }

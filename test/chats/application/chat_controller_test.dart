@@ -70,6 +70,7 @@ void main() {
       await settle();
 
       expect(session.calls.where((c) => c.contains(bob)), [
+        'members $bob',
         'history $bob since 4',
         'deleteLog $bob since 1',
         'markRead $bob 5',

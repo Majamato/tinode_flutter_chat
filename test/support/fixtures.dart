@@ -43,3 +43,22 @@ DataMessage message(
   time: time ?? at(seq),
   content: PlainText(text ?? 'message $seq'),
 );
+
+/// A member entry of [userId] in a chat's subscriptions.
+Subscription member(
+  String userId, {
+  String? name,
+  int read = 0,
+  int received = 0,
+  String mode = 'JRWPS',
+}) => Subscription(
+  userId: userId,
+  read: read,
+  received: received,
+  public: name == null ? null : Profile(name: name),
+  access: Access(
+    want: AccessMode.parse(mode),
+    given: AccessMode.parse(mode),
+    mode: AccessMode.parse(mode),
+  ),
+);

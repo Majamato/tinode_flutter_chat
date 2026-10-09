@@ -1,4 +1,5 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/avatar_image.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/initials.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 
@@ -8,6 +9,7 @@ final class SearchResult with ValueObject {
     required this.topic,
     required this.kind,
     required this.title,
+    this.photo,
     this.memberCount,
   });
 
@@ -17,6 +19,7 @@ final class SearchResult with ValueObject {
       topic: found.topic,
       kind: found.kind,
       title: name == null || name.isEmpty ? found.topic : name,
+      photo: AvatarImage.tryParse(found.public?.photo),
       memberCount: found.memberCount,
     );
   }
@@ -29,6 +32,9 @@ final class SearchResult with ValueObject {
   /// The profile name, or [topic] when there is none.
   final String title;
 
+  /// The profile photo, when it is sent inline.
+  final AvatarImage? photo;
+
   /// Members of a group; null for users.
   final int? memberCount;
 
@@ -38,5 +44,5 @@ final class SearchResult with ValueObject {
   String get initials => initialsOf(title);
 
   @override
-  List<Object?> get props => [topic, kind, title, memberCount];
+  List<Object?> get props => [topic, kind, title, photo, memberCount];
 }

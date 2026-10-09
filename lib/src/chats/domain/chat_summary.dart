@@ -1,4 +1,5 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/avatar_image.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/initials.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 
@@ -8,6 +9,7 @@ final class ChatSummary with ValueObject {
     required this.topic,
     required this.kind,
     required this.title,
+    this.photo,
     this.lastMessageAt,
     this.lastSeq = 0,
     this.read = 0,
@@ -22,6 +24,7 @@ final class ChatSummary with ValueObject {
       topic: topic,
       kind: TopicKind.of(topic),
       title: name == null || name.isEmpty ? topic : name,
+      photo: AvatarImage.tryParse(subscription.public?.photo),
       lastMessageAt: subscription.lastMessageAt,
       lastSeq: subscription.lastSeq,
       read: subscription.read,
@@ -36,6 +39,9 @@ final class ChatSummary with ValueObject {
 
   /// The profile name, or the topic name when there is none.
   final String title;
+
+  /// The profile photo, when it is sent inline.
+  final AvatarImage? photo;
   final DateTime? lastMessageAt;
   final int lastSeq;
 
@@ -72,6 +78,7 @@ final class ChatSummary with ValueObject {
         topic: topic,
         kind: kind,
         title: title,
+        photo: photo,
         lastMessageAt: lastMessageAt ?? this.lastMessageAt,
         lastSeq: lastSeq ?? this.lastSeq,
         read: read ?? this.read,
@@ -84,6 +91,7 @@ final class ChatSummary with ValueObject {
     topic,
     kind,
     title,
+    photo,
     lastMessageAt,
     lastSeq,
     read,

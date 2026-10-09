@@ -4,6 +4,7 @@ import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/application/chat_members_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_state.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
@@ -21,7 +22,8 @@ const historyPageSize = 32;
 
 /// One open chat: shows what the cache holds, attaches to the topic,
 /// catches up with the server, merges live messages and the outbox, and
-/// marks what the user sees as read. Detaches when the chat screen closes.
+/// marks what the user sees as read. Each attach also syncs the chat's
+/// members. Detaches when the chat screen closes.
 @riverpod
 class ChatController extends _$ChatController {
   late ChatSession _session;
@@ -43,6 +45,8 @@ class ChatController extends _$ChatController {
     _me = me;
     _lastMarkedRead = 0;
     final link = _Link();
+    // Alive as long as the chat: it syncs once attached.
+    ref.listen(chatMembersControllerProvider(topic), (_, _) {});
 
     final subscriptions = [
       session.messages.where((m) => m.topic == topic).listen(_onLive),
@@ -166,6 +170,9 @@ class ChatController extends _$ChatController {
           ref.read(chatListControllerProvider.notifier).refresh();
         }
       }
+      // After the first attach, and after each reconnect, which attaches
+      // again: members' counters may have moved meanwhile.
+      unawaited(ref.read(chatMembersControllerProvider(topic).notifier).sync());
 
       if (state.status != LoadStatus.ready || state.lastSeq == null) {
         final page = await _session.history(topic, limit: historyPageSize);

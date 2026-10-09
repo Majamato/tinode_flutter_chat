@@ -145,6 +145,78 @@ void main() {
     });
   });
 
+  group('members', () {
+    setUp(() {
+      remote.memberLists[friends] = [
+        member(alice, name: 'Alice'),
+        member(bob, name: 'Bob', read: 2),
+      ];
+    });
+
+    test('a fetch keeps them; one member is put, or removed', () async {
+      expect(await session.members(friends), hasLength(2));
+      expect(await session.storedMembers(friends), hasLength(2));
+
+      remote.memberLists[friends]!.add(member(carol, name: 'Carol'));
+      final [carolNow] = await session.members(friends, userId: carol);
+      expect(carolNow.public?.name, 'Carol');
+      expect(await session.storedMembers(friends), hasLength(3));
+
+      remote.memberLists[friends]!.removeWhere((m) => m.userId == bob);
+      expect(await session.members(friends, userId: bob), isEmpty);
+      expect(
+        (await session.storedMembers(friends)).map((m) => m.userId),
+        unorderedEquals([alice, carol]),
+      );
+    });
+
+    test('markers and messages from members raise their counters', () async {
+      await session.members(friends);
+      remote
+        ..emitInfo(
+          const InfoMessage(
+            topic: friends,
+            event: InfoEvent.received,
+            from: bob,
+            seq: 6,
+          ),
+        )
+        ..emitInfo(
+          const InfoMessage(
+            topic: friends,
+            event: InfoEvent.read,
+            from: bob,
+            seq: 4,
+          ),
+        )
+        ..emitMessage(message(friends, 3, from: alice));
+
+      final stored = {
+        for (final m in await session.storedMembers(friends)) m.userId: m,
+      };
+      expect((stored[bob]!.read, stored[bob]!.received), (4, 6));
+      expect((stored[alice]!.read, stored[alice]!.received), (3, 3));
+    });
+  });
+
+  group('received markers', () {
+    test('go out only while connected, and raise the chat', () async {
+      await session.chatList();
+      remote.emitStatus(
+        const Reconnecting(attempt: 1, retryIn: Duration(seconds: 1)),
+      );
+      session.markReceived(bob, 99);
+      remote.emitStatus(const Connected());
+      session.markReceived(bob, 100);
+      await settle();
+
+      expect(remote.calls.where((c) => c.startsWith('markReceived')), [
+        'markReceived $bob 100',
+      ]);
+      expect((await session.storedChatList()).single.received, 100);
+    });
+  });
+
   test('closing closes the remote session', () async {
     await session.close();
     expect(remote.isClosed, isTrue);

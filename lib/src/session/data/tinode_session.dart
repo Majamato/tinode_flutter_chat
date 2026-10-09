@@ -35,6 +35,12 @@ abstract interface class TinodeSession {
   /// `TinodeClient.getSubscriptions`.
   Future<List<Subscription>> chatList({DateTime? ifModifiedSince});
 
+  /// The members of [topic], with their profiles and read and received
+  /// counters; with [userId], just that member, or `[]` when they aren't
+  /// one. The topic must be attached. In a direct chat they come without
+  /// profiles.
+  Future<List<Subscription>> members(String topic, {String? userId});
+
   /// Users and groups whose tags match [query], best first; see
   /// `TinodeClient.find`. A user's result is named by their user ID,
   /// which [attach] opens as the 1:1 chat with them.
@@ -79,6 +85,11 @@ abstract interface class TinodeSession {
   void sendTyping(String topic);
 
   void markRead(String topic, int seq);
+
+  /// Tells the other members this device received [topic] up to [seq].
+  /// Works for a topic that isn't attached too. Dropped while not
+  /// connected.
+  void markReceived(String topic, int seq);
 
   /// The server's reply to the latest `hi`, with its ICE servers for calls.
   ServerInfo get serverInfo;

@@ -12,6 +12,10 @@ part of 'chat_list_controller.dart';
 /// synced with the server, kept current from `me` presence and from the
 /// messages of attached chats, and synced again after a reconnect.
 ///
+/// It also tells the senders their messages reached this device (`note
+/// recv`): as they arrive, live or as `pres msg`, and after each sync for
+/// what came while the link was down.
+///
 /// It subscribes to the streams before loading, so nothing that arrives
 /// during the load is lost. Offline, the cached list stays as it is.
 
@@ -22,6 +26,10 @@ final chatListControllerProvider = ChatListControllerProvider._();
 /// synced with the server, kept current from `me` presence and from the
 /// messages of attached chats, and synced again after a reconnect.
 ///
+/// It also tells the senders their messages reached this device (`note
+/// recv`): as they arrive, live or as `pres msg`, and after each sync for
+/// what came while the link was down.
+///
 /// It subscribes to the streams before loading, so nothing that arrives
 /// during the load is lost. Offline, the cached list stays as it is.
 final class ChatListControllerProvider
@@ -29,6 +37,10 @@ final class ChatListControllerProvider
   /// The chat list of the logged-in user: shown from the cache first, then
   /// synced with the server, kept current from `me` presence and from the
   /// messages of attached chats, and synced again after a reconnect.
+  ///
+  /// It also tells the senders their messages reached this device (`note
+  /// recv`): as they arrive, live or as `pres msg`, and after each sync for
+  /// what came while the link was down.
   ///
   /// It subscribes to the streams before loading, so nothing that arrives
   /// during the load is lost. Offline, the cached list stays as it is.
@@ -60,11 +72,15 @@ final class ChatListControllerProvider
 }
 
 String _$chatListControllerHash() =>
-    r'2c44694269f9881ca42de3b6dcda74501de8ddfc';
+    r'2c0e86cfc7e63eae1d167fd1b167bdfcaee22695';
 
 /// The chat list of the logged-in user: shown from the cache first, then
 /// synced with the server, kept current from `me` presence and from the
 /// messages of attached chats, and synced again after a reconnect.
+///
+/// It also tells the senders their messages reached this device (`note
+/// recv`): as they arrive, live or as `pres msg`, and after each sync for
+/// what came while the link was down.
 ///
 /// It subscribes to the streams before loading, so nothing that arrives
 /// during the load is lost. Offline, the cached list stays as it is.
