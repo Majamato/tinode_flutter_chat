@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/avatar_image.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/ref_photo_avatar.dart';
 
 /// A profile's photo in a circle, or its initials when it has none, or a
-/// person icon when there are no initials either. Watches nothing.
+/// person icon when there are no initials either. Watches nothing itself;
+/// a photo given by ref is downloaded by [RefPhotoAvatar].
 class ProfileAvatar extends StatelessWidget {
   const ProfileAvatar({
     required this.initials,
@@ -19,15 +21,20 @@ class ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final photo = this.photo;
-    return CircleAvatar(
-      radius: radius,
-      backgroundImage: photo == null ? null : MemoryImage(photo.bytes),
-      child: photo != null
-          ? null
-          : initials.isEmpty
-          ? Icon(Icons.person, size: radius)
-          : Text(initials),
-    );
+    final fallback = initials.isEmpty
+        ? Icon(Icons.person, size: radius)
+        : Text(initials);
+    return switch (photo) {
+      AvatarImage(:final bytes?) => CircleAvatar(
+        radius: radius,
+        backgroundImage: MemoryImage(bytes),
+      ),
+      AvatarImage(:final ref?) => RefPhotoAvatar(
+        photoRef: ref,
+        fallback: fallback,
+        radius: radius,
+      ),
+      _ => CircleAvatar(radius: radius, child: fallback),
+    };
   }
 }

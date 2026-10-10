@@ -9,7 +9,8 @@ part of 'session_controller.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Owns the connection: connects, logs in with the remembered credentials,
-/// opens the user's cache and closes it all when rebuilt or disposed.
+/// opens the user's cache and files and closes it all when rebuilt or
+/// disposed.
 ///
 /// With a token for the user who last logged in to this server, it opens
 /// that user's cache at once and lets the client connect in the background,
@@ -24,7 +25,8 @@ part of 'session_controller.dart';
 final sessionControllerProvider = SessionControllerProvider._();
 
 /// Owns the connection: connects, logs in with the remembered credentials,
-/// opens the user's cache and closes it all when rebuilt or disposed.
+/// opens the user's cache and files and closes it all when rebuilt or
+/// disposed.
 ///
 /// With a token for the user who last logged in to this server, it opens
 /// that user's cache at once and lets the client connect in the background,
@@ -37,7 +39,8 @@ final sessionControllerProvider = SessionControllerProvider._();
 final class SessionControllerProvider
     extends $AsyncNotifierProvider<SessionController, SessionState> {
   /// Owns the connection: connects, logs in with the remembered credentials,
-  /// opens the user's cache and closes it all when rebuilt or disposed.
+  /// opens the user's cache and files and closes it all when rebuilt or
+  /// disposed.
   ///
   /// With a token for the user who last logged in to this server, it opens
   /// that user's cache at once and lets the client connect in the background,
@@ -66,10 +69,11 @@ final class SessionControllerProvider
   SessionController create() => SessionController();
 }
 
-String _$sessionControllerHash() => r'e78f6b41bc4bd98851f74c85fb14b644b2123816';
+String _$sessionControllerHash() => r'e1f6594e3e4b45ae8bee8335bf0b2fbab1b5e405';
 
 /// Owns the connection: connects, logs in with the remembered credentials,
-/// opens the user's cache and closes it all when rebuilt or disposed.
+/// opens the user's cache and files and closes it all when rebuilt or
+/// disposed.
 ///
 /// With a token for the user who last logged in to this server, it opens
 /// that user's cache at once and lets the client connect in the background,

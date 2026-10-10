@@ -144,6 +144,30 @@ final class ClientTinodeSession implements TinodeSession {
   ServerInfo get serverInfo => _client.serverInfo;
 
   @override
+  Future<UploadResult> upload(
+    Stream<List<int>> Function() openRead, {
+    required int length,
+    required String filename,
+    String? mimeType,
+    void Function(int sent, int total)? onProgress,
+    Future<void>? abortTrigger,
+  }) => _client.upload(
+    openRead,
+    length: length,
+    filename: filename,
+    mimeType: mimeType,
+    onProgress: onProgress,
+    abortTrigger: abortTrigger,
+  );
+
+  @override
+  Future<FileDownload> download(String ref, {Future<void>? abortTrigger}) =>
+      _client.download(ref, abortTrigger: abortTrigger);
+
+  @override
+  Uri? resolveFile(String ref) => _client.config.tryResolveFile(ref);
+
+  @override
   Future<PublishResult> startCall(String topic, {required bool audioOnly}) =>
       _client.startCall(topic, audioOnly: audioOnly);
 

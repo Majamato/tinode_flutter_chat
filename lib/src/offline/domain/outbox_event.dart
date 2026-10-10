@@ -48,6 +48,25 @@ final class OutgoingDiscarded extends OutboxEvent {
   List<Object?> get props => [topic, clientId];
 }
 
+/// [sent] of [total] bytes of the attachment of message [clientId] have
+/// gone to the server. Reported a few times a second at most, never
+/// stored.
+final class UploadProgress extends OutboxEvent {
+  const UploadProgress(this.topic, this.clientId, this.sent, this.total);
+
+  @override
+  final String topic;
+  final String clientId;
+  final int sent;
+  final int total;
+
+  /// From 0 to 1.
+  double get fraction => total <= 0 ? 0 : (sent / total).clamp(0, 1);
+
+  @override
+  List<Object?> get props => [topic, clientId, sent, total];
+}
+
 /// Messages of [topic] were deleted, here or elsewhere. When [restored],
 /// a deletion of this user's failed and the messages are back: reload.
 final class TopicDeletion with ValueObject {

@@ -7,7 +7,8 @@ import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// What the user can do with a message not sent yet: retry it once it
-/// failed, or discard it unless it is on its way.
+/// failed, or discard it unless it is on its way; for an attachment
+/// waiting to upload, discarding cancels the upload.
 class OutgoingActionsSheet extends ConsumerWidget {
   const OutgoingActionsSheet({
     required this.topic,
@@ -21,15 +22,13 @@ class OutgoingActionsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = TinodeChatStrings.of(context);
-    final status = ref.watch(
-      outgoingMessageProvider(topic, clientId).select((m) => m?.status),
+    final (status, hasAttachment) = ref.watch(
+      outgoingMessageProvider(
+        topic,
+        clientId,
+      ).select((m) => (m?.status, m?.attachment != null)),
     );
     final chat = ref.read(chatControllerProvider(topic).notifier);
-
-    void act(Future<void> Function(String clientId) action) {
-      Navigator.of(context).pop();
-      unawaited(action(clientId).then((_) {}, onError: (_) {}));
-    }
 
     return SafeArea(
       child: Column(
@@ -39,16 +38,31 @@ class OutgoingActionsSheet extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.refresh),
               title: Text(strings.retry),
-              onTap: () => act(chat.retry),
+              onTap: () => _act(context, chat.retry),
             ),
           if (status != OutgoingStatus.sending)
             ListTile(
               leading: const Icon(Icons.delete_outline),
-              title: Text(strings.discardMessage),
-              onTap: () => act(chat.discard),
+              // Discarding a waiting attachment stops its upload.
+              title: Text(
+                hasAttachment && status == OutgoingStatus.queued
+                    ? strings.cancelUpload
+                    : strings.discardMessage,
+              ),
+              onTap: () => _act(context, chat.discard),
             ),
         ],
       ),
     );
+  }
+
+  /// Closes the sheet and runs [action] on this message without waiting
+  /// for it.
+  void _act(
+    BuildContext context,
+    Future<void> Function(String clientId) action,
+  ) {
+    Navigator.of(context).pop();
+    unawaited(action(clientId).then((_) {}, onError: (_) {}));
   }
 }

@@ -111,15 +111,19 @@ final class DeviceChatStoreOpener implements ChatStoreOpener {
     await file.writeAsString(jsonEncode(accounts));
   }
 
-  /// A file name from the server's host and port and the user ID.
   static String _name(Uri server, String userId) =>
-      'tinode_${_serverKey(server)}_$userId'.replaceAll(
-        RegExp('[^A-Za-z0-9_-]'),
-        '_',
-      );
+      userStorageName(server, userId);
 
   static String _serverKey(Uri server) => '${server.host}_${server.port}';
 }
+
+/// A file name for [userId]'s data on [server], from the server's host and
+/// port and the user ID, e.g. `tinode_chat_example_com_443_usrAbC`.
+String userStorageName(Uri server, String userId) =>
+    'tinode_${server.host}_${server.port}_$userId'.replaceAll(
+      RegExp('[^A-Za-z0-9_-]'),
+      '_',
+    );
 
 /// Caches kept in memory for as long as the opener lives: for tests, and
 /// for hosts that want no files.

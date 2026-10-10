@@ -25,12 +25,28 @@ void main() {
     ]);
   });
 
-  test('no inline data, or bad data, is no image', () {
-    expect(AvatarImage.tryParse(null), isNull);
+  test('a photo given by ref keeps the ref', () {
+    final photo = AvatarImage.tryParse(
+      const ProfilePhoto(ref: '/v0/file/s/a.jpg'),
+    )!;
+    expect(photo.ref, '/v0/file/s/a.jpg');
+    expect(photo.bytes, isNull);
     expect(
+      photo,
       AvatarImage.tryParse(const ProfilePhoto(ref: '/v0/file/s/a.jpg')),
-      isNull,
     );
+  });
+
+  test('inline data wins over a ref', () {
+    final photo = AvatarImage.tryParse(
+      const ProfilePhoto(data: 'AQID', ref: '/v0/file/s/a.jpg'),
+    )!;
+    expect(photo.bytes, [1, 2, 3]);
+  });
+
+  test('no data and no ref, or bad data, is no image', () {
+    expect(AvatarImage.tryParse(null), isNull);
+    expect(AvatarImage.tryParse(const ProfilePhoto(ref: '')), isNull);
     expect(
       AvatarImage.tryParse(const ProfilePhoto(data: 'not base64!')),
       isNull,

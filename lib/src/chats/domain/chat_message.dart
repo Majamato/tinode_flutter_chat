@@ -1,4 +1,5 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/call_record.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
@@ -52,6 +53,19 @@ final class ChatMessage with ValueObject {
 
   /// The seq of the newest update applied, or [seq] when there is none.
   final int revision;
+
+  /// Images and files to show, in order; read once per [content].
+  List<MessageAttachment> get attachments =>
+      _attachments[content] ??= MessageAttachment.listFrom(content);
+
+  static final _attachments = Expando<List<MessageAttachment>>();
+
+  /// The text to show: under the [attachments] when there are any, with
+  /// Drafty line breaks as newlines.
+  String get caption => switch (content) {
+    DraftyContent(:final drafty) => drafty.caption,
+    _ => content.text,
+  };
 
   /// This message as its update [later] changes it: new content and call
   /// state, same place in the chat. Older updates, and updates from anyone

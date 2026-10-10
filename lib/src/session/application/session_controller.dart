@@ -3,6 +3,8 @@ import 'dart:developer';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/application/attachment_inputs.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/io_file_store.dart';
 import 'package:tinode_flutter_chat/src/offline/application/offline_inputs.dart';
 import 'package:tinode_flutter_chat/src/offline/data/cached_tinode_session.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
@@ -17,7 +19,8 @@ import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 part 'session_controller.g.dart';
 
 /// Owns the connection: connects, logs in with the remembered credentials,
-/// opens the user's cache and closes it all when rebuilt or disposed.
+/// opens the user's cache and files and closes it all when rebuilt or
+/// disposed.
 ///
 /// With a token for the user who last logged in to this server, it opens
 /// that user's cache at once and lets the client connect in the background,
@@ -39,6 +42,7 @@ class SessionController extends _$SessionController {
     final connect = ref.watch(sessionConnectorProvider);
     final restore = ref.watch(sessionRestorerProvider);
     final opener = ref.watch(chatStoreOpenerProvider);
+    final filesOpener = ref.watch(fileStoreOpenerProvider);
     final open = _open = _OpenSession();
     ref.onDispose(() => unawaited(open.close()));
 
@@ -46,10 +50,16 @@ class SessionController extends _$SessionController {
     if (credentials case TokenCredentials(:final token)) {
       if (await _lastUser(opener, config.server) case final userId?) {
         final store = await openOrFallBack(opener, config.server, userId);
+        final files = await openFilesOrFallBack(
+          filesOpener,
+          config.server,
+          userId,
+        );
         final session = CachedTinodeSession(
           await restore(config, token),
           store,
           userId: userId,
+          files: files,
         );
         open.session = session;
         if (lifetime.isActive) {
@@ -163,13 +173,17 @@ class SessionController extends _$SessionController {
     }
   }
 
-  /// Closes the session, deletes [userId]'s cache and forgets them.
+  /// Closes the session, deletes [userId]'s cache and files, and forgets
+  /// them.
   Future<void> _endSession(String userId) async {
     final server = ref.read(tinodeConfigProvider).server;
     final opener = ref.read(chatStoreOpenerProvider);
     ref.read(credentialsControllerProvider.notifier).forget();
     await _open.close();
     await _quietly(() => opener.delete(server, userId));
+    await _quietly(
+      () => ref.read(fileStoreOpenerProvider).delete(server, userId),
+    );
     await _quietly(() => opener.forgetUser(server));
     ref.invalidateSelf();
   }
@@ -190,8 +204,18 @@ class SessionController extends _$SessionController {
     final server = ref.read(tinodeConfigProvider).server;
     final opener = ref.read(chatStoreOpenerProvider);
     final store = await openOrFallBack(opener, server, login.userId);
+    final files = await openFilesOrFallBack(
+      ref.read(fileStoreOpenerProvider),
+      server,
+      login.userId,
+    );
     await _quietly(() => opener.rememberUser(server, login.userId));
-    final cached = CachedTinodeSession(session, store, userId: login.userId);
+    final cached = CachedTinodeSession(
+      session,
+      store,
+      userId: login.userId,
+      files: files,
+    );
     _open.session = cached;
     return SessionLoggedIn(cached, userId: login.userId, login: login);
   }

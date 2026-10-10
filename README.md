@@ -12,6 +12,11 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 - Opens direct chats, groups and channels. Channel followers get a read-only view.
 - Loads history, pages older messages in on scroll, and merges live messages as they arrive.
 - Sends plain text and marks what the user sees as read.
+- Sends and shows images and files: an attach button offers Photo, Camera and File, then a
+  preview with a caption. Images show in the chat and open full screen; files show their name and
+  size, and a tap downloads and opens them with the system's viewer. Uploads show their progress,
+  wait in the outbox like any message, and can be cancelled. Profile photos given by reference
+  show too.
 - In groups, names the sender of each run of messages and shows their avatar. Shows who is
   typing. The user's own messages get delivered and read ticks, and a "Read by" list in groups.
 - Finds people and groups by login, email, phone or tag, opens 1:1 chats with them, and creates
@@ -86,6 +91,25 @@ needs `platform :ios, '13.0'` or later.
 The OS asks the user for access when the first call starts. See [`example/`](example/) for a
 complete setup.
 
+## Attachments: platform setup
+
+Picking photos and files uses `image_picker` and `file_picker`; opening received files uses
+`open_filex`. The package runs on Android, iOS and desktop; the web is not supported yet (its
+cache uses `dart:io`).
+
+- **iOS** (`ios/Runner/Info.plist`): `NSPhotoLibraryUsageDescription`, and
+  `NSCameraUsageDescription` (already there for calls) for the Camera entry.
+- **Android:** nothing for the system photo picker. See `file_picker`'s notes for older Android
+  versions.
+- **macOS:** the `com.apple.security.files.user-selected.read-only` entitlement (in
+  `DebugProfile.entitlements` and `Release.entitlements`), next to `network.client`.
+- **Linux:** `file_picker` needs `zenity` or `kdialog` installed.
+- **Desktop:** there is no Camera entry, and photos go up at their original size (the pickers
+  can't scale them there). Every file is still capped by the server's `maxFileUploadSize`.
+
+Downloaded files live in the OS's cache folder, which the OS may clear; files waiting to be sent
+are kept in the app's support folder until the server has them. Logging out deletes both.
+
 ## Offline
 
 Each user's chats are kept on the device, so they open without waiting for the server:
@@ -118,15 +142,16 @@ await chat.logOut();
 ## Roadmap
 
 Built so far: the happy path, reconnection, calls, offline, finding people and starting chats,
-group chat essentials.
+group chat essentials, attachments.
 Next, in this order. Each feature lands in [`tinode_dart_client`](../tinode_dart_client) first
 where it needs the protocol:
 
 1. ~~**Find people and start chats**~~: done (search, 1:1 chats, new groups with members).
 2. ~~**Group chat essentials**~~: done (sender names and avatars in groups, typing indicators,
    delivered and read ticks, a "Read by" list).
-3. **Attachments**: send and show images and files, rich Drafty rendering (messages show only
-   their plain text today).
+3. ~~**Attachments**~~: done (send and show images and files, photos given by reference).
+   Rich Drafty rendering (bold, links, mentions) is still to come: messages show their plain
+   text.
 4. **Account and profile**: sign up, edit name and avatar, change password, leave or delete
    chats.
 5. **Push and background calls**: push notifications, CallKit and ConnectionService. Today calls

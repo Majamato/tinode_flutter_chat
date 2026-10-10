@@ -220,6 +220,9 @@ class ChatController extends _$ChatController {
         _markRead(message.seq);
       case OutgoingDiscarded(:final clientId):
         state = state.withoutOutgoing(clientId);
+      case UploadProgress():
+        // Only the bubble's progress ring follows it.
+        break;
     }
   }
 

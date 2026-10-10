@@ -1,4 +1,5 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 
@@ -25,6 +26,7 @@ final class OutgoingMessage with ValueObject {
     required this.createdAt,
     this.status = OutgoingStatus.queued,
     this.failure,
+    this.attachment,
   });
 
   final String clientId;
@@ -36,6 +38,10 @@ final class OutgoingMessage with ValueObject {
   /// Why it failed; set when [status] is [OutgoingStatus.failed].
   final ChatFailure? failure;
 
+  /// The image or file it sends, if any; [content] then holds the
+  /// caption.
+  final OutgoingAttachment? attachment;
+
   OutgoingMessage withStatus(OutgoingStatus status, {ChatFailure? failure}) =>
       OutgoingMessage(
         clientId: clientId,
@@ -44,6 +50,7 @@ final class OutgoingMessage with ValueObject {
         createdAt: createdAt,
         status: status,
         failure: status == OutgoingStatus.failed ? failure : null,
+        attachment: attachment,
       );
 
   @override
@@ -54,5 +61,6 @@ final class OutgoingMessage with ValueObject {
     createdAt,
     status,
     failure,
+    attachment,
   ];
 }

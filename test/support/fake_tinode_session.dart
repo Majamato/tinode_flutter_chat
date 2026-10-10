@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 
@@ -99,6 +101,34 @@ final class FakeTinodeSession implements TinodeSession {
   /// Whether `publish` echoes the message back like the server does.
   bool echo = true;
 
+  /// Whether a login succeeded, which `upload` and `download` need, like
+  /// the client; set by the logins and by [comeOnline].
+  bool loggedIn = false;
+
+  /// Files on the server by ref: what `upload` stored and `download`
+  /// serves. Tests put files here to receive them.
+  final files = <String, Uint8List>{};
+  var _uploads = 0;
+
+  /// When set, `upload` waits for it before answering; an abort ends the
+  /// wait.
+  Completer<void>? holdUpload;
+
+  /// When set, the next `upload` or `download` throws it, e.g. a
+  /// `ServerUnreachableException` or a `ServerException`.
+  Exception? failUpload;
+  Exception? failDownload;
+
+  /// When set, `upload` reports progress in chunks of this many bytes.
+  int? uploadChunk;
+
+  /// When set, `upload` reports each value added as the bytes sent so far,
+  /// and answers once it is closed: the test drives the progress.
+  StreamController<int>? uploadSteps;
+
+  /// How long an upload's ref is good for, like the server's 60 s.
+  Duration uploadLifetime = const Duration(seconds: 60);
+
   final _messages = StreamController<DataMessage>.broadcast(sync: true);
   final _presence = StreamController<PresMessage>.broadcast(sync: true);
   final _info = StreamController<InfoMessage>.broadcast(sync: true);
@@ -167,6 +197,7 @@ final class FakeTinodeSession implements TinodeSession {
     if (passwords[login] != password) {
       throw const ServerException(401, 'authentication failed');
     }
+    loggedIn = true;
     return LoginResult(userId: userId, token: token);
   }
 
@@ -176,6 +207,7 @@ final class FakeTinodeSession implements TinodeSession {
     if (token != this.token) {
       throw const ServerException(401, 'authentication failed');
     }
+    loggedIn = true;
     return LoginResult(userId: userId, token: token);
   }
 
@@ -386,6 +418,7 @@ final class FakeTinodeSession implements TinodeSession {
     if (token == null || isClosed) {
       return;
     }
+    loggedIn = token == this.token;
     emitStatus(
       token == this.token
           ? Connected(
@@ -455,6 +488,85 @@ final class FakeTinodeSession implements TinodeSession {
       scheduleMicrotask(() => emitMessage(sent));
     }
     return PublishResult(seq: seq, time: time);
+  }
+
+  /// Stores the file under `/v0/file/s/fakeN.<ext>`. Works in any link
+  /// state once logged in, like the client.
+  @override
+  Future<UploadResult> upload(
+    Stream<List<int>> Function() openRead, {
+    required int length,
+    required String filename,
+    String? mimeType,
+    void Function(int sent, int total)? onProgress,
+    Future<void>? abortTrigger,
+  }) async {
+    calls.add('upload $filename');
+    _requireLogin();
+    var aborted = false;
+    unawaited(abortTrigger?.then((_) => aborted = true));
+    final bytes = BytesBuilder(copy: false);
+    await openRead().forEach(bytes.add);
+    final all = bytes.takeBytes();
+    final step = uploadChunk ?? all.length;
+    for (var sent = step; step > 0 && sent < all.length; sent += step) {
+      onProgress?.call(sent, length);
+      await Future<void>.delayed(Duration.zero);
+    }
+    if (uploadSteps case final steps?) {
+      await for (final sent in steps.stream) {
+        if (aborted) {
+          break;
+        }
+        onProgress?.call(sent, length);
+      }
+    }
+    onProgress?.call(all.length, length);
+    if (holdUpload case final hold?) {
+      await Future.any([hold.future, ?abortTrigger]);
+    }
+    await Future<void>.delayed(Duration.zero);
+    if (aborted) {
+      throw TransferAbortedException(Uri.parse('/v0/file/u/'));
+    }
+    if (failUpload case final error?) {
+      failUpload = null;
+      throw error;
+    }
+    final dot = filename.lastIndexOf('.');
+    final ref =
+        '/v0/file/s/fake${++_uploads}${dot < 0 ? '' : filename.substring(dot)}';
+    files[ref] = all;
+    return UploadResult(ref: ref, expires: clock.now().add(uploadLifetime));
+  }
+
+  @override
+  Future<FileDownload> download(
+    String ref, {
+    Future<void>? abortTrigger,
+  }) async {
+    calls.add('download $ref');
+    _requireLogin();
+    if (failDownload case final error?) {
+      failDownload = null;
+      throw error;
+    }
+    final bytes = files[ref];
+    if (bytes == null) {
+      throw const ServerException(404, 'not found');
+    }
+    return FileDownload(bytes: Stream.value(bytes), length: bytes.length);
+  }
+
+  @override
+  Uri? resolveFile(String ref) => ref.startsWith('javascript:')
+      ? null
+      : Uri.parse('https://tinode.test').resolve(ref);
+
+  void _requireLogin() {
+    if (!loggedIn) {
+      throw StateError('Log in before transferring files.');
+    }
   }
 
   @override

@@ -1,9 +1,17 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:math' show max, min;
+import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/image_size.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/progress_throttle.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
@@ -23,12 +31,18 @@ const _reconcilePage = 64;
 /// How many delete-log pages one sync reads at most.
 const _maxDeleteLogPages = 20;
 
-/// A [ChatSession] over a remote [TinodeSession] and a [ChatStore].
+/// A [ChatSession] over a remote [TinodeSession], a [ChatStore] and a
+/// [FileStore] (in memory unless given).
 ///
 /// What the server sends is written to the store in arrival order; reads
 /// wait for those writes, so they see everything that arrived before.
 final class CachedTinodeSession implements ChatSession {
-  CachedTinodeSession(this._remote, this._store, {required this.userId}) {
+  CachedTinodeSession(
+    this._remote,
+    this._store, {
+    required this.userId,
+    FileStore? files,
+  }) : _files = files ?? MemoryFileStore() {
     _subscriptions = [
       _remote.messages.listen(_onMessage),
       _remote.presence.listen(_onPresence),
@@ -42,6 +56,10 @@ final class CachedTinodeSession implements ChatSession {
 
   final TinodeSession _remote;
   final ChatStore _store;
+  final FileStore _files;
+
+  /// Downloads under way, by URL, shared by everyone asking.
+  final _fetches = <String, _Fetch>{};
   late final List<StreamSubscription<Object>> _subscriptions;
 
   @override
@@ -62,6 +80,15 @@ final class CachedTinodeSession implements ChatSession {
   Timer? _retry;
   var _retryRound = 0;
 
+  // Uploader state: one upload at a time, beside the drain.
+  var _uploadLoop = false;
+  var _uploadAgain = false;
+  Timer? _uploadRetry;
+
+  /// The message whose attachment is being uploaded, and how to stop it.
+  String? _uploading;
+  Completer<void>? _uploadAbort;
+
   // Passed through.
 
   @override
@@ -81,6 +108,30 @@ final class CachedTinodeSession implements ChatSession {
 
   @override
   ServerInfo get serverInfo => _remote.serverInfo;
+
+  @override
+  Future<UploadResult> upload(
+    Stream<List<int>> Function() openRead, {
+    required int length,
+    required String filename,
+    String? mimeType,
+    void Function(int sent, int total)? onProgress,
+    Future<void>? abortTrigger,
+  }) => _remote.upload(
+    openRead,
+    length: length,
+    filename: filename,
+    mimeType: mimeType,
+    onProgress: onProgress,
+    abortTrigger: abortTrigger,
+  );
+
+  @override
+  Future<FileDownload> download(String ref, {Future<void>? abortTrigger}) =>
+      _remote.download(ref, abortTrigger: abortTrigger);
+
+  @override
+  Uri? resolveFile(String ref) => _remote.resolveFile(ref);
 
   @override
   Future<LoginResult> loginBasic(String login, String password) =>
@@ -142,6 +193,49 @@ final class CachedTinodeSession implements ChatSession {
   @override
   void resume({Duration? probeTimeout}) =>
       _remote.resume(probeTimeout: probeTimeout);
+
+  // Files.
+
+  @override
+  Future<LocalFile?> cachedFile(String ref) async =>
+      switch (_remote.resolveFile(ref)) {
+        final url? => _files.cached(url),
+        null => null,
+      };
+
+  @override
+  Future<LocalFile> fetchFile(
+    String ref, {
+    void Function(int received, int? total)? onProgress,
+  }) async {
+    final url =
+        _remote.resolveFile(ref) ??
+        (throw ArgumentError.value(ref, 'ref', 'is not an http(s) URL'));
+    if (await _files.cached(url) case final file?) {
+      return file;
+    }
+    final fetch = _fetches['$url'] ??= _Fetch(() async {
+      final download = await _remote.download(ref);
+      var received = 0;
+      return _files.cache(
+        url,
+        download.bytes.map((chunk) {
+          received += chunk.length;
+          _fetches['$url']?.report(received, download.length);
+          return chunk;
+        }),
+      );
+    }, onDone: () => _fetches.remove('$url'));
+    if (onProgress == null) {
+      return fetch.result;
+    }
+    fetch.listeners.add(onProgress);
+    try {
+      return await fetch.result;
+    } finally {
+      fetch.listeners.remove(onProgress);
+    }
+  }
 
   @override
   Stream<OutboxEvent> get outbox => _outbox.stream;
@@ -375,6 +469,59 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   @override
+  Future<OutgoingMessage> sendAttachment(
+    String topic,
+    PickedFile file, {
+    String caption = '',
+  }) async {
+    final limit = _remote.serverInfo.maxFileUploadSize;
+    if (limit != null && file.length > limit) {
+      throw FileTooLargeException(limit);
+    }
+    final stagedId = await _files.stage(file.name, file.openRead());
+    final staged = await _files.staged(stagedId);
+    final size = file.isImage && staged != null
+        ? imageSizeOf(await _header(staged))
+        : null;
+    final attachment = OutgoingAttachment(
+      stagedId: stagedId,
+      name: file.name,
+      size: staged?.length ?? file.length,
+      mimeType: file.mimeType,
+      isImage: file.isImage,
+      width: size?.width,
+      height: size?.height,
+      caption: caption.trim(),
+    );
+    final entry = await _store.enqueuePublish(
+      topic,
+      newClientId(),
+      attachment.content,
+      clock.now().toUtc(),
+      attachment: attachment,
+    );
+    final message = entry.toOutgoing();
+    _emit(OutgoingChanged(message));
+    _kick();
+    return message;
+  }
+
+  @override
+  Future<LocalFile?> stagedFile(String stagedId) => _files.staged(stagedId);
+
+  /// The first bytes of [file], enough to read an image's size.
+  Future<Uint8List> _header(LocalFile file) async {
+    final header = BytesBuilder(copy: false);
+    await for (final chunk in _files.read(file)) {
+      header.add(chunk);
+      if (header.length >= imageHeaderLength) {
+        break;
+      }
+    }
+    return header.takeBytes();
+  }
+
+  @override
   Future<void> retry(String clientId) async {
     final entry = await _store.outboxByClientId(clientId);
     if (entry == null || !entry.failed) {
@@ -394,6 +541,15 @@ final class CachedTinodeSession implements ChatSession {
     }
     final entry = await _store.outboxByClientId(clientId);
     if (entry != null && await _store.removeOutbox(entry.id)) {
+      if (clientId == _uploading) {
+        _abortUpload();
+      }
+      if (entry.attachment case final attachment?) {
+        await _quietly(
+          'Could not delete a staged file',
+          () => _files.unstage(attachment.stagedId),
+        );
+      }
       _emit(OutgoingDiscarded(entry.topic, clientId));
     }
   }
@@ -445,8 +601,12 @@ final class CachedTinodeSession implements ChatSession {
     }
   }
 
-  /// Starts a drain unless one is running, in which case it runs again.
-  void _kick() => unawaited(_drain());
+  /// Starts a drain and the uploader, unless they are running, in which
+  /// case they run again.
+  void _kick() {
+    unawaited(_drain());
+    unawaited(_runUploads());
+  }
 
   Future<void> _drain() async {
     if (_closed) {
@@ -516,6 +676,11 @@ final class CachedTinodeSession implements ChatSession {
         if (current == null || current.failed) {
           continue;
         }
+        if (current.attachment?.needsUpload(clock.now()) ?? false) {
+          // This chat waits for the upload; the others go on.
+          unawaited(_runUploads());
+          return true;
+        }
         try {
           await _send(current);
           _retryRound = 0;
@@ -563,10 +728,12 @@ final class CachedTinodeSession implements ChatSession {
         );
         _sending = clientId;
         _emit(OutgoingChanged(entry.toOutgoing(sending: true)));
+        // With its ref now; the client lists the upload in the packet.
+        final content = entry.attachment?.content ?? entry.content;
         try {
           final ack = await _remote.publish(
             entry.topic,
-            entry.content,
+            content,
             head: {clientIdHeadKey: clientId},
           );
           await _complete(
@@ -577,11 +744,10 @@ final class CachedTinodeSession implements ChatSession {
               time: ack.time,
               from: userId,
               head: MessageHead.fromJson({
-                if (entry.content is DraftyContent)
-                  'mime': MessageHead.draftyMime,
+                if (content is DraftyContent) 'mime': MessageHead.draftyMime,
                 clientIdHeadKey: clientId,
               }),
-              content: entry.content,
+              content: content,
             ),
           );
         } finally {
@@ -640,9 +806,23 @@ final class CachedTinodeSession implements ChatSession {
     // Deletes and read markers are safe to repeat.
   }
 
-  /// The server has [entry] as [message].
+  /// The server has [entry] as [message]. Its staged file, if any, moves
+  /// into the file cache, so the sender never downloads it.
   Future<void> _complete(OutboxEntry entry, DataMessage message) async {
     final first = await _store.completePublish(entry, message);
+    if (first) {
+      if (entry.attachment case OutgoingAttachment(
+        :final stagedId,
+        :final ref?,
+      )) {
+        if (_remote.resolveFile(ref) case final url?) {
+          await _quietly(
+            'Could not keep a sent file',
+            () => _files.adopt(stagedId, url),
+          );
+        }
+      }
+    }
     await _store.advanceChat(
       message.topic,
       lastSeq: message.seq,
@@ -683,6 +863,130 @@ final class CachedTinodeSession implements ChatSession {
   void _scheduleRetry() {
     _retry?.cancel();
     _retry = Timer(retryDelay(++_retryRound), _kick);
+  }
+
+  // Uploads.
+
+  /// Uploads attachments one at a time, each once its message is next in
+  /// its chat, until none waits or the link is down. Runs again when asked
+  /// during a run; waits while a retry is scheduled.
+  Future<void> _runUploads() async {
+    if (_closed || (_uploadRetry?.isActive ?? false)) {
+      return;
+    }
+    if (_uploadLoop) {
+      _uploadAgain = true;
+      return;
+    }
+    _uploadLoop = true;
+    try {
+      do {
+        _uploadAgain = false;
+        while (!_closed && _remote.status is Connected) {
+          final next = await _nextUpload();
+          if (next == null || !await _upload(next)) {
+            break;
+          }
+        }
+      } while (_uploadAgain && !_closed);
+    } on Object catch (e, stackTrace) {
+      _log('The uploader stopped', e, stackTrace);
+    } finally {
+      _uploadLoop = false;
+    }
+  }
+
+  /// The first entry with an attachment to upload that leads its chat.
+  Future<OutboxEntry?> _nextUpload() async {
+    await _writes;
+    final now = clock.now();
+    final leaders = <String, OutboxEntry>{};
+    for (final entry in await _store.outbox()) {
+      if (!entry.failed) {
+        leaders.putIfAbsent(entry.topic, () => entry);
+      }
+    }
+    for (final entry in leaders.values) {
+      if (!entry.inFlight && (entry.attachment?.needsUpload(now) ?? false)) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  /// Uploads [entry]'s attachment and keeps its ref. False when the
+  /// uploader should stop: the link is down, the upload was cancelled, or
+  /// a retry is scheduled.
+  Future<bool> _upload(OutboxEntry entry) async {
+    final attachment = entry.attachment!;
+    final clientId = entry.clientId!;
+    final staged = await _files.staged(attachment.stagedId);
+    if (staged == null) {
+      // The file is gone, e.g. the app's data was cleared.
+      await _giveUp(entry, ChatFailure.unexpected);
+      return true;
+    }
+    final abort = _uploadAbort = Completer<void>();
+    _uploading = clientId;
+    final throttle = ProgressThrottle();
+    try {
+      final result = await _remote.upload(
+        () => _files.read(staged),
+        length: staged.length,
+        filename: attachment.name,
+        mimeType: attachment.mimeType,
+        abortTrigger: abort.future,
+        onProgress: (sent, total) {
+          if (throttle.admit(sent, total, clock.now())) {
+            _emit(UploadProgress(entry.topic, clientId, sent, total));
+          }
+        },
+      );
+      // A fresh upload is trusted for a little while whatever its expiry
+      // says, so it is never uploaded again before it could be sent.
+      final now = clock.now();
+      final soonest = now.add(OutgoingAttachment.expiryMargin * 2);
+      final expires = result.expires ?? now.add(const Duration(minutes: 1));
+      await _store.setOutboxAttachment(
+        entry.id,
+        attachment.uploaded(
+          result.ref,
+          expires.isBefore(soonest) ? soonest : expires,
+        ),
+      );
+      unawaited(_drain());
+      return true;
+    } on TransferAbortedException {
+      // Discarded, or the link went down: nothing to report.
+      return false;
+    } on Object catch (e) {
+      switch (retryDecisionFor(e)) {
+        case RetryDecision.waitForConnection:
+          return false;
+        case RetryDecision.retryLater || RetryDecision.reconcile:
+          final attempts = entry.attempts + 1;
+          if (attempts >= maxSendAttempts) {
+            await _giveUp(entry, ChatFailure.of(e));
+            return true;
+          }
+          await _store.updateOutbox(entry.id, attempts: attempts);
+          _uploadRetry?.cancel();
+          _uploadRetry = Timer(retryDelay(attempts), _kick);
+          return false;
+        case RetryDecision.fail:
+          await _giveUp(entry, ChatFailure.of(e));
+          return true;
+      }
+    } finally {
+      _uploading = null;
+      _uploadAbort = null;
+    }
+  }
+
+  void _abortUpload() {
+    if (_uploadAbort case final abort? when !abort.isCompleted) {
+      abort.complete();
+    }
   }
 
   Future<int> _newestSeq(String topic) async {
@@ -792,7 +1096,11 @@ final class CachedTinodeSession implements ChatSession {
   void _onStatus(ConnectionStatus status) {
     if (status is Connected) {
       _retryRound = 0;
+      _uploadRetry?.cancel();
       _kick();
+    } else {
+      // Started over on the next connect.
+      _abortUpload();
     }
   }
 
@@ -820,6 +1128,8 @@ final class CachedTinodeSession implements ChatSession {
     }
     _closed = true;
     _retry?.cancel();
+    _uploadRetry?.cancel();
+    _abortUpload();
     for (final subscription in _subscriptions) {
       unawaited(subscription.cancel());
     }
@@ -843,10 +1153,38 @@ final class CachedTinodeSession implements ChatSession {
     return high != null && high > low ? SeqRange(low, high) : null;
   }
 
+  /// File chores must not stop the outbox: a failure is logged.
+  static Future<void> _quietly(
+    String message,
+    Future<void> Function() action,
+  ) async {
+    try {
+      await action();
+    } on Object catch (e, stackTrace) {
+      _log(message, e, stackTrace);
+    }
+  }
+
   static void _log(String message, Object error, StackTrace stackTrace) => log(
     message,
     name: 'tinode_flutter_chat',
     error: error,
     stackTrace: stackTrace,
   );
+}
+
+/// One download, with whoever follows its progress.
+final class _Fetch {
+  _Fetch(Future<LocalFile> Function() run, {required void Function() onDone}) {
+    result = run().whenComplete(onDone);
+  }
+
+  late final Future<LocalFile> result;
+  final listeners = <void Function(int received, int? total)>[];
+
+  void report(int received, int? total) {
+    for (final listener in List.of(listeners)) {
+      listener(received, total);
+    }
+  }
 }

@@ -73,7 +73,7 @@ final class SendControllerProvider
   }
 }
 
-String _$sendControllerHash() => r'2bd2935ce481184782c420de6344b93ef4719bd7';
+String _$sendControllerHash() => r'ead71e0c541189e0c792820b213b4176b404ef49';
 
 /// Sending in one chat: loading while a message goes into the outbox, an
 /// error when that failed. Only the send button watches it.

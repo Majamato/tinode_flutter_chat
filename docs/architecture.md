@@ -42,6 +42,16 @@ lib/
       domain/                     findQuery, SearchResult, FindState, NewGroup
       application/                FindController(scope), NewGroupController
       presentation/               search and new group screens, the chat list's new chat button
+    attachments/                  sending and showing images and files
+      domain/                     MessageAttachment, OutgoingAttachment, PickedFile, LocalFile,
+                                  FileDownloadState, ProgressThrottle, imageSizeOf
+      data/                       FileStore (IoFileStore, MemoryFileStore), FileStoreOpener,
+                                  AttachmentPicker (image_picker, file_picker), FileOpener
+                                  (open_filex)
+      application/                attachmentFile, FileDownloadController, UploadProgressController,
+                                  stagedFile, fileStoreOpener, attachmentPicker, fileOpener
+      presentation/               image and file bubbles, image viewer, attach sheet, preview
+                                  screen, outgoing attachment view, upload progress ring
     calls/                        1:1 voice and video calls
       domain/                     ActiveCall, CallInvite, CallFailure, the CallMedia interface
       data/                       WebRtcCallMedia (flutter_webrtc)
@@ -55,15 +65,15 @@ lib/
 
 A feature is something the user *does* (connect, chat), not a screen. New work goes into an
 existing feature when it shares its state, otherwise into a new folder with the same four layers.
-Expected next features, in the README's roadmap order: `attachments`, `profile`, push, then
-`search` (local message search).
+Expected next features, in the README's roadmap order: `profile`, push, then `search` (local
+message search).
 
 ## Layers
 
 | Layer | Holds | May import | Must not import |
 |-------|-------|------------|-----------------|
 | `domain` | Immutable models and pure rules (merging, counters) | Dart, `collection`, `meta`, `tinode_dart_client` models, `webrtc_interface` types | Flutter, Riverpod, other layers |
-| `data` | Talking to the outside world: the server, the OS's network reports, WebRTC, the local cache | `domain`, `tinode_dart_client`, `web_socket`, `drift`, platform plugins behind an interface (`connectivity_plus`, `flutter_webrtc`, `drift_flutter`, `path_provider`) | Flutter itself, Riverpod, `application`, `presentation` |
+| `data` | Talking to the outside world: the server, the OS's network reports, WebRTC, the local cache and files | `domain`, `tinode_dart_client`, `web_socket`, `drift`, `crypto`, `mime`, platform plugins behind an interface (`connectivity_plus`, `flutter_webrtc`, `drift_flutter`, `path_provider`, `image_picker`, `file_picker`, `open_filex`) | Flutter itself, Riverpod, `application`, `presentation` |
 | `application` | Riverpod providers: state, use cases, the glue between data and UI | `domain`, `data`, `riverpod`, `riverpod_annotation` | Flutter, `flutter_riverpod`, `presentation` |
 | `presentation` | Widgets only | `domain`, `application`, Flutter, `flutter_riverpod` | `data` (except the composition root in `app/`) |
 
@@ -205,6 +215,23 @@ cache. `CachedTinodeSession` decorates the server session:
   other 4xx fail the message, which the user can retry or discard. A refused deletion brings its
   messages back.
 
+- **Files.** Each user has a `FileStore` beside the chat cache, opened and deleted with it by the
+  session controller: a cache folder (under the OS's cache directory, which it may clear) for
+  downloads, keyed by a hash of the resolved URL, and a staging folder (under the app's support
+  directory) for files waiting to be sent. `fetchFile(ref)` serves the cache, or downloads into it
+  once for everyone asking. A store that can't be opened falls back to memory.
+- **Uploads.** `sendAttachment` copies the picked file into staging (picker files can vanish),
+  reads an image's size from its header, and queues a `publish` whose payload holds the
+  attachment. An **uploader** runs beside the drain, one upload at a time: it uploads an entry's
+  file once that entry leads its chat, and saves the ref and its expiry (on the device's clock)
+  into the payload before kicking the drain, so a drop never uploads it twice. The drain stops a
+  chat at an entry still waiting for its upload and goes on with the other chats: later messages
+  of that chat keep their order, other chats don't wait. Leaving `Connected` aborts the upload,
+  which starts over on the next connect; a ref about to expire is uploaded again. Once the server
+  has the message, the staged file moves into the cache under its ref. Discarding the entry
+  aborts its upload and deletes the staged file. Upload errors follow the outbox rules, plus: a
+  413 fails the message as `tooLarge`, a network failure backs off, an abort is no error.
+
 **Chat list** (`ChatListController`, keepAlive, sync `Notifier<ChatListState>`):
 
 1. Subscribes to `presence` on `me` and to `messages`, **then** shows the cached list, attaches
@@ -310,6 +337,20 @@ during a call doesn't end the call.
 chat shows it with a clock until the server numbers it, or with an error mark if it refuses it.
 Only a local failure (no session) keeps the text and shows a snack bar.
 
+**Sending and receiving files.** The composer's attach button opens `AttachSheet` (Photo, Camera
+where `cameraAvailable`, File), `SendController.pick` asks the `AttachmentPicker`, and
+`AttachmentPreviewScreen` takes a caption; `SendController.sendAttachment` queues it (a file over
+`maxFileUploadSize` is refused there, naming the limit). The outgoing bubble shows the staged
+copy (`stagedFile`) and an `UploadProgressRing`, the only widget that watches
+`UploadProgressController` (fed by the outbox's `UploadProgress` events, at most a few a second).
+On receipt, `ChatMessage.attachments` reads the Drafty images and files (`AU`/`VD` as files) and
+`caption` the text; `MessageBubble` shows them through `AttachmentMessageBody`.
+`ImageBubbleContent` keeps the image's space from its size, shows inline bytes at once, else
+watches `attachmentFile(ref)` (an error loads again on `Connected`), decodes at display size and
+opens `ImageViewerScreen`. `FileBubbleContent` watches `FileDownloadController(ref)`: a tap
+downloads with progress and hands the file to the `FileOpener`. `ProfileAvatar` shows photos
+given by ref through `RefPhotoAvatar`, which watches `attachmentFile` too.
+
 **Deleting** (`ChatController.delete`): a long press on a message offers "Delete for me", and
 "Delete for everyone" where the user has `D`. A long press on an outgoing message offers Retry
 (once failed) and Discard.
@@ -317,7 +358,8 @@ Only a local failure (no session) keeps the text and shows a snack bar.
 ## Errors
 
 `ChatFailure.of(error)` maps any error to a small enum the UI can explain
-(`unreachable`, `connectionLost`, `badCredentials`, `timeout`, `rejected`, `unexpected`), and
+(`unreachable`, `connectionLost`, `badCredentials`, `timeout`, `rejected`, `unexpected`,
+`tooLarge`), and
 `failureMessage` turns it into the host's `TinodeChatStrings`.
 
 | Where | Shown as |
@@ -331,6 +373,10 @@ Only a local failure (no session) keeps the text and shows a snack bar.
 | A call fails (permission, busy, link) | Snack bar from `CallLayer`; the call screen says why for 2 s |
 | A search fails, e.g. offline | `ErrorRetryView` in place of the results; it searches again on connect |
 | The server refuses a new group, or some of its members | Snack bar; the group screen stays, or the group opens |
+| A picked file is over the server's limit | Snack bar naming the limit; nothing is queued |
+| The server refuses an upload (413: too large) or it keeps failing | Error mark on the outgoing bubble; long press to retry or discard |
+| An image fails to download, e.g. offline | A retry button in its space; it loads again on connect |
+| A file fails to download, or nothing opens it | "Could not be downloaded" in its bubble, or a snack bar |
 
 Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); widgets never catch.
 

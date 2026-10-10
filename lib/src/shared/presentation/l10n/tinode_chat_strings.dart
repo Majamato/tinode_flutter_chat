@@ -95,6 +95,20 @@ class TinodeChatStrings {
     this.typingOne = _typingOne,
     this.typingTwo = _typingTwo,
     this.typingMany = _typingMany,
+    this.attach = 'Attach',
+    this.attachPhoto = 'Photo',
+    this.attachCamera = 'Camera',
+    this.attachFile = 'File',
+    this.captionHint = 'Add a caption',
+    this.uploading = 'Uploading…',
+    this.cancelUpload = 'Cancel',
+    this.fileTooLarge = 'The file is too large to send.',
+    this.fileTooLargeLimit = _fileTooLargeLimit,
+    this.downloadFailed = 'The file could not be downloaded.',
+    this.cannotOpenFile = 'No app on this device opens this file.',
+    this.openFile = 'Open',
+    this.imageLabel = 'Image',
+    this.fileLabel = 'File',
   });
 
   /// The texts of the nearest `TinodeChat`, or the defaults outside one.
@@ -332,6 +346,48 @@ class TinodeChatStrings {
   /// Under a group's title while three or more members type, given how
   /// many.
   final String Function(int count) typingMany;
+
+  /// Tooltip of the composer's button that sends an image or a file.
+  final String attach;
+
+  /// Sends a photo from the gallery.
+  final String attachPhoto;
+
+  /// Takes a photo with the camera and sends it.
+  final String attachCamera;
+
+  /// Sends any file.
+  final String attachFile;
+
+  /// Hint of the caption field before sending an image or a file.
+  final String captionHint;
+
+  /// Shown while an image or a file goes to the server.
+  final String uploading;
+
+  /// Stops an upload and drops the message.
+  final String cancelUpload;
+
+  /// The server refused a file as too large, or it is over the limit.
+  final String fileTooLarge;
+
+  /// [fileTooLarge] with the server's limit, e.g. `32 MB`.
+  final String Function(String limit) fileTooLargeLimit;
+
+  /// A received file could not be fetched.
+  final String downloadFailed;
+
+  /// Nothing on the device opens a received file.
+  final String cannotOpenFile;
+
+  /// Opens a received file.
+  final String openFile;
+
+  /// Names an image without a file name, e.g. for screen readers.
+  final String imageLabel;
+
+  /// Names a file without a file name.
+  final String fileLabel;
 }
 
 String _typingOne(String name) => '$name is typing…';
@@ -340,3 +396,6 @@ String _typingTwo(String first, String second) =>
     '$first and $second are typing…';
 
 String _typingMany(int count) => '$count people are typing…';
+
+String _fileTooLargeLimit(String limit) =>
+    'The file is too large to send: the limit is $limit.';

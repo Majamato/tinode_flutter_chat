@@ -22,7 +22,12 @@ enum RetryDecision {
 }
 
 RetryDecision retryDecisionFor(Object error) => switch (error) {
-  ConnectionClosedException() => RetryDecision.waitForConnection,
+  // No login yet, e.g. right after an offline start.
+  ConnectionClosedException() ||
+  StateError() => RetryDecision.waitForConnection,
+  // An upload or download that found no network; the socket, if it is
+  // gone too, stops the outbox anyway.
+  ServerUnreachableException() => RetryDecision.retryLater,
   RequestTimeoutException() => RetryDecision.reconcile,
   // Busy, timed out, rate limited, or "attach first" after a lost topic.
   ServerException(:final code)

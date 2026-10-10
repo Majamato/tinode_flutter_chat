@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/outgoing_attachment_view.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_footer.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_frame.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/outgoing_actions_sheet.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// A message of the user's still in the outbox, with its status. A long
-/// press offers to retry or discard it.
+/// A message of the user's still in the outbox, with its status; an image
+/// or file shows from its staged copy while it uploads. A long press
+/// offers to retry or discard it.
 class OutgoingBubble extends ConsumerWidget {
   const OutgoingBubble({
     required this.topic,
@@ -27,6 +30,9 @@ class OutgoingBubble extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final foreground = TinodeChatTheme.of(context).onOwnBubbleColor;
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: foreground);
 
     return BubbleFrame(
       own: true,
@@ -37,12 +43,26 @@ class OutgoingBubble extends ConsumerWidget {
               OutgoingActionsSheet(topic: topic, clientId: clientId),
         ),
       ),
-      body: Text(
-        message.content.text,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: foreground),
-      ),
+      body: switch (message.attachment) {
+        final attachment? => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            OutgoingAttachmentView(
+              topic: topic,
+              clientId: clientId,
+              attachment: attachment,
+              uploading: message.status == OutgoingStatus.queued,
+              color: foreground,
+            ),
+            if (attachment.caption.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(attachment.caption, style: textStyle),
+            ],
+          ],
+        ),
+        null => Text(message.content.text, style: textStyle),
+      },
       footer: BubbleFooter(
         time: message.createdAt,
         color: foreground,

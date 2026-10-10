@@ -183,6 +183,37 @@ when their message arrives; the user's own typing goes out at most every 3 s.
 it arrives (live, or as `pres msg` for a chat that isn't attached), and after each chat list sync
 for what came while away. Not queued offline. *In code:* `TinodeSession.markReceived`.
 
+## Attachments
+
+**Attachment**
+An image or file in a message: a Drafty `IM` (shown in the bubble) or `EX` (shown as its name and
+size; audio and video read as files too), sent inline (`val`) or as a `ref` to an **upload**.
+*In code:* `MessageAttachment` (`ImageAttachment`, `FileAttachment`), `ChatMessage.attachments`;
+the text beside it is the **caption** (`ChatMessage.caption`).
+
+**Upload**
+Sending an attachment's file to the server over HTTP before its message goes; the server answers
+with the file's `ref` and a deadline for a message to use it.
+*In code:* `TinodeSession.upload`.
+
+**Uploader**
+The part of the outbox that uploads attachments, one at a time, each once its message leads its
+chat, beside the drain that sends messages. *In code:* `CachedTinodeSession` (`_runUploads`).
+
+**Staged file**
+A copy of a file the user picked, kept in the app's own folder until the server has the message:
+picker files can vanish. *In code:* `FileStore.stage`, `OutgoingAttachment.stagedId`.
+
+**File cache**
+Downloaded files, and files the user sent, kept by their URL in the OS's cache folder (which the
+OS may clear), one store per user beside the chat cache. *In code:* `FileStore`,
+`ChatSession.fetchFile`, `attachmentFile`.
+
+**Upload progress**
+How much of an attachment's file has gone to the server, reported a few times a second at most and
+never stored. *In code:* `UploadProgress` (outbox event), `UploadProgressController`,
+`UploadProgressRing`.
+
 ## Calls
 
 **Call stage**

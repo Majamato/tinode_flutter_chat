@@ -23,6 +23,9 @@ business logic in UI files. Flutter's own guidance is in
 - No object creation that isn't cheap and needed for the tree: no controllers, streams, futures or
   regexes in `build`. Controllers live in a `State` and are disposed in `dispose`.
 - No `ref.read` to fetch data in `build`; `ref.read` belongs in callbacks.
+- No local functions declared inside `build`. A helper used by callbacks (`_act` in
+  `OutgoingActionsSheet`) is a private method on the widget, taking `context` or `ref` as
+  parameters when it needs them; anything bigger moves to a controller.
 
 ## Rebuild only what changes
 
@@ -41,6 +44,15 @@ business logic in UI files. Flutter's own guidance is in
 
   A test (`chat_list_rebuild_test.dart`) checks that a new message in the top chat rebuilds only
   `ChatLastMessageTime` and `ChatUnreadBadge`.
+- **Attachments** follow the same rule. In the chat, `AttachmentMessageBody` lays out what the
+  message carries; `ImageBubbleContent` watches only its file (`attachmentFile(ref)`),
+  `FileBubbleContent` only its download, and `RefPhotoAvatar` only its photo. An outgoing
+  attachment's `UploadProgressRing` is the only widget that watches upload progress
+  (`attachments_flow_test.dart` checks that progress rebuilds nothing else). Images keep their
+  space from the sender's width and height, so the list doesn't jump when they load, and decode
+  at display size (`ResizeImage`). The attach menu (`AttachSheet`), the caption screen
+  (`AttachmentPreviewScreen`) and the full-screen `ImageViewerScreen` watch nothing but the
+  camera's availability.
 - **`select` scalars:** `ref.watch(chatSummaryProvider(topic).select((c) => c?.unread ?? 0))`.
 - **Buttons own their state.** `SendButton` alone watches whether a send is running (and the text
   field via `ValueListenableBuilder`); typing or sending never rebuilds the composer or the screen.

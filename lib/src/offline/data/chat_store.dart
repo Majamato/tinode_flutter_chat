@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/chat_merge.dart'
     as merge;
@@ -287,12 +288,15 @@ final class ChatStore {
   // Outbox.
 
   /// Queues [content] for [topic] under [clientId].
+  /// Queues [content]; with [attachment], the image or file to upload
+  /// first, whose message [content] stands for until then.
   Future<OutboxEntry> enqueuePublish(
     String topic,
     String clientId,
     MessageContent content,
-    DateTime createdAt,
-  ) async {
+    DateTime createdAt, {
+    OutgoingAttachment? attachment,
+  }) async {
     final id = await _db
         .into(_db.outbox)
         .insert(
@@ -300,12 +304,32 @@ final class ChatStore {
             topic: topic,
             kind: OutboxKind.publish,
             clientId: Value(clientId),
-            payload: jsonEncode({'content': content.toJson()}),
+            payload: jsonEncode({
+              'content': content.toJson(),
+              'attachment': ?attachment?.toJson(),
+            }),
             createdAt: createdAt,
           ),
         );
     return (await outboxEntry(id))!;
   }
+
+  /// Replaces the attachment of entry [id], e.g. once it is uploaded. Does
+  /// nothing when the entry is gone.
+  Future<void> setOutboxAttachment(int id, OutgoingAttachment attachment) =>
+      _db.transaction(() async {
+        final entry = await outboxEntry(id);
+        if (entry == null) {
+          return;
+        }
+        await (_db.update(_db.outbox)..where((o) => o.id.equals(id))).write(
+          OutboxCompanion(
+            payload: Value(
+              jsonEncode({...entry.payload, 'attachment': attachment.toJson()}),
+            ),
+          ),
+        );
+      });
 
   Future<OutboxEntry> enqueueDelete(
     String topic,
@@ -526,8 +550,15 @@ final class OutboxEntry {
 
   bool get failed => failure != null;
 
-  /// What a publish sends.
+  /// What a publish sends; with an [attachment], what stands for it until
+  /// it is uploaded.
   MessageContent get content => MessageContent.fromJson(payload['content']);
+
+  /// The image or file a publish sends, if any.
+  OutgoingAttachment? get attachment => switch (payload['attachment']) {
+    final Json json => OutgoingAttachment.fromJson(json),
+    _ => null,
+  };
 
   /// What a delete deletes.
   List<SeqRange> get ranges => [
@@ -550,5 +581,6 @@ final class OutboxEntry {
         ? OutgoingStatus.failed
         : (sending ? OutgoingStatus.sending : OutgoingStatus.queued),
     failure: failure,
+    attachment: attachment,
   );
 }

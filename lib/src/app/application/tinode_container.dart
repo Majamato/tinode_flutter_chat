@@ -1,5 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/application/attachment_inputs.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_inputs.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/offline/application/offline_inputs.dart';
@@ -19,20 +23,29 @@ ProviderContainer createTinodeContainer({
   SessionConnector? connector,
   SessionRestorer? restorer,
   ChatStoreOpener? storeOpener,
+  FileStoreOpener? fileStoreOpener,
+  FileOpener? fileOpener,
+  AttachmentPicker? attachmentPicker,
   NetworkMonitor? network,
   CallMediaFactory? callMedia,
 }) => ProviderContainer(
   overrides: [
     tinodeConfigProvider.overrideWithValue(config),
     initialCredentialsProvider.overrideWithValue(credentials),
-    if (connector != null)
-      sessionConnectorProvider.overrideWithValue(connector),
-    if (restorer != null) sessionRestorerProvider.overrideWithValue(restorer),
-    if (storeOpener != null)
-      chatStoreOpenerProvider.overrideWithValue(storeOpener),
-    if (network != null) networkMonitorProvider.overrideWithValue(network),
-    if (callMedia != null)
-      callMediaFactoryProvider.overrideWithValue(callMedia),
+    ?_override(connector, sessionConnectorProvider.overrideWithValue),
+    ?_override(restorer, sessionRestorerProvider.overrideWithValue),
+    ?_override(storeOpener, chatStoreOpenerProvider.overrideWithValue),
+    ?_override(fileStoreOpener, fileStoreOpenerProvider.overrideWithValue),
+    ?_override(fileOpener, fileOpenerProvider.overrideWithValue),
+    ?_override(attachmentPicker, attachmentPickerProvider.overrideWithValue),
+    ?_override(network, networkMonitorProvider.overrideWithValue),
+    ?_override(callMedia, callMediaFactoryProvider.overrideWithValue),
   ],
   retry: (_, _) => null,
 );
+
+/// Overrides a seam only when the caller supplied a [value] for it.
+Override? _override<T extends Object>(
+  T? value,
+  Override Function(T value) override,
+) => value == null ? null : override(value);

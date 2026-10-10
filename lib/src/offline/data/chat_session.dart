@@ -1,4 +1,6 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
@@ -42,11 +44,26 @@ abstract interface class ChatSession implements TinodeSession {
   /// Queues [content] and sends it as soon as the link allows.
   Future<OutgoingMessage> send(String topic, MessageContent content);
 
+  /// Queues an image or file with an optional [caption]. The file is
+  /// copied in first, so it survives the picker's temporary copy; the
+  /// outbox uploads it once the message is next in its chat, then sends
+  /// the message. Throws `FileTooLargeException` for a file over the
+  /// server's limit, when it is known.
+  Future<OutgoingMessage> sendAttachment(
+    String topic,
+    PickedFile file, {
+    String caption = '',
+  });
+
+  /// The staged copy of an outgoing attachment, while it is not sent.
+  Future<LocalFile?> stagedFile(String stagedId);
+
   /// Queues a failed message again.
   Future<void> retry(String clientId);
 
-  /// Drops a queued or failed message. Throws [StateError] while it is on
-  /// its way to the server.
+  /// Drops a queued or failed message, cancelling the upload of its
+  /// attachment. Throws [StateError] while the message itself is on its
+  /// way to the server.
   Future<void> discard(String clientId);
 
   /// Deletes messages now in the cache, and on the server once the link
@@ -55,6 +72,18 @@ abstract interface class ChatSession implements TinodeSession {
     String topic,
     List<SeqRange> ranges, {
     required bool forEveryone,
+  });
+
+  /// The file [ref] names, if this device has it: downloaded before, or
+  /// sent from here. Never asks the server.
+  Future<LocalFile?> cachedFile(String ref);
+
+  /// The file [ref] names: from the cache, or downloaded into it. Callers
+  /// asking for the same file share one download; [onProgress] reports
+  /// the bytes received and the total, when the server sends it.
+  Future<LocalFile> fetchFile(
+    String ref, {
+    void Function(int received, int? total)? onProgress,
   });
 
   /// Changes of the outbox, for the chats that show it.

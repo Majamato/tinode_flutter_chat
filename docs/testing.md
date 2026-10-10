@@ -60,6 +60,13 @@ expect(session.calls, contains('markRead $bob 3'));   // what the app sent
 - While not `Connected`, `attach`, `chatList`, `history`, `publish`, `deleteMessages`,
   `deleteLog`, `find`, `createGroup` and `addMember` throw `ConnectionClosedException`, like the
   client.
+- `upload` stores files in `files` under `/v0/file/s/fakeN.<ext>` and `download` serves them;
+  put files there to receive them. Like the client, both need a login (`loggedIn`, set by the
+  logins; `StateError` without one) but not a live link. `holdUpload` holds an upload (an abort
+  ends it), `uploadSteps` lets the test report each step of its progress, `uploadChunk` reports
+  progress in chunks, `uploadLifetime` sets how long a ref is good for, and `failUpload` /
+  `failDownload` refuse the next one (a `ServerException`, or a `ServerUnreachableException` for
+  no network).
 - `restoreWith(token)` starts it like `TinodeClient.restore`: reconnecting, then logged in once
   `reachable` (the default) or when the test calls `comeOnline()`. `restoreTo(session)` makes a
   `SessionRestorer` of it.
@@ -99,6 +106,15 @@ goes up, regenerate the test helpers (`dart run drift_dev schema generate drift_
 test/offline/data/generated_migrations/`), and add the step to
 `test/offline/data/chat_database_migration_test.dart`: the schema it migrates to, and the data a
 cache of the older version keeps.
+
+## Files in tests
+
+Containers and `pumpTinodeChat` get a `MemoryFileStoreOpener` (files in memory, shown with
+`Image.memory`), an opener that opens nothing (`fileOpener`: pass your own to record what was
+opened) and a `FakeAttachmentPicker`: set its `next` file (`pickedFile`, `pickedText`; `pngBytes`
+is a real 3×2 PNG) before tapping an entry of the attach menu, and `hasCamera` to drop the Camera
+entry. Data tests give `CachedTinodeSession` a `MemoryFileStore` and check `isCached` and
+`stagedIds`.
 
 ## Widget tests
 

@@ -46,7 +46,9 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>The camera is used for video calls.</string>
+	<string>The camera is used for video calls and to take photos to send.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photos you pick are sent in your chats.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>The microphone is used for voice and video calls.</string>
 	<key>NSLocalNetworkUsageDescription</key>

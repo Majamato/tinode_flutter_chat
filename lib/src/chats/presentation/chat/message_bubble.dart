@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_members_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/attachment_message_body.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_frame.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/call_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_actions_sheet.dart';
@@ -13,8 +15,9 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/sender_name.dart
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// One numbered message. A call message shows the call instead of its
-/// text. In a group, others' messages carry the sender's name and avatar
-/// at the edges of a run. A long press offers to delete it.
+/// text, and a message with images or files shows them above its
+/// caption. In a group, others' messages carry the sender's name and
+/// avatar at the edges of a run. A long press offers to delete it.
 class MessageBubble extends ConsumerWidget {
   const MessageBubble({required this.topic, required this.seq, super.key});
 
@@ -47,14 +50,20 @@ class MessageBubble extends ConsumerWidget {
         ),
       ),
       header: startsRun ? SenderName(topic: topic, seq: seq) : null,
-      body: switch (message.call) {
-        final call? => CallBubbleContent(
+      body: switch (message) {
+        ChatMessage(:final call?) => CallBubbleContent(
           call: call,
           outgoing: own,
           color: foreground,
         ),
-        null => Text(
-          message.content.text,
+        ChatMessage(:final attachments) when attachments.isNotEmpty =>
+          AttachmentMessageBody(
+            attachments: attachments,
+            caption: message.caption,
+            color: foreground,
+          ),
+        _ => Text(
+          message.caption,
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: foreground),

@@ -1,5 +1,25 @@
 ## Unreleased
 
+- Attachments, from `tinode_dart_client` 0.7.0. The composer's attach button offers Photo, Camera
+  (where the device has one) and File, then a preview with a caption. The file is copied into the
+  app's own folder and waits in the outbox like any message: it is uploaded once it is next in
+  its chat (so later messages of that chat keep their order, and other chats don't wait), then
+  the message goes out with its ref. The bubble shows the image or file with a progress ring; a
+  long press cancels the upload. A drop restarts the upload on the next connect; a ref that
+  expired meanwhile is uploaded again. A file over the server's `maxFileUploadSize` is refused
+  before it is queued, naming the limit, and one the server finds too large fails with
+  `ChatFailure.tooLarge`.
+- Received images show in the chat, keeping their space while they download, and open full
+  screen; received files show their name and size, and a tap downloads them (with progress) and
+  opens them with the system's viewer (`open_filex`). Downloads are kept in a per-user cache in
+  the OS's cache folder; sent files go there too, so the sender never downloads them. Logging out
+  deletes them. Profile photos given by reference (`photo.ref`) show in avatars.
+- Captions and plain Drafty text show Drafty line breaks as new lines.
+- New dependencies: `image_picker`, `file_picker`, `open_filex`, `mime`, `crypto`.
+- New `TinodeChatStrings`: `attach`, `attachPhoto`, `attachCamera`, `attachFile`, `captionHint`,
+  `uploading`, `cancelUpload`, `fileTooLarge`, `downloadFailed`, `cannotOpenFile`, `openFile`,
+  `imageLabel`, `fileLabel`, and the function `fileTooLargeLimit`.
+
 - Group chat essentials, from `tinode_dart_client` 0.6.0: in groups, the sender's name (in their
   colour) heads each run of their messages and their avatar sits beside its last. The user's own
   messages show two ticks once every other member received them, in the read colour once all of

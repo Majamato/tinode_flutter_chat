@@ -17,37 +17,50 @@ class ReadBySheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = TinodeChatStrings.of(context);
     final (:read, :delivered) = ref.watch(messageReadByProvider(topic, seq));
-    final headingStyle = Theme.of(context).textTheme.titleSmall;
-
-    Widget tile(ChatMember member) => ListTile(
-      leading: ProfileAvatar(initials: member.initials, photo: member.photo),
-      title: Text(
-        member.name ?? strings.unknownMember,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-
-    Widget heading(String text) => Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(text, style: headingStyle),
-    );
 
     return SafeArea(
       child: ListView(
         shrinkWrap: true,
         children: [
-          heading(strings.readBy),
+          _Heading(strings.readBy),
           if (read.isEmpty)
             ListTile(title: Text(strings.notReadYet))
           else
-            ...read.map(tile),
+            ...read.map(_MemberTile.new),
           if (delivered.isNotEmpty) ...[
-            heading(strings.deliveredTo),
-            ...delivered.map(tile),
+            _Heading(strings.deliveredTo),
+            ...delivered.map(_MemberTile.new),
           ],
         ],
       ),
     );
   }
+}
+
+class _Heading extends StatelessWidget {
+  const _Heading(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+    child: Text(text, style: Theme.of(context).textTheme.titleSmall),
+  );
+}
+
+class _MemberTile extends StatelessWidget {
+  const _MemberTile(this.member);
+
+  final ChatMember member;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: ProfileAvatar(initials: member.initials, photo: member.photo),
+    title: Text(
+      member.name ?? TinodeChatStrings.of(context).unknownMember,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
+  );
 }

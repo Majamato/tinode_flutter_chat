@@ -94,6 +94,23 @@ abstract interface class TinodeSession {
   /// The server's reply to the latest `hi`, with its ICE servers for calls.
   ServerInfo get serverInfo;
 
+  /// Uploads a file for a message; see `TinodeClient.upload`. Needs a
+  /// login but not a live link: without one it throws [StateError].
+  Future<UploadResult> upload(
+    Stream<List<int>> Function() openRead, {
+    required int length,
+    required String filename,
+    String? mimeType,
+    void Function(int sent, int total)? onProgress,
+    Future<void>? abortTrigger,
+  });
+
+  /// Fetches the file [ref] names; see `TinodeClient.download`.
+  Future<FileDownload> download(String ref, {Future<void>? abortTrigger});
+
+  /// The URL of the file [ref] names; null for refs that aren't http(s).
+  Uri? resolveFile(String ref);
+
   /// Calls the peer of the 1:1 [topic]; the result's seq names the call.
   Future<PublishResult> startCall(String topic, {required bool audioOnly});
 

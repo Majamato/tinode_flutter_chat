@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/session_gate.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
@@ -53,19 +56,26 @@ class TinodeChat extends StatefulWidget {
   }) : connector = null,
        restorer = null,
        storeOpener = null,
+       fileStoreOpener = null,
+       fileOpener = null,
+       attachmentPicker = null,
        network = null,
        callMedia = null;
 
   /// Like the default constructor, with sessions opened by [connector]
   /// (or [restorer] for a remembered user) instead of a real connection,
-  /// caches from [storeOpener], network reports from [network] and the
-  /// media of calls from [callMedia].
+  /// caches from [storeOpener], files from [fileStoreOpener], opened with
+  /// [fileOpener] and picked with [attachmentPicker], network reports from
+  /// [network] and the media of calls from [callMedia].
   @visibleForTesting
   const TinodeChat.withConnector({
     required this.config,
     required SessionConnector this.connector,
     this.restorer,
     this.storeOpener,
+    this.fileStoreOpener,
+    this.fileOpener,
+    this.attachmentPicker,
     this.network,
     this.callMedia,
     this.credentials,
@@ -109,6 +119,19 @@ class TinodeChat extends StatefulWidget {
   @visibleForTesting
   final ChatStoreOpener? storeOpener;
 
+  /// Opens the per-user downloaded and staged files; null for folders on
+  /// the device.
+  @visibleForTesting
+  final FileStoreOpener? fileStoreOpener;
+
+  /// Opens received files; null for the system's viewer.
+  @visibleForTesting
+  final FileOpener? fileOpener;
+
+  /// Picks photos and files to send; null for the system's pickers.
+  @visibleForTesting
+  final AttachmentPicker? attachmentPicker;
+
   /// Reports network changes; null for the OS's.
   @visibleForTesting
   final NetworkMonitor? network;
@@ -128,6 +151,9 @@ class _TinodeChatState extends State<TinodeChat> {
     connector: widget.connector,
     restorer: widget.restorer,
     storeOpener: widget.storeOpener,
+    fileStoreOpener: widget.fileStoreOpener,
+    fileOpener: widget.fileOpener,
+    attachmentPicker: widget.attachmentPicker,
     network: widget.network,
     callMedia: widget.callMedia,
   );

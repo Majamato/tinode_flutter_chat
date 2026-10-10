@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/typing_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/attach_button.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/send_button.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// The message field and send button. Typing and sending never rebuild
-/// it: the button watches both on its own. Typing tells the other members.
-/// A failed send shows a snack bar and keeps the text.
+/// The attach button, the message field and the send button. Typing and
+/// sending never rebuild it: the button watches both on its own. Typing
+/// tells the other members. A failed send, or a refused attachment, shows
+/// a snack bar and keeps the text.
 class Composer extends ConsumerStatefulWidget {
   const Composer({required this.topic, super.key});
 
@@ -39,10 +42,13 @@ class _ComposerState extends ConsumerState<Composer> {
 
   void _onSendState(AsyncValue<void>? previous, AsyncValue<void> next) {
     if (next case AsyncError(:final error) when previous is! AsyncError) {
-      final message = failureMessage(
-        TinodeChatStrings.of(context),
-        ChatFailure.of(error),
-      );
+      final strings = TinodeChatStrings.of(context);
+      final message = switch (error) {
+        FileTooLargeException(:final limit) => strings.fileTooLargeLimit(
+          fileSizeLabel(limit),
+        ),
+        _ => failureMessage(strings, ChatFailure.of(error)),
+      };
       ScaffoldMessenger.maybeOf(
         context,
       )?.showSnackBar(SnackBar(content: Text(message)));
@@ -53,9 +59,10 @@ class _ComposerState extends ConsumerState<Composer> {
   Widget build(BuildContext context) {
     ref.listen(sendControllerProvider(widget.topic), _onSendState);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 4, 8),
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
       child: Row(
         children: [
+          AttachButton(topic: widget.topic),
           Expanded(
             child: TextField(
               controller: _text,

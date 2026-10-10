@@ -31,6 +31,16 @@ void main() {
         reason: '$code',
       );
     }
+    // An upload that found no network is tried again later.
+    expect(
+      retryDecisionFor(ServerUnreachableException(Exception('offline'))),
+      RetryDecision.retryLater,
+    );
+    // An upload before the login: wait for the connection.
+    expect(
+      retryDecisionFor(StateError('Log in first.')),
+      RetryDecision.waitForConnection,
+    );
   });
 
   test('retry delays grow and stay under a minute', () {

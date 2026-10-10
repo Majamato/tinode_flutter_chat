@@ -28,15 +28,6 @@ class MessageActionsSheet extends ConsumerWidget {
     );
     final readBy = ref.watch(showsReadByProvider(topic, seq));
 
-    void delete({required bool forEveryone}) {
-      Navigator.of(context).pop();
-      unawaited(
-        ref.read(chatControllerProvider(topic).notifier).delete({
-          seq,
-        }, forEveryone: forEveryone),
-      );
-    }
-
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -58,16 +49,30 @@ class MessageActionsSheet extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.delete_outline),
             title: Text(strings.deleteForMe),
-            onTap: () => delete(forEveryone: false),
+            onTap: () => _delete(context, ref, forEveryone: false),
           ),
           if (forEveryone ?? false)
             ListTile(
               leading: const Icon(Icons.delete_forever_outlined),
               title: Text(strings.deleteForEveryone),
-              onTap: () => delete(forEveryone: true),
+              onTap: () => _delete(context, ref, forEveryone: true),
             ),
         ],
       ),
+    );
+  }
+
+  /// Closes the sheet and deletes this message without waiting for it.
+  void _delete(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool forEveryone,
+  }) {
+    Navigator.of(context).pop();
+    unawaited(
+      ref.read(chatControllerProvider(topic).notifier).delete({
+        seq,
+      }, forEveryone: forEveryone),
     );
   }
 }

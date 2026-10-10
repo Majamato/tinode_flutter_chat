@@ -10,4 +10,5 @@ String failureMessage(TinodeChatStrings strings, ChatFailure failure) =>
       ChatFailure.timeout => strings.timeout,
       ChatFailure.rejected => strings.rejected,
       ChatFailure.unexpected => strings.unexpected,
+      ChatFailure.tooLarge => strings.fileTooLarge,
     };
