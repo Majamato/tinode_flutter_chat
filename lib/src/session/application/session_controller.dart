@@ -83,29 +83,38 @@ class SessionController extends _$SessionController {
 
     try {
       return await _loggedIn(session, await _login(session, credentials));
-    } on ServerException catch (e) {
-      if (e.code != 401) {
+    } on TinodeException catch (e) {
+      // A refused login, or an email still to confirm, which only a
+      // password login can do: back to the login screen.
+      final failure = switch (e) {
+        ServerException(code: 401) => ChatFailure.badCredentials,
+        CredentialsRequiredException() => ChatFailure.credentialsRequired,
+        _ => null,
+      };
+      if (failure == null) {
         rethrow;
       }
       if (lifetime.isActive) {
         ref.read(credentialsControllerProvider.notifier).forget();
       }
-      return SessionAwaitingLogin(
-        session,
-        lastFailure: ChatFailure.badCredentials,
-      );
+      return SessionAwaitingLogin(session, lastFailure: failure);
     }
   }
 
-  /// Logs in on a session that awaits login. Failures are rethrown for the
-  /// login form and leave the state unchanged.
-  Future<void> login(TinodeCredentials credentials) async {
+  /// Logs in on a session that awaits login; [codes] confirm the user's
+  /// email (password logins only). Failures, such as
+  /// `CredentialsRequiredException` while the email waits for its code,
+  /// are rethrown for the form and leave the state unchanged.
+  Future<void> login(
+    TinodeCredentials credentials, {
+    Map<String, String> codes = const {},
+  }) async {
     final current = state.value;
     if (current is! SessionAwaitingLogin) {
       throw StateError('No session is waiting for a login.');
     }
     final lifetime = BuildLifetime(ref);
-    final result = await _login(current.session, credentials);
+    final result = await _login(current.session, credentials, codes: codes);
     if (!lifetime.isActive) {
       return;
     }
@@ -113,6 +122,54 @@ class SessionController extends _$SessionController {
     if (lifetime.isActive) {
       state = AsyncData(loggedIn);
     }
+  }
+
+  /// Signs up a new user on a session that awaits login and logs in as
+  /// them. Failures are rethrown for the form and leave the state
+  /// unchanged. With an [email] the server mails a code and this throws
+  /// `CredentialsRequiredException`: [login] with that code finishes.
+  Future<void> signUp({
+    required String login,
+    required String password,
+    required String name,
+    String? email,
+  }) async {
+    final current = state.value;
+    if (current is! SessionAwaitingLogin) {
+      throw StateError('No session is waiting for a login.');
+    }
+    final lifetime = BuildLifetime(ref);
+    final result = await current.session.createAccount(
+      login: login,
+      password: password,
+      public: Profile(name: name),
+      email: email,
+    );
+    if (!lifetime.isActive) {
+      return;
+    }
+    _remember(result);
+    final loggedIn = await _loggedIn(current.session, result);
+    if (lifetime.isActive) {
+      state = AsyncData(loggedIn);
+    }
+  }
+
+  /// Deletes the user's account on the server, then ends the session as
+  /// [logout] does. A failure is rethrown and leaves the session as it was.
+  Future<void> deleteAccount() async {
+    final current = state.value;
+    if (current is! SessionLoggedIn) {
+      throw StateError('Nobody is logged in.');
+    }
+    final open = _open..ending = true;
+    try {
+      await current.session.deleteAccount();
+    } on Object {
+      open.ending = false;
+      rethrow;
+    }
+    await _endSession(current.userId);
   }
 
   /// Closes the current session, if any, and connects again.
@@ -137,6 +194,10 @@ class SessionController extends _$SessionController {
   }
 
   void _onStatus(ConnectionStatus status) {
+    if (_open.ending) {
+      // Closed on purpose, on the way back to the login screen.
+      return;
+    }
     final current = state.value;
     switch (status) {
       case Connected(login: final login?):
@@ -161,7 +222,10 @@ class SessionController extends _$SessionController {
           when current is SessionLoggedIn:
         // The user is gone, and so is what was cached for them.
         unawaited(_endSession(current.userId));
-      case Disconnected(cause: ServerException(code: 401 || 404)):
+      case Disconnected(
+        cause: ServerException(code: 401 || 404) ||
+            CredentialsRequiredException(),
+      ):
         // The token expired: back to the login screen. The cache stays
         // for when the same user logs in again.
         ref.read(credentialsControllerProvider.notifier).forget();
@@ -179,6 +243,7 @@ class SessionController extends _$SessionController {
     final server = ref.read(tinodeConfigProvider).server;
     final opener = ref.read(chatStoreOpenerProvider);
     ref.read(credentialsControllerProvider.notifier).forget();
+    _open.ending = true;
     await _open.close();
     await _quietly(() => opener.delete(server, userId));
     await _quietly(
@@ -226,12 +291,14 @@ class SessionController extends _$SessionController {
 
   Future<LoginResult> _login(
     TinodeSession session,
-    TinodeCredentials credentials,
-  ) async {
+    TinodeCredentials credentials, {
+    Map<String, String> codes = const {},
+  }) async {
     final result = await switch (credentials) {
       PasswordCredentials(:final login, :final password) => session.loginBasic(
         login,
         password,
+        codes: codes,
       ),
       TokenCredentials(:final token) => session.loginToken(token),
     };
@@ -270,6 +337,9 @@ class SessionController extends _$SessionController {
 /// The outermost session a build opened, so disposing closes it once.
 final class _OpenSession {
   TinodeSession? session;
+
+  /// The session is being ended on purpose: its disconnect is expected.
+  bool ending = false;
 
   Future<void> close() async {
     final session = this.session;

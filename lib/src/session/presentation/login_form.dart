@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/session/application/login_controller.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/confirm_email_screen.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/create_account_link.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/forgot_password_link.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_error_text.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_submit_button.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// Login name and password fields. Watches nothing: the button and the
+/// Login name and password fields, and links to sign up or reset a
+/// forgotten password. Watches nothing: the button and the
 /// error text below it watch the submission on their own.
 class LoginForm extends ConsumerStatefulWidget {
   const LoginForm({super.key});
@@ -25,9 +31,20 @@ class _LoginFormState extends ConsumerState<LoginForm> {
     super.dispose();
   }
 
-  void _onSubmit() => ref
-      .read(loginControllerProvider.notifier)
-      .submit(_login.text, _password.text);
+  /// Asks for the mailed code when the user's email isn't confirmed yet.
+  Future<void> _onSubmit() async {
+    final navigator = Navigator.of(context);
+    final (login, password) = (_login.text.trim(), _password.text);
+    if (await ref
+        .read(loginControllerProvider.notifier)
+        .submit(login, password)) {
+      unawaited(
+        navigator.push(
+          ConfirmEmailScreen.route(login: login, password: password),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,12 +67,15 @@ class _LoginFormState extends ConsumerState<LoginForm> {
             autofillHints: const [AutofillHints.password],
             obscureText: true,
             textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _onSubmit(),
+            onSubmitted: (_) => unawaited(_onSubmit()),
           ),
           const SizedBox(height: 8),
           const LoginErrorText(),
           const SizedBox(height: 16),
-          LoginSubmitButton(onSubmit: _onSubmit),
+          LoginSubmitButton(onSubmit: () => unawaited(_onSubmit())),
+          const SizedBox(height: 8),
+          const ForgotPasswordLink(),
+          const CreateAccountLink(),
         ],
       ),
     );

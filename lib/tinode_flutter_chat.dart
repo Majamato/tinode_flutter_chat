@@ -11,6 +11,8 @@ export 'package:tinode_dart_client/tinode_dart_client.dart'
 
 export 'src/app/presentation/tinode_chat.dart'
     show TinodeChat, TinodeChatController;
+export 'src/session/domain/tinode_chat_features.dart'
+    show PasswordResetMode, TinodeChatFeatures;
 export 'src/session/domain/tinode_credentials.dart'
     show PasswordCredentials, TinodeCredentials, TokenCredentials;
 export 'src/shared/presentation/l10n/tinode_chat_strings.dart'

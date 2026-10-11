@@ -134,8 +134,11 @@ final class CachedTinodeSession implements ChatSession {
   Uri? resolveFile(String ref) => _remote.resolveFile(ref);
 
   @override
-  Future<LoginResult> loginBasic(String login, String password) =>
-      _remote.loginBasic(login, password);
+  Future<LoginResult> loginBasic(
+    String login,
+    String password, {
+    Map<String, String> codes = const {},
+  }) => _remote.loginBasic(login, password, codes: codes);
 
   @override
   Future<LoginResult> loginToken(String token) => _remote.loginToken(token);
@@ -160,6 +163,66 @@ final class CachedTinodeSession implements ChatSession {
   @override
   Future<void> addMember(String topic, String userId) =>
       _remote.addMember(topic, userId);
+
+  @override
+  Future<void> removeMember(String topic, String userId) async {
+    await _remote.removeMember(topic, userId);
+    await _write(() => _store.removeMember(topic, userId));
+  }
+
+  @override
+  Future<void> deleteChat(String topic) async {
+    await _remote.deleteChat(topic);
+    await _write(() => _forgetChat(topic));
+  }
+
+  @override
+  Future<void> leaveChat(String topic) async {
+    await _remote.leaveChat(topic);
+    await _write(() => _forgetChat(topic));
+  }
+
+  @override
+  Future<LoginResult> createAccount({
+    required String login,
+    required String password,
+    required Profile public,
+    String? email,
+  }) => _remote.createAccount(
+    login: login,
+    password: password,
+    public: public,
+    email: email,
+  );
+
+  @override
+  Future<void> changePassword(String password, {String? login}) =>
+      _remote.changePassword(password, login: login);
+
+  @override
+  Future<void> requestPasswordReset(String email) =>
+      _remote.requestPasswordReset(email);
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) => _remote.resetPassword(email: email, code: code, password: password);
+
+  /// Closes this session too; the caller deletes the cache.
+  @override
+  Future<void> deleteAccount() async {
+    await _remote.deleteAccount();
+    await close();
+  }
+
+  @override
+  Future<TopicDescription?> description(String topic) =>
+      _remote.description(topic);
+
+  @override
+  Future<void> updateProfile(Profile public) => _remote.updateProfile(public);
 
   @override
   Future<PublishResult> publish(
@@ -1049,6 +1112,9 @@ final class CachedTinodeSession implements ChatSession {
           )
           when topic != 'me' && deletedRanges.isNotEmpty:
         unawaited(_write(() => _onDeleted(presence)));
+      case PresMessage(topic: 'me', event: PresenceEvent.gone)
+          when source != null:
+        unawaited(_write(() => _forgetChat(source)));
       case _:
         break;
     }
@@ -1090,6 +1156,26 @@ final class CachedTinodeSession implements ChatSession {
     } else {
       // Deletions came in between: read them from the log.
       unawaited(_syncDeletes(topic));
+    }
+  }
+
+  /// The chat was deleted, or this user left or was removed: its cache
+  /// and queued messages go.
+  Future<void> _forgetChat(String topic) async {
+    if (_uploading case final uploading?
+        when (await _store.outboxByClientId(uploading))?.topic == topic) {
+      _abortUpload();
+    }
+    for (final entry in await _store.deleteChat(topic)) {
+      if (entry.attachment case final attachment?) {
+        await _quietly(
+          'Could not delete a staged file',
+          () => _files.unstage(attachment.stagedId),
+        );
+      }
+      if (entry.clientId case final clientId?) {
+        _emit(OutgoingDiscarded(topic, clientId));
+      }
     }
   }
 

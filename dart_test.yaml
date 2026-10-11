@@ -6,3 +6,6 @@ tags:
   integration:
     skip: Needs a Tinode server, run with --tags integration --run-skipped.
     timeout: 30s
+  smtp:
+    skip: Needs a Tinode server that mails to Mailpit, run with -P smtp.
+    timeout: 30s

@@ -69,7 +69,7 @@ final class SessionControllerProvider
   SessionController create() => SessionController();
 }
 
-String _$sessionControllerHash() => r'e1f6594e3e4b45ae8bee8335bf0b2fbab1b5e405';
+String _$sessionControllerHash() => r'235a777a510ee4dd04560be64886b8ad79ce1133';
 
 /// Owns the connection: connects, logs in with the remembered credentials,
 /// opens the user's cache and files and closes it all when rebuilt or

@@ -1,5 +1,38 @@
 ## Unreleased
 
+- Account and profile, from `tinode_dart_client` 0.8.0. The login screen links to signing up (name,
+  login and password; it logs in as the new user, so `onLoggedIn` hands over the token as after any
+  login) and to resetting a forgotten password (a code sent to the account's email, then the new
+  password; asking again while a code is valid goes on with that one). The chat list's menu opens a profile screen that edits the name and note, sets a new
+  photo (picked like an attachment, uploaded and set by reference), changes the password and,
+  optionally, the login, and deletes the account after asking, which ends the session like a log
+  out. These need the network.
+- Email confirmation: sign-up asks for an email, required where the server needs one (servers
+  that send mail usually do) and optional elsewhere. When the server mails a code to confirm it,
+  a "Confirm your email" screen takes the code and logs in; a password login of an account still
+  to confirm opens it too. A remembered token whose email turns out unconfirmed goes back to the
+  login screen. A taken or malformed email, or a wrong code, says so.
+- `TinodeChat(features:)` with `TinodeChatFeatures` switches the login screen's extras: `signUp`
+  (on by default) and `passwordReset` (`PasswordResetMode.automatic` by default: offered only
+  where the server requires an email, the sign that it sends email; `always`; `never`).
+- Tapping a chat's title opens its info: a group's members, owner first, with a remove button for
+  whoever manages them, and "Delete chat" (1:1, the peer keeps their side), "Delete group" (the
+  owner, for everyone) or "Leave group". A chat that is deleted, or that the user is removed from,
+  here or on another device, leaves the list and the cache with its unsent messages; an open one
+  says it is no longer available.
+- Chats removed by a chat list sync take their cached messages along.
+- The login screens get their own navigator, so sign-up and reset screens close on login.
+- New `TinodeChatStrings`: `createAccountLink`, `signUpTitle`, `displayNameField`, `signUp`,
+  `forgotPassword`, `resetPasswordTitle`, `emailField`, `sendResetCode`, `resetCodeSent`,
+  `resetCodeField`, `newPasswordField`, `setPassword`, `passwordResetDone`, `profile`, `nameField`,
+  `noteField`, `save`, `profileSaved`, `changePhoto`, `changePassword`, `newLoginField`,
+  `passwordChanged`, `deleteAccount`, `deleteAccountConfirm`, `chatInfo`, `members`, `ownerLabel`,
+  `youLabel`, `removeMember`, `deleteChat`, `deleteChatConfirm`, `deleteGroup`,
+  `deleteGroupConfirm`, `leaveGroup`, `leaveGroupConfirm`, `cancel`, `loginTaken`,
+  `credentialsRefused`, `wrongResetCode`, `chatGone`, `emailOptionalField`, `confirmEmailTitle`,
+  `confirmEmailText`, `confirm`, `emailTaken`, `invalidEmail`, `confirmEmailFirst`, and the
+  function `removeMemberConfirm`.
+
 - Attachments, from `tinode_dart_client` 0.7.0. The composer's attach button offers Photo, Camera
   (where the device has one) and File, then a preview with a caption. The file is copied into the
   app's own folder and waits in the outbox like any message: it is uploaded once it is next in

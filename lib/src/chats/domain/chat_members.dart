@@ -35,6 +35,19 @@ final class ChatMembers {
     return _with(ChatMember.fromSubscription(subscription, previous: byId[id]));
   }
 
+  /// The members as a list shows them: the owner first, then by name,
+  /// those without one last.
+  List<ChatMember> get ordered => byId.values.sorted((a, b) {
+    if (a.isOwner != b.isOwner) {
+      return a.isOwner ? -1 : 1;
+    }
+    final (an, bn) = (a.name?.toLowerCase(), b.name?.toLowerCase());
+    if (an != bn) {
+      return an == null ? 1 : (bn == null ? -1 : an.compareTo(bn));
+    }
+    return a.userId.compareTo(b.userId);
+  });
+
   /// [userId] left, or was removed.
   ChatMembers without(String userId) => byId.containsKey(userId)
       ? ChatMembers(Map.unmodifiable(Map.of(byId)..remove(userId)))

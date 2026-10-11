@@ -52,6 +52,14 @@ class ChatController extends _$ChatController {
       session.messages.where((m) => m.topic == topic).listen(_onLive),
       session.outbox.where((e) => e.topic == topic).listen(_onOutbox),
       session.deletions.where((d) => d.topic == topic).listen(_onDeletion),
+      session.presence
+          .where(
+            (p) =>
+                p.topic == 'me' &&
+                p.event == PresenceEvent.gone &&
+                p.source == topic,
+          )
+          .listen((_) => state = state.failed(ChatFailure.gone)),
       session.statusChanges
           .where((s) => s is Connected)
           .listen((_) => _sync(lifetime, link)),

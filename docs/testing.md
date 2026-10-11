@@ -147,6 +147,12 @@ fvm flutter test --tags integration --run-skipped --concurrency=1
 - `call_test.dart` needs the server's ICE servers (`ICE_SERVERS_FILE` in `../tinode-tests`). It
   places real calls between alice and bob with fake media: the server only relays the WebRTC setup,
   so the whole call flow runs without audio.
+- `email_test.dart` is tagged `smtp`, not `integration`: it needs the server's mail override, which
+  requires an email at sign-up and so breaks the other suites. Start it with
+  run `fvm flutter test --tags smtp --run-skipped`, then go back with `docker compose up -d`.
+- `account_test.dart` signs up throwaway users (`signUp`) and deletes them when the test ends, so
+  runs leave no accounts behind. Use it for anything that changes a user: never rename or delete
+  the sample users.
 
 ## Manual check with the example app
 

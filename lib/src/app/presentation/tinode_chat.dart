@@ -15,6 +15,7 @@ import 'package:tinode_flutter_chat/src/session/application/session_controller.d
 import 'package:tinode_flutter_chat/src/session/application/session_state.dart';
 import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings_scope.dart';
@@ -52,6 +53,7 @@ class TinodeChat extends StatefulWidget {
     this.onLoggedOut,
     this.controller,
     this.strings = const TinodeChatStrings(),
+    this.features = const TinodeChatFeatures(),
     super.key,
   }) : connector = null,
        restorer = null,
@@ -83,6 +85,7 @@ class TinodeChat extends StatefulWidget {
     this.onLoggedOut,
     this.controller,
     this.strings = const TinodeChatStrings(),
+    this.features = const TinodeChatFeatures(),
     super.key,
   });
 
@@ -106,6 +109,11 @@ class TinodeChat extends StatefulWidget {
 
   /// The texts the chat shows.
   final TinodeChatStrings strings;
+
+  /// Which account features the login screen offers: signing up, and
+  /// resetting a forgotten password (by default only where the server
+  /// sends email).
+  final TinodeChatFeatures features;
 
   /// Opens sessions; null for a real connection.
   @visibleForTesting
@@ -148,6 +156,7 @@ class _TinodeChatState extends State<TinodeChat> {
   late final ProviderContainer _container = createTinodeContainer(
     config: widget.config,
     credentials: widget.credentials,
+    features: widget.features,
     connector: widget.connector,
     restorer: widget.restorer,
     storeOpener: widget.storeOpener,

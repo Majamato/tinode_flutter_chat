@@ -78,6 +78,9 @@ class ChatMembersController extends _$ChatMembersController {
     }
   }
 
+  /// This user removed [userId] from the group.
+  void removed(String userId) => state = state.without(userId);
+
   Future<void> _load(ChatSession session, BuildLifetime lifetime) async {
     try {
       final stored = await session.storedMembers(topic);

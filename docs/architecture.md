@@ -20,19 +20,22 @@ lib/
   src/
     app/                          composition root
       application/                createTinodeContainer()
-      presentation/               TinodeChat (public), SessionGate, ChatNavigator
+      presentation/               TinodeChat (public), SessionGate, AuthNavigator, ChatNavigator
     session/                      connecting and logging in
       data/                       TinodeSession interface + ClientTinodeSession
-      domain/                     TinodeCredentials (public)
-      application/                providers: session, credentials, login
-      presentation/               login screen, connecting and error views
+      domain/                     TinodeCredentials, TinodeChatFeatures (public),
+                                  PasswordResetState
+      application/                providers: session, credentials, login, sign-up, password reset
+      presentation/               login, sign-up and password reset screens, connecting and error
+                                  views
     chats/                        chat list and open chats
       domain/                     ChatSummary, ChatListState, ChatMessage, ChatState, CallRecord,
                                   ChatMembers, ChatMember, MessageReceipt, MessageSender,
-                                  TypingMembers
-      application/                providers: chat list, chat, send, members, typing
-      presentation/chat_list/     list screen and its tile parts
+                                  TypingMembers, ChatExit
+      application/                providers: chat list, chat, send, members, typing, chat actions
+      presentation/chat_list/     list screen and its tile parts, the account menu
       presentation/chat/          chat screen, message list, bubbles, composer
+      presentation/chat_info/     chat info screen: members, delete, leave
     offline/                      the cache, catching up and the outbox
       domain/                     SeqRanges, OutgoingMessage, outbox events, merge and retry rules
       data/                       ChatDatabase (drift, v2), ChatStore, ChatStoreOpener,
@@ -57,16 +60,20 @@ lib/
       data/                       WebRtcCallMedia (flutter_webrtc)
       application/                CallController, CallResources, callsAvailable, callMediaFactory
       presentation/               call layer, ringing and call screens, call buttons
+    profile/                      the user's own profile and account
+      domain/                     MyProfile
+      application/                ProfileController, saving, photo, password, deleting the account
+      presentation/               profile and password screens
     shared/                       used by several features
       domain/                     ValueObject, ChatFailure
       application/                BuildLifetime
-      presentation/               theme, strings, time format, error view
+      presentation/               theme, strings, time format, error view, confirm dialog,
+                                  progress button
 ```
 
 A feature is something the user *does* (connect, chat), not a screen. New work goes into an
 existing feature when it shares its state, otherwise into a new folder with the same four layers.
-Expected next features, in the README's roadmap order: `profile`, push, then `search` (local
-message search).
+Expected next features, in the README's roadmap order: push, then `search` (local message search).
 
 ## Layers
 
@@ -115,13 +122,19 @@ TinodeChat                      owns the container
     └ ChatThemeScope            adds TinodeChatTheme.fallback when the host has none
       └ SessionGate             watches the session phase only
         ├ ConnectingView
-        ├ LoginScreen
+        ├ AuthNavigator         nested Navigator, only while awaiting login
+        │ ├ LoginScreen         first route; links to sign up and reset the password
+        │ ├ SignUpScreen
+        │ ├ ConfirmEmailScreen  replaces SignUpScreen, or pushed by the login form
+        │ └ PasswordResetScreen
         ├ SessionErrorView      "Reconnect"
         └ ChatNavigator         nested Navigator, only while logged in
-          ├ ChatListScreen      first route; NewChatButton
+          ├ ChatListScreen      first route; NewChatButton, AccountMenuButton
+          ├ ProfileScreen       pushed from the account menu; ChangePasswordScreen over it
           ├ FindPeopleScreen    pushed by NewChatButton
           ├ NewGroupScreen      pushed from the search
           ├ ChatScreen(topic)   pushed per chat; CallButtons in its app bar
+          ├ ChatInfoScreen      pushed by tapping the chat's title
           ├ CallLayer           over the routes: IncomingCallView or CallView
           └ ReconnectingBanner  below the routes, while the link is restored
 ```
@@ -129,7 +142,8 @@ TinodeChat                      owns the container
 `SessionGate` sits **above** the nested navigator on purpose. Riverpod 3 pauses consumers on routes
 covered by another route (via `TickerMode`), so a gate inside the navigator would not notice a lost
 connection while a chat is open. Placed above, losing the session removes the navigator and every
-chat route with it. `CallLayer` sits beside the routes in a `Stack` for the same reason: an
+chat route with it. `AuthNavigator` gets the same treatment: signing up logs in, which swaps it
+for the chat's navigator with the sign-up screen inside it. `CallLayer` sits beside the routes in a `Stack` for the same reason: an
 incoming call must show whichever chat is open, and system back does nothing during a call.
 
 ## Session lifecycle
@@ -137,13 +151,18 @@ incoming call must show whichever chat is open, and system back does nothing dur
 ```
 connecting ── token of the last user ─► loggedIn        offline start: cache now, login later
 connecting ── no credentials ─────────► awaitingLogin ── login() ──► loggedIn
+awaitingLogin ── signUp() ────────────► loggedIn        the new user, as after a login
+awaitingLogin ── signUp(email) ───────► awaitingLogin   the server mails a code to confirm it
+awaitingLogin ── login(codes:) ───────► loggedIn        the email confirmed with that code
 connecting ── credentials accepted ───► loggedIn
 connecting ── token rejected (401) ───► awaitingLogin(lastFailure)
 connecting ── unreachable ────────────► failed
 loggedIn   ── socket drops ───────────► loggedIn        the client reconnects; banner meanwhile
 loggedIn   ── Disconnected(401) ──────► awaitingLogin   token forgotten, cache kept
+loggedIn   ── Disconnected(300) ──────► awaitingLogin   email unconfirmed: token forgotten, cache kept
 loggedIn   ── Disconnected(404) ──────► awaitingLogin   the user is gone: cache deleted
 loggedIn   ── logout() ───────────────► awaitingLogin   cache deleted, credentials forgotten
+loggedIn   ── deleteAccount() ────────► awaitingLogin   the user deleted on the server, then as logout()
 loggedIn   ── Disconnected(other) ────► failed
 failed     ── reconnect() ────────────► connecting      old session closed, token login
 ```
@@ -164,6 +183,21 @@ failed     ── reconnect() ────────────► connecting
   A password login always connects first.
 - **Logout** (`logout()`, the chat list's menu, `TinodeChatController.logOut`) closes the session,
   deletes the cache and forgets the credentials; `onLoggedOut` tells the host, also after a 401.
+  **Deleting the account** (the profile screen) deletes the user on the server first, then ends the
+  same way. Either way the session's own disconnect is expected, so it doesn't show as a failure.
+- **Sign-up and password reset** run on the session that awaits login. `signUp()` creates the
+  account and logs in as the new user, so `onLoggedIn` hands the host its token like any login.
+  `PasswordResetController` emails a code and sets the new password with it; it doesn't log in.
+  The login screen links to each only where it is offered (`signUpOffered`,
+  `passwordResetOffered`): the host's `TinodeChatFeatures`, and for the reset by default the
+  server requiring an email, the sign that it sends email.
+- **Email confirmation.** Where the server requires an email (`signUpNeedsEmail`, from
+  `ServerInfo.requiredCredentials`) the sign-up form makes it mandatory, elsewhere optional. With
+  an email the server creates the account but keeps it from logging in until the mailed code
+  comes back: `signUp()` and `login()` throw `CredentialsRequiredException`, which
+  `SignUpController` and `LoginController` turn into a `true` result, and the form pushes
+  `ConfirmEmailScreen`, which logs in with the password and the code
+  (`ConfirmEmailController`). The password stays in that route only, never in a provider.
 - A dropped socket is the client's business: it reconnects with backoff, logs in with the token
   and re-attaches topics. `SessionController` follows `TinodeSession.statusChanges` and acts only
   on two cases: `Connected(login:)` (the client logged in again, so the renewed token replaces the
@@ -206,7 +240,11 @@ cache. `CachedTinodeSession` decorates the server session:
   take their members with them.
 - **Chat list sync.** `chatList()` asks `get sub` with "if modified since" the newest change the
   cache holds and merges the answer: counters never move back, a `public`/`private` left out is
-  unchanged, a chat with `deleted` goes.
+  unchanged, a chat with `deleted` goes, with its members and messages.
+- **Chats that go.** Deleting or leaving a chat (`deleteChat`, `leaveChat`) and `pres gone` on
+  `me` (the chat was deleted, or the user removed from it, here or on another device) forget it:
+  its row, members, messages and outbox, staged files included (`ChatStore.deleteChat`). The
+  session no longer counts it as attached, nor does the client after a reconnect.
 - **Outbox.** `send`, `delete` and offline read markers are rows in the `outbox` table, drained in
   order per topic whenever the link is up (at start, on `Connected`, after a change, after a
   backoff). A message carries its client ID in its head; one sent without a reply (`in_flight`) is
@@ -355,11 +393,24 @@ given by ref through `RefPhotoAvatar`, which watches `attachmentFile` too.
 "Delete for everyone" where the user has `D`. A long press on an outgoing message offers Retry
 (once failed) and Discard.
 
+**Chat info** (`ChatInfoScreen`, a tap on the chat's title): a group's members, owner first, with a
+remove button for those the user may remove (`A`, not the owner, not themselves), and one way out
+(`ChatExit`): "Delete chat" in a 1:1 chat (the peer keeps their side), "Delete group" for the owner
+(for everyone) and "Leave group" for other members. `ChatActionsController(topic)` runs them,
+online only, and drops the chat from the list; the screen then goes back to the list.
+
+**Profile** (`ProfileScreen`, from the chat list's menu): read from `me` online only
+(`ProfileController`). Name and note are saved with `Profile.copyWith`, so other theCard fields
+survive; a new photo is picked like an attachment, uploaded, and set by ref. It also offers the
+password change (with an optional new login) and deleting the account, after asking.
+
 ## Errors
 
 `ChatFailure.of(error)` maps any error to a small enum the UI can explain
 (`unreachable`, `connectionLost`, `badCredentials`, `timeout`, `rejected`, `unexpected`,
-`tooLarge`), and
+`tooLarge`, `gone`), `ChatFailure.ofAccount` adds `loginTaken` (409) and `credentialsRefused`
+(422), `emailTaken`, `invalidEmail` for sign-up and password changes, the password reset maps a refused code to `wrongCode`,
+and
 `failureMessage` turns it into the host's `TinodeChatStrings`.
 
 | Where | Shown as |
@@ -377,6 +428,11 @@ given by ref through `RefPhotoAvatar`, which watches `attachmentFile` too.
 | The server refuses an upload (413: too large) or it keeps failing | Error mark on the outgoing bubble; long press to retry or discard |
 | An image fails to download, e.g. offline | A retry button in its space; it loads again on connect |
 | A file fails to download, or nothing opens it | "Could not be downloaded" in its bubble, or a snack bar |
+| Sign-up, a password change or a reset fails | Text under the form, which stays |
+| The profile fails to load, e.g. offline | `ErrorRetryView` in place of the profile |
+| Saving the profile or its photo fails | Text under the profile's fields |
+| Deleting the account, deleting or leaving a chat, or removing a member fails | Snack bar; nothing changes |
+| An open chat is deleted, or the user removed (`pres gone`) | "No longer available" in place of the messages, no composer |
 
 Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); widgets never catch.
 
@@ -384,6 +440,7 @@ Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); wi
 
 Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `TinodeChatController`,
 `TinodeCredentials`
-(`PasswordCredentials`, `TokenCredentials`), `TinodeChatTheme`, `TinodeChatStrings`, and the
+(`PasswordCredentials`, `TokenCredentials`), `TinodeChatFeatures` (`PasswordResetMode`),
+`TinodeChatTheme`, `TinodeChatStrings`, and the
 client's `TinodeConfig` and `LoginResult`. Everything else may change freely. Every exported symbol
 carries dartdoc. Adding an export is an API decision: keep the list short.

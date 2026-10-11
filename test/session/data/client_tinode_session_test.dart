@@ -60,7 +60,7 @@ final class _Server {
         send({
           'ctrl': {'id': id, 'code': 403, 'text': 'forbidden', 'ts': ts},
         });
-      case 'sub' || 'leave':
+      case 'sub' || 'leave' || 'del':
         send({
           'ctrl': {'id': id, 'code': 200, 'text': 'ok', 'ts': ts},
         });
@@ -172,6 +172,53 @@ void main() {
       await session.attach('usrBob');
       await session.detach('usrBob');
       expect(server.requests.last, 'leave usrBob');
+    });
+  });
+
+  group('a chat that is gone holds nothing', () {
+    Future<void> leftAfterDetach() async {
+      await session.attach('grpX');
+      expect(server.requests.last, 'sub grpX');
+    }
+
+    test('after deleting it', () async {
+      await session.attach('grpX');
+      await session.attach('grpX');
+      await session.deleteChat('grpX');
+      expect(server.requests.last, 'del grpX');
+
+      await leftAfterDetach();
+    });
+
+    test('after leaving it', () async {
+      await session.attach('grpX');
+      await session.leaveChat('grpX');
+      expect(server.requests.last, 'leave grpX');
+
+      await leftAfterDetach();
+    });
+
+    test('after the server evicted the user, or deleted it', () async {
+      await session.attach('grpX');
+      await session.attach('usrBob');
+      final gone = session.presence.first;
+      server
+        ..send({
+          'ctrl': {
+            'topic': 'grpX',
+            'code': 205,
+            'text': 'evicted',
+            'ts': DateTime.utc(2026).toIso8601String(),
+          },
+        })
+        ..send({
+          'pres': {'topic': 'me', 'what': 'gone', 'src': 'usrBob'},
+        });
+      await gone;
+
+      await leftAfterDetach();
+      await session.attach('usrBob');
+      expect(server.requests.last, 'sub usrBob');
     });
   });
 

@@ -335,4 +335,96 @@ void main() {
       expect(await stores.lastUser(testConfig.server), isNull);
     });
   });
+
+  group('sign up', () {
+    test('creates the account and logs in as the new user', () async {
+      final container = createTestContainer(connector: connectTo(session));
+      await connect(container);
+
+      await container
+          .read(sessionControllerProvider.notifier)
+          .signUp(login: 'carol', password: 'carol123', name: 'Carol');
+
+      expect(
+        container.read(sessionControllerProvider).value,
+        isA<SessionLoggedIn>().having(
+          (s) => s.login?.token,
+          'token',
+          session.token,
+        ),
+      );
+      expect(session.calls, contains('createAccount carol Carol'));
+      expect(
+        container.read(credentialsControllerProvider),
+        TinodeCredentials.token(session.token),
+      );
+    });
+
+    test('a taken login throws and keeps awaiting login', () async {
+      final container = createTestContainer(connector: connectTo(session));
+      await connect(container);
+
+      await expectLater(
+        container
+            .read(sessionControllerProvider.notifier)
+            .signUp(login: 'alice', password: 'pw', name: 'Alice'),
+        throwsA(isA<ServerException>().having((e) => e.code, 'code', 409)),
+      );
+      expect(
+        container.read(sessionControllerProvider).value,
+        isA<SessionAwaitingLogin>(),
+      );
+    });
+  });
+
+  group('deleteAccount', () {
+    test('deletes the user and their cache, then asks for a login', () async {
+      final stores = MemoryChatStoreOpener();
+      final container = createTestContainer(
+        connector: connectTo(session),
+        storeOpener: stores,
+        credentials: TinodeCredentials.token(session.token),
+      );
+      await connect(container);
+      final phases = <SessionPhase>[];
+      container.listen(
+        sessionControllerProvider.select(SessionPhase.of),
+        (_, phase) => phases.add(phase),
+      );
+
+      await container.read(sessionControllerProvider.notifier).deleteAccount();
+      final state = await container.read(sessionControllerProvider.future);
+
+      expect(session.accountDeleted, isTrue);
+      expect(state, isA<SessionAwaitingLogin>());
+      expect(container.read(credentialsControllerProvider), isNull);
+      expect(await stores.lastUser(testConfig.server), isNull);
+      // Its expected disconnect is no lost connection.
+      expect(phases, isNot(contains(SessionPhase.failed)));
+    });
+
+    test('a refusal throws and keeps the session', () async {
+      final container = createTestContainer(
+        connector: connectTo(session),
+        credentials: TinodeCredentials.token(session.token),
+      );
+      await connect(container);
+      session.failDeleteAccount = const ServerException(403, 'forbidden');
+
+      await expectLater(
+        container.read(sessionControllerProvider.notifier).deleteAccount(),
+        throwsA(isA<ServerException>()),
+      );
+      expect(
+        container.read(sessionControllerProvider).value,
+        isA<SessionLoggedIn>(),
+      );
+      session.dropConnection();
+      await settle();
+      expect(
+        SessionPhase.of(container.read(sessionControllerProvider)),
+        SessionPhase.failed,
+      );
+    });
+  });
 }

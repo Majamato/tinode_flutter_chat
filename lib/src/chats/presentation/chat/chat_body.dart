@@ -22,7 +22,10 @@ class ChatBody extends ConsumerWidget {
       LoadStatus.loading => const Center(child: CircularProgressIndicator()),
       LoadStatus.failed => ErrorRetryView(
         failure: failure ?? ChatFailure.unexpected,
-        onRetry: ref.read(chatControllerProvider(topic).notifier).reload,
+        // A chat that is gone stays gone.
+        onRetry: failure == ChatFailure.gone
+            ? null
+            : ref.read(chatControllerProvider(topic).notifier).reload,
       ),
       LoadStatus.ready => MessageList(topic: topic),
     };

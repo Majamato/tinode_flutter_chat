@@ -11,4 +11,11 @@ String failureMessage(TinodeChatStrings strings, ChatFailure failure) =>
       ChatFailure.rejected => strings.rejected,
       ChatFailure.unexpected => strings.unexpected,
       ChatFailure.tooLarge => strings.fileTooLarge,
+      ChatFailure.loginTaken => strings.loginTaken,
+      ChatFailure.emailTaken => strings.emailTaken,
+      ChatFailure.invalidEmail => strings.invalidEmail,
+      ChatFailure.credentialsRequired => strings.confirmEmailFirst,
+      ChatFailure.credentialsRefused => strings.credentialsRefused,
+      ChatFailure.wrongCode => strings.wrongResetCode,
+      ChatFailure.gone => strings.chatGone,
     };

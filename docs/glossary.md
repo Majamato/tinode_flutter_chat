@@ -126,6 +126,60 @@ members and needs the `D` permission. Both show at once and go to the server thr
 Ends the session for good: deletes the user's cache, including unsent messages, and forgets the
 credentials. *In code:* `SessionController.logout`, `TinodeChatController.logOut`, `onLoggedOut`.
 
+## Account and profile
+
+**Sign up**
+Creating an account from the login screens with a name, a login and a password; it logs in as the
+new user. *In code:* `SessionController.signUp`, `SignUpController`, `SignUpScreen`.
+*Avoid:* "register".
+
+**Account features**
+What the login screen offers besides logging in: signing up, and resetting a forgotten password.
+The host switches them (`TinodeChatFeatures`); the reset defaults to servers that require an
+email. *In code:* `signUpOffered`, `passwordResetOffered`.
+
+**Confirm email**
+Entering the code the server mailed to the email given at sign-up. Servers that send mail usually
+require an email, and an account can't log in until it is confirmed. *In code:*
+`ConfirmEmailController`, `ConfirmEmailScreen`, `signUpNeedsEmail`; the client's
+`CredentialsRequiredException`.
+
+**Password reset**
+Setting a new password for a user who forgot it: the server emails a code to the account's address,
+and the code sets the new password. It doesn't log in. *In code:* `PasswordResetController`,
+`PasswordResetState`, `PasswordResetScreen`.
+
+**Profile**
+What others see of the user: name, note and photo, the `public` of `me`. Edited on the profile
+screen, online only. *In code:* `MyProfile`, `ProfileController`, `ProfileScreen`.
+*Avoid:* "card".
+
+**Change password**
+A new password, and optionally a new login, for the logged-in user; the session goes on.
+*In code:* `ChangePasswordController`, `ChangePasswordScreen`.
+
+**Delete account**
+Deletes the user on the server, then ends the session like a log out. *In code:*
+`SessionController.deleteAccount`, `DeleteAccountController`.
+
+**Chat info**
+The screen about one chat, opened from its title: a group's members, and the way out of the chat.
+*In code:* `ChatInfoScreen`, `ChatActionsController`.
+
+**Delete chat / delete group / leave group**
+The way out of a chat (`ChatExit`): a 1:1 chat is deleted for the user (the peer keeps their side);
+the owner deletes a group for everyone; other members leave it, on every device. Either way it
+leaves the chat list and the cache.
+
+**Remove a member**
+Taking someone out of a group, which needs `A`; nobody removes the owner, and nobody removes
+themselves (they leave). *In code:* `ChatActionsController.removeMember`, `memberRemovable`.
+
+**Gone chat**
+A chat that was deleted, or the user removed from it, maybe on another device (`pres gone`). It
+leaves the list and the cache; an open one says it is no longer available. *In code:*
+`ChatFailure.gone`.
+
 ## Starting chats
 
 **Search**

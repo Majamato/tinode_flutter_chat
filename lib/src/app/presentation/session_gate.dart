@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinode_flutter_chat/src/app/presentation/auth_navigator.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/chat_navigator.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_state.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/connecting_view.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/session_error_view.dart';
 
 /// Picks the screen for the session's phase; rebuilds only when the phase
@@ -23,7 +23,7 @@ class SessionGate extends ConsumerWidget {
       sessionControllerProvider.select(SessionPhase.of),
     )) {
       SessionPhase.connecting => const ConnectingView(),
-      SessionPhase.awaitingLogin => const LoginScreen(),
+      SessionPhase.awaitingLogin => const AuthNavigator(),
       SessionPhase.loggedIn => const ChatNavigator(),
       SessionPhase.failed => const SessionErrorView(),
     };

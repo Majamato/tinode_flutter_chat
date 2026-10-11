@@ -15,6 +15,7 @@ final class ChatMember with ValueObject {
     this.read = 0,
     this.received = 0,
     this.canRead = true,
+    this.isOwner = false,
   });
 
   /// [subscription] is a member entry of `get sub`. A `public` it leaves
@@ -36,6 +37,7 @@ final class ChatMember with ValueObject {
       read: max(subscription.read, previous?.read ?? 0),
       received: max(subscription.received, previous?.received ?? 0),
       canRead: subscription.access?.mode.has(Permission.read) ?? true,
+      isOwner: subscription.access?.mode.has(Permission.owner) ?? false,
     );
   }
 
@@ -53,6 +55,9 @@ final class ChatMember with ValueObject {
   /// The member may read messages (`R`): only such members count for
   /// receipts.
   final bool canRead;
+
+  /// The member owns the group (`O`), so nobody can remove them.
+  final bool isOwner;
 
   /// Up to two letters for the avatar; empty without a [name].
   String get initials => initialsOf(name ?? '');
@@ -80,11 +85,20 @@ final class ChatMember with ValueObject {
       read: newRead,
       received: newReceived,
       canRead: canRead,
+      isOwner: isOwner,
     );
   }
 
   @override
-  List<Object?> get props => [userId, name, photo, read, received, canRead];
+  List<Object?> get props => [
+    userId,
+    name,
+    photo,
+    read,
+    received,
+    canRead,
+    isOwner,
+  ];
 }
 
 /// The same number for the same user on every device, to pick their

@@ -72,7 +72,7 @@ final class ChatListControllerProvider
 }
 
 String _$chatListControllerHash() =>
-    r'2c0e86cfc7e63eae1d167fd1b167bdfcaee22695';
+    r'c861b5ece9a711a09adc6ab3c2f9cf5a66781bc6';
 
 /// The chat list of the logged-in user: shown from the cache first, then
 /// synced with the server, kept current from `me` presence and from the

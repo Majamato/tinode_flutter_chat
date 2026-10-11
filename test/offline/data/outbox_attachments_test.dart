@@ -308,4 +308,24 @@ void main() {
       expect((await session.fetchFile(ref)).length, pngBytes.length);
     });
   });
+
+  test('a chat that is gone drops its queue and staged files', () async {
+    remote.emitStatus(const Suspended());
+    final events = <OutboxEvent>[];
+    session.outbox.listen(events.add);
+    await session.sendAttachment(bob, notes());
+    await session.sendAttachment(carol, notes());
+    await idle();
+    expect(files.stagedIds, hasLength(2));
+
+    remote.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.gone, source: bob),
+    );
+    await idle();
+
+    expect(await session.storedOutgoing(bob), isEmpty);
+    expect(await session.storedOutgoing(carol), hasLength(1));
+    expect(files.stagedIds, hasLength(1));
+    expect(events.whereType<OutgoingDiscarded>().map((e) => e.topic), [bob]);
+  });
 }

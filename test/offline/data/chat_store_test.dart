@@ -248,4 +248,36 @@ void main() {
       expect((await store.coverage(bob)).covers(1), isTrue);
     });
   });
+
+  test('deleteChat forgets the chat and hands back its outbox', () async {
+    await store.replaceChats([chat(bob), chat(friends)]);
+    await store.putMember(bob, member(bob, name: 'Bob'));
+    await store.putMessages(bob, [
+      message(bob, 1),
+    ], covering: const SeqRange(1, 2));
+    await store.setSyncedDeleteId(bob, 3);
+    await store.enqueuePublish(bob, 'cid', const PlainText('hi'), at(1));
+    await store.enqueuePublish(friends, 'other', const PlainText('hi'), at(1));
+
+    final dropped = await store.deleteChat(bob);
+
+    expect(dropped.map((e) => e.clientId), ['cid']);
+    expect((await store.chats()).map((c) => c.topic), [friends]);
+    expect(await store.members(bob), isEmpty);
+    expect(await store.messagesIn(bob, from: 1, before: 10, limit: 5), isEmpty);
+    expect(await store.coverage(bob), SeqRanges.empty);
+    expect(await store.syncedDeleteId(bob), 0);
+    expect((await store.outbox()).map((e) => e.clientId), ['other']);
+  });
+
+  test('a chat removed by a sync takes its messages along', () async {
+    await store.replaceChats([chat(bob)]);
+    await store.putMessages(bob, [
+      message(bob, 1),
+    ], covering: const SeqRange(1, 2));
+
+    await store.mergeChats([Subscription(topic: bob, deleted: at(1))]);
+
+    expect(await store.messagesIn(bob, from: 1, before: 10, limit: 5), isEmpty);
+  });
 }

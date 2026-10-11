@@ -3,6 +3,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/data/client_tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
 part 'session_inputs.g.dart';
@@ -15,6 +16,11 @@ TinodeConfig tinodeConfig(Ref ref) =>
 /// The credentials the host passed to `TinodeChat`, if any.
 @Riverpod(keepAlive: true)
 TinodeCredentials? initialCredentials(Ref ref) => null;
+
+/// Which account features the host offers; `createTinodeContainer`
+/// overrides it.
+@Riverpod(keepAlive: true)
+TinodeChatFeatures tinodeChatFeatures(Ref ref) => const TinodeChatFeatures();
 
 /// How sessions are opened; tests override it with a fake.
 @Riverpod(keepAlive: true)

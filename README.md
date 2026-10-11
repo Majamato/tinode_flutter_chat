@@ -6,7 +6,14 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 ## Features
 
 - Connects, logs in with a built-in form or with credentials you pass, and keeps the session for as
-  long as the widget lives.
+  long as the widget lives. The login screen also signs new users up (confirming their email
+  with a mailed code where the server asks for one) and resets forgotten passwords with a code
+  sent by email.
+- A profile screen, from the chat list's menu, edits the user's name, note and photo, changes the
+  password (and the login) and deletes the account.
+- A chat's info screen, from its title, lists a group's members and removes them, and deletes a
+  chat or a group, or leaves a group. Chats deleted elsewhere, or that the user was removed from,
+  leave the list.
 - Shows the chat list from `me`, newest first, with unread counts that follow new messages and reads
   from other devices.
 - Opens direct chats, groups and channels. Channel followers get a read-only view.
@@ -49,6 +56,35 @@ void main() => runApp(
   ),
 );
 ```
+
+## Accounts: what the server decides
+
+Some account features depend on how the server is set up, and the chat adapts to it:
+
+- **Email at sign-up.** A server that sends email usually requires one; the official Docker image
+  does as soon as it has an SMTP server. The sign-up form then requires the email and asks for
+  the code the server mails. Elsewhere the email is optional and nothing needs confirming. Only
+  the server can change this.
+- **Password reset** needs the server to send email, since the code goes by email. By default the
+  login screen offers it only where the server requires an email (Tinode v0.25 also fails on resets
+  where email is optional).
+- **Changing the password**, editing the profile and deleting the account work on any server.
+
+Switch features off for a server that doesn't offer them, or force the reset on for one you know
+sends email:
+
+```dart
+TinodeChat(
+  config: config,
+  features: const TinodeChatFeatures(
+    signUp: false, // e.g. accounts made by an admin
+    passwordReset: PasswordResetMode.always,
+  ),
+)
+```
+
+Rules such as the shortest login or password, or how long codes last, are the server's
+(`tinode.conf`); the chat shows its refusals.
 
 To restyle the chat, add a theme extension:
 
@@ -142,7 +178,7 @@ await chat.logOut();
 ## Roadmap
 
 Built so far: the happy path, reconnection, calls, offline, finding people and starting chats,
-group chat essentials, attachments.
+group chat essentials, attachments, account and profile.
 Next, in this order. Each feature lands in [`tinode_dart_client`](../tinode_dart_client) first
 where it needs the protocol:
 
@@ -152,8 +188,9 @@ where it needs the protocol:
 3. ~~**Attachments**~~: done (send and show images and files, photos given by reference).
    Rich Drafty rendering (bold, links, mentions) is still to come: messages show their plain
    text.
-4. **Account and profile**: sign up, edit name and avatar, change password, leave or delete
-   chats.
+4. ~~**Account and profile**~~: done (sign up with email confirmation, password reset by email, edit name, note and
+   photo, change the password and login, delete the account, delete or leave chats, remove group
+   members).
 5. **Push and background calls**: push notifications, CallKit and ConnectionService. Today calls
    ring only while the app is open and connected, and on Android a call may lose the microphone
    and camera in the background. Later still: group calls, switching between voice and video

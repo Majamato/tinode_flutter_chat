@@ -114,4 +114,20 @@ void main() {
     expect(members[bob]!.colorIndex, three[bob]!.colorIndex);
     expect(three[bob]!.colorIndex, isNot(three[carol]!.colorIndex));
   });
+
+  test('ordered puts the owner first, then names, nameless last', () {
+    final members = const ChatMembers().withMembers([
+      member(carol, name: 'carol'),
+      member('usrNoName'),
+      member(bob, name: 'Bob', mode: 'JRWPASDO'),
+      member(alice, name: 'Alice'),
+    ]);
+    expect(members.ordered.map((m) => m.userId), [
+      bob,
+      alice,
+      carol,
+      'usrNoName',
+    ]);
+    expect(members[bob]!.isOwner, isTrue);
+  });
 }

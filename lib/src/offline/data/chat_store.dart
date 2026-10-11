@@ -56,24 +56,46 @@ final class ChatStore {
   );
 
   /// Merges the chats changed since the last sync; removed ones go.
-  Future<void> mergeChats(
-    List<Subscription> changes,
-  ) => _db.transaction(() async {
-    for (final change in changes) {
-      final topic = change.topic!;
-      if (change.deleted != null) {
-        await (_db.delete(_db.chats)..where((c) => c.topic.equals(topic))).go();
-        await _deleteMembers(topic);
-        continue;
-      }
-      final stored = await chat(topic);
-      await _db
-          .into(_db.chats)
-          .insertOnConflictUpdate(
-            _chatRow(stored == null ? change : merge.mergeChat(stored, change)),
-          );
-    }
-  });
+  Future<void> mergeChats(List<Subscription> changes) =>
+      _db.transaction(() async {
+        for (final change in changes) {
+          final topic = change.topic!;
+          if (change.deleted != null) {
+            await _forgetChat(topic);
+            continue;
+          }
+          final stored = await chat(topic);
+          await _db
+              .into(_db.chats)
+              .insertOnConflictUpdate(
+                _chatRow(
+                  stored == null ? change : merge.mergeChat(stored, change),
+                ),
+              );
+        }
+      });
+
+  /// Forgets everything about [topic]: the chat, its members, messages and
+  /// outbox. Returns the outbox entries it dropped, whose staged files the
+  /// caller deletes.
+  Future<List<OutboxEntry>> deleteChat(String topic) => _db.transaction(
+    () async {
+      final dropped = await outbox(topic: topic);
+      await (_db.delete(_db.outbox)..where((o) => o.topic.equals(topic))).go();
+      await _forgetChat(topic);
+      return dropped;
+    },
+  );
+
+  /// Deletes the chat's row, members, messages and sync state.
+  Future<void> _forgetChat(String topic) async {
+    await (_db.delete(_db.chats)..where((c) => c.topic.equals(topic))).go();
+    await _deleteMembers(topic);
+    await (_db.delete(_db.messages)..where((m) => m.topic.equals(topic))).go();
+    await (_db.delete(
+      _db.topicSyncs,
+    )..where((t) => t.topic.equals(topic))).go();
+  }
 
   /// Raises the counters of a stored chat; unknown chats are left alone.
   Future<void> advanceChat(

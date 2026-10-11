@@ -4,6 +4,9 @@ import 'dart:developer';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 
+/// The code of a `ctrl` saying the server detached a topic on its own.
+const _evicted = 205;
+
 /// A [TinodeSession] over a real `TinodeClient`.
 final class ClientTinodeSession implements TinodeSession {
   ClientTinodeSession(this._client) {
@@ -51,11 +54,56 @@ final class ClientTinodeSession implements TinodeSession {
   Stream<ConnectionStatus> get statusChanges => _client.statusChanges;
 
   @override
-  Future<LoginResult> loginBasic(String login, String password) =>
-      _client.loginBasic(login, password);
+  Future<LoginResult> loginBasic(
+    String login,
+    String password, {
+    Map<String, String> codes = const {},
+  }) => _client.loginBasic(login, password, codes: codes);
 
   @override
   Future<LoginResult> loginToken(String token) => _client.loginToken(token);
+
+  @override
+  Future<LoginResult> createAccount({
+    required String login,
+    required String password,
+    required Profile public,
+    String? email,
+  }) => _client.createAccount(
+    login: login,
+    password: password,
+    public: public,
+    email: email,
+  );
+
+  @override
+  Future<void> changePassword(String password, {String? login}) =>
+      _client.changePassword(password, login: login);
+
+  @override
+  Future<void> requestPasswordReset(String email) =>
+      _client.requestPasswordReset(email);
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) => _client.resetPassword(email: email, code: code, password: password);
+
+  @override
+  Future<void> deleteAccount() async {
+    await _client.deleteAccount();
+    _onDone();
+  }
+
+  @override
+  Future<TopicDescription?> description(String topic) =>
+      _client.getDescription(topic);
+
+  @override
+  Future<void> updateProfile(Profile public) =>
+      _client.setDescription('me', public: public);
 
   @override
   Future<String> attach(String topic) async {
@@ -104,6 +152,22 @@ final class ClientTinodeSession implements TinodeSession {
   @override
   Future<void> addMember(String topic, String userId) =>
       _client.setSubscription(topic, userId: userId);
+
+  @override
+  Future<void> removeMember(String topic, String userId) =>
+      _client.deleteSubscription(topic, userId: userId);
+
+  @override
+  Future<void> deleteChat(String topic) async {
+    await _client.deleteTopic(topic);
+    _holds.remove(topic);
+  }
+
+  @override
+  Future<void> leaveChat(String topic) async {
+    await _client.leave(topic, unsubscribe: true);
+    _holds.remove(topic);
+  }
 
   @override
   Future<List<DataMessage>> history(
@@ -193,9 +257,19 @@ final class ClientTinodeSession implements TinodeSession {
       case final DataMessage m:
         _messages.add(m);
       case final PresMessage m:
+        // The chat was deleted or this user removed: nothing is attached.
+        if (m case PresMessage(
+          topic: 'me',
+          event: PresenceEvent.gone,
+          :final source?,
+        )) {
+          _holds.remove(source);
+        }
         _presence.add(m);
       case final InfoMessage m:
         _info.add(m);
+      case CtrlMessage(code: _evicted, :final topic?):
+        _holds.remove(topic);
       case CtrlMessage() || MetaMessage():
         break;
     }

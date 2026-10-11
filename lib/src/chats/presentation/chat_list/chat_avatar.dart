@@ -5,9 +5,12 @@ import 'package:tinode_flutter_chat/src/shared/presentation/profile_avatar.dart'
 
 /// The chat's photo, or its initials, in a circle.
 class ChatAvatar extends ConsumerWidget {
-  const ChatAvatar({required this.topic, super.key});
+  const ChatAvatar({required this.topic, this.radius, super.key});
 
   final String topic;
+
+  /// The circle's radius; [CircleAvatar]'s default when null.
+  final double? radius;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -16,6 +19,6 @@ class ChatAvatar extends ConsumerWidget {
         topic,
       ).select((chat) => (chat?.initials ?? '', chat?.photo)),
     );
-    return ProfileAvatar(initials: initials, photo: photo);
+    return ProfileAvatar(initials: initials, photo: photo, radius: radius);
   }
 }

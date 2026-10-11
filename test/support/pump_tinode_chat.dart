@@ -27,6 +27,7 @@ Future<void> pumpTinodeChat(
   AttachmentPicker? attachmentPicker,
   VoidCallback? onLoggedOut,
   TinodeChatController? controller,
+  TinodeChatFeatures features = const TinodeChatFeatures(),
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -44,6 +45,7 @@ Future<void> pumpTinodeChat(
         onLoggedIn: onLoggedIn,
         onLoggedOut: onLoggedOut,
         controller: controller,
+        features: features,
       ),
     ),
   );

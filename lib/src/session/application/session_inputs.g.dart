@@ -107,6 +107,62 @@ final class InitialCredentialsProvider
 String _$initialCredentialsHash() =>
     r'239bd9b4a4aaccfffa155614bd58c5d9b1b5e93b';
 
+/// Which account features the host offers; `createTinodeContainer`
+/// overrides it.
+
+@ProviderFor(tinodeChatFeatures)
+final tinodeChatFeaturesProvider = TinodeChatFeaturesProvider._();
+
+/// Which account features the host offers; `createTinodeContainer`
+/// overrides it.
+
+final class TinodeChatFeaturesProvider
+    extends
+        $FunctionalProvider<
+          TinodeChatFeatures,
+          TinodeChatFeatures,
+          TinodeChatFeatures
+        >
+    with $Provider<TinodeChatFeatures> {
+  /// Which account features the host offers; `createTinodeContainer`
+  /// overrides it.
+  TinodeChatFeaturesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'tinodeChatFeaturesProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$tinodeChatFeaturesHash();
+
+  @$internal
+  @override
+  $ProviderElement<TinodeChatFeatures> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  TinodeChatFeatures create(Ref ref) {
+    return tinodeChatFeatures(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(TinodeChatFeatures value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<TinodeChatFeatures>(value),
+    );
+  }
+}
+
+String _$tinodeChatFeaturesHash() =>
+    r'76b48e9c382208753d30450ca9ed6220bc2f07e1';
+
 /// How sessions are opened; tests override it with a fake.
 
 @ProviderFor(sessionConnector)

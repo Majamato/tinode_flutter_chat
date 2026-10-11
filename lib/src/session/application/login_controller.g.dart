@@ -47,7 +47,7 @@ final class LoginControllerProvider
   }
 }
 
-String _$loginControllerHash() => r'ad0247c061feb493dd213acb3868adbe3420fb49';
+String _$loginControllerHash() => r'c050e65542c9119357ad1c21595d1c9e915085a5';
 
 /// The login form's submission: loading while a login runs, an error when
 /// it failed. Only the submit button and the error text watch it.

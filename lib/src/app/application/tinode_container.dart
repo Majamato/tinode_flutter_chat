@@ -11,6 +11,7 @@ import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
 /// The composition root: one container per `TinodeChat`, owned by it.
@@ -20,6 +21,7 @@ import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 ProviderContainer createTinodeContainer({
   required TinodeConfig config,
   TinodeCredentials? credentials,
+  TinodeChatFeatures features = const TinodeChatFeatures(),
   SessionConnector? connector,
   SessionRestorer? restorer,
   ChatStoreOpener? storeOpener,
@@ -32,6 +34,7 @@ ProviderContainer createTinodeContainer({
   overrides: [
     tinodeConfigProvider.overrideWithValue(config),
     initialCredentialsProvider.overrideWithValue(credentials),
+    tinodeChatFeaturesProvider.overrideWithValue(features),
     ?_override(connector, sessionConnectorProvider.overrideWithValue),
     ?_override(restorer, sessionRestorerProvider.overrideWithValue),
     ?_override(storeOpener, chatStoreOpenerProvider.overrideWithValue),

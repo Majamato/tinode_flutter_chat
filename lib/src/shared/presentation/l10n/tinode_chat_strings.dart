@@ -109,6 +109,61 @@ class TinodeChatStrings {
     this.openFile = 'Open',
     this.imageLabel = 'Image',
     this.fileLabel = 'File',
+    this.createAccountLink = 'Create an account',
+    this.signUpTitle = 'Create account',
+    this.displayNameField = 'Your name',
+    this.signUp = 'Create account',
+    this.forgotPassword = 'Forgot password?',
+    this.resetPasswordTitle = 'Reset password',
+    this.emailField = 'Email',
+    this.sendResetCode = 'Send code',
+    this.resetCodeSent = 'If an account has this email, a code is on its way.',
+    this.resetCodeField = 'Code from the email',
+    this.newPasswordField = 'New password',
+    this.setPassword = 'Set password',
+    this.passwordResetDone = 'Password changed. Sign in with the new one.',
+    this.profile = 'Profile',
+    this.nameField = 'Name',
+    this.noteField = 'About',
+    this.save = 'Save',
+    this.profileSaved = 'Profile saved.',
+    this.changePhoto = 'Change photo',
+    this.changePassword = 'Change password',
+    this.newLoginField = 'New login (optional)',
+    this.passwordChanged = 'Password changed.',
+    this.deleteAccount = 'Delete account',
+    this.deleteAccountConfirm =
+        'Delete your account, with your chats and messages? '
+        'This cannot be undone.',
+    this.chatInfo = 'Chat info',
+    this.members = 'Members',
+    this.ownerLabel = 'Owner',
+    this.youLabel = 'You',
+    this.removeMember = 'Remove',
+    this.deleteChat = 'Delete chat',
+    this.deleteChatConfirm = 'Delete this chat and its messages for you?',
+    this.deleteGroup = 'Delete group',
+    this.deleteGroupConfirm =
+        'Delete this group and its messages for everyone?',
+    this.leaveGroup = 'Leave group',
+    this.leaveGroupConfirm =
+        'Leave this group? You will not see its messages any more.',
+    this.cancel = 'Cancel',
+    this.loginTaken = 'This login is taken.',
+    this.credentialsRefused =
+        'The server refused this login or password. It may be too short.',
+    this.wrongResetCode = 'The code is wrong or has expired.',
+    this.chatGone = 'This chat is no longer available.',
+    this.emailOptionalField = 'Email (optional)',
+    this.confirmEmailTitle = 'Confirm your email',
+    this.confirmEmailText =
+        'Enter the code from the email the server sent you.',
+    this.confirm = 'Confirm',
+    this.emailTaken = 'This email belongs to another account.',
+    this.invalidEmail = 'This is not an email address.',
+    this.confirmEmailFirst =
+        'Confirm your email first: sign in with your password.',
+    this.removeMemberConfirm = _removeMemberConfirm,
   });
 
   /// The texts of the nearest `TinodeChat`, or the defaults outside one.
@@ -388,6 +443,150 @@ class TinodeChatStrings {
 
   /// Names a file without a file name.
   final String fileLabel;
+
+  /// Opens sign-up from the sign-in screen.
+  final String createAccountLink;
+
+  /// Title of the sign-up screen.
+  final String signUpTitle;
+
+  /// Label of the name field on sign-up, shown to others.
+  final String displayNameField;
+
+  /// Submits the sign-up form.
+  final String signUp;
+
+  /// Opens the password reset from the sign-in screen.
+  final String forgotPassword;
+
+  /// Title of the password reset screen.
+  final String resetPasswordTitle;
+
+  /// Label of the account's email field.
+  final String emailField;
+
+  /// Asks the server to email a reset code.
+  final String sendResetCode;
+
+  /// Shown once a reset code was asked for.
+  final String resetCodeSent;
+
+  /// Label of the reset code field.
+  final String resetCodeField;
+
+  /// Label of a new password field.
+  final String newPasswordField;
+
+  /// Submits a new password.
+  final String setPassword;
+
+  /// Shown on the sign-in screen after a reset.
+  final String passwordResetDone;
+
+  /// Opens the user's profile, and titles it.
+  final String profile;
+
+  /// Label of the profile name field.
+  final String nameField;
+
+  /// Label of the profile note field.
+  final String noteField;
+
+  /// Saves changes.
+  final String save;
+
+  /// Shown once the profile was saved.
+  final String profileSaved;
+
+  /// Picks a new profile photo.
+  final String changePhoto;
+
+  /// Opens the password change, and titles it.
+  final String changePassword;
+
+  /// Label of the field that also changes the login.
+  final String newLoginField;
+
+  /// Shown once the password was changed.
+  final String passwordChanged;
+
+  /// Deletes the user's account.
+  final String deleteAccount;
+
+  /// Asks before deleting the account.
+  final String deleteAccountConfirm;
+
+  /// Title of the screen about one chat.
+  final String chatInfo;
+
+  /// Heads a group's member list.
+  final String members;
+
+  /// Marks the group's owner in the member list.
+  final String ownerLabel;
+
+  /// Marks the user in the member list.
+  final String youLabel;
+
+  /// Removes a member from a group.
+  final String removeMember;
+
+  /// Deletes a 1:1 chat for the user.
+  final String deleteChat;
+
+  /// Asks before deleting a 1:1 chat.
+  final String deleteChatConfirm;
+
+  /// Deletes a group the user owns, for everyone.
+  final String deleteGroup;
+
+  /// Asks before deleting a group.
+  final String deleteGroupConfirm;
+
+  /// Leaves a group for good.
+  final String leaveGroup;
+
+  /// Asks before leaving a group.
+  final String leaveGroupConfirm;
+
+  /// Closes a question without doing anything.
+  final String cancel;
+
+  /// The login is already used by someone else.
+  final String loginTaken;
+
+  /// The server's rules refuse the login or password.
+  final String credentialsRefused;
+
+  /// A password reset code was refused.
+  final String wrongResetCode;
+
+  /// The chat was deleted, or the user was removed from it.
+  final String chatGone;
+
+  /// Label of the email field on sign-up where the server needs none.
+  final String emailOptionalField;
+
+  /// Title of the screen that confirms the email with a code.
+  final String confirmEmailTitle;
+
+  /// Explains the email confirmation.
+  final String confirmEmailText;
+
+  /// Sends the email confirmation code.
+  final String confirm;
+
+  /// The email is already used.
+  final String emailTaken;
+
+  /// The server refused the email as malformed.
+  final String invalidEmail;
+
+  /// A token login found the email still unconfirmed.
+  final String confirmEmailFirst;
+
+  /// Asks before removing the member `name` from a group.
+  final String Function(String name) removeMemberConfirm;
 }
 
 String _typingOne(String name) => '$name is typing…';
@@ -399,3 +598,5 @@ String _typingMany(int count) => '$count people are typing…';
 
 String _fileTooLargeLimit(String limit) =>
     'The file is too large to send: the limit is $limit.';
+
+String _removeMemberConfirm(String name) => 'Remove $name from the group?';

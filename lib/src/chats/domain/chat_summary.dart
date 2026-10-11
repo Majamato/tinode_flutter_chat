@@ -15,6 +15,8 @@ final class ChatSummary with ValueObject {
     this.read = 0,
     this.canWrite = true,
     this.canDeleteForEveryone = false,
+    this.isOwner = false,
+    this.canManageMembers = false,
   });
 
   factory ChatSummary.fromSubscription(Subscription subscription) {
@@ -31,6 +33,9 @@ final class ChatSummary with ValueObject {
       canWrite: subscription.access?.mode.has(Permission.write) ?? true,
       canDeleteForEveryone:
           subscription.access?.mode.has(Permission.delete) ?? false,
+      isOwner: subscription.access?.mode.has(Permission.owner) ?? false,
+      canManageMembers:
+          subscription.access?.mode.has(Permission.approve) ?? false,
     );
   }
 
@@ -54,6 +59,12 @@ final class ChatSummary with ValueObject {
   /// The user may delete messages for everyone (`D`), e.g. a group's
   /// owner. Others can delete only for themselves.
   final bool canDeleteForEveryone;
+
+  /// The user owns the group (`O`): deleting it deletes it for everyone.
+  final bool isOwner;
+
+  /// The user may remove members (`A`), e.g. a group's owner.
+  final bool canManageMembers;
 
   int get unread => lastSeq > read ? lastSeq - read : 0;
 
@@ -84,6 +95,8 @@ final class ChatSummary with ValueObject {
         read: read ?? this.read,
         canWrite: canWrite,
         canDeleteForEveryone: canDeleteForEveryone,
+        isOwner: isOwner,
+        canManageMembers: canManageMembers,
       );
 
   @override
@@ -97,5 +110,7 @@ final class ChatSummary with ValueObject {
     read,
     canWrite,
     canDeleteForEveryone,
+    isOwner,
+    canManageMembers,
   ];
 }

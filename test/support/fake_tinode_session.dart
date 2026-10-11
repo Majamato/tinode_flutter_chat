@@ -54,6 +54,66 @@ final class FakeTinodeSession implements TinodeSession {
   Exception? failFind;
   Exception? failCreateGroup;
 
+  /// The user's own profile, the `public` of `me`.
+  Profile? profile = const Profile(name: 'Alice');
+
+  /// Logins taken by `createAccount`, with their passwords; [passwords]
+  /// count as taken too.
+  final accounts = <String, String>{};
+
+  /// The login each email belongs to, for password resets.
+  final emails = <String, String>{'alice@example.com': 'alice'};
+
+  /// Whether new accounts need an email, as servers that send mail do;
+  /// see [requireEmails].
+  bool requireEmail = false;
+
+  /// Makes new accounts need an email, and says so in [serverInfo].
+  void requireEmails() {
+    requireEmail = true;
+    serverInfo = ServerInfo(
+      version: serverInfo.version,
+      iceServers: serverInfo.iceServers,
+      callTimeout: serverInfo.callTimeout,
+      requiredCredentials: const ['email'],
+    );
+  }
+
+  /// The codes "mailed" to confirm new accounts' emails, by login; such a
+  /// login can't log in without its code.
+  final emailCodes = <String, String>{};
+
+  /// The code `requestPasswordReset` "emailed", by address.
+  final resetCodes = <String, String>{};
+
+  /// The latest password `changePassword` set, and the login with it.
+  String? changedPassword;
+  String? changedLogin;
+
+  /// Whether `deleteAccount` deleted the user.
+  bool accountDeleted = false;
+
+  /// Chats deleted with `deleteChat`, and left with `leaveChat`.
+  final deletedChats = <String>[];
+  final leftChats = <String>[];
+
+  /// The members `removeMember` removed, by group.
+  final removedMembers = <String, List<String>>{};
+
+  /// When set, the next such call throws it.
+  Exception? failSignUp;
+  Exception? failChangePassword;
+  Exception? failResetPassword;
+  Exception? failDeleteAccount;
+  Exception? failProfile;
+  Exception? failUpdateProfile;
+  Exception? failDeleteChat;
+  Exception? failRemoveMember;
+
+  /// When set, `createAccount` and `updateProfile` wait for it.
+  Completer<void>? holdSignUp;
+  Completer<void>? holdUpdateProfile;
+
   /// Users that `addMember` refuses to add, as a server would without `S`.
   final refuseMembers = <String>{};
 
@@ -192,10 +252,23 @@ final class FakeTinodeSession implements TinodeSession {
   );
 
   @override
-  Future<LoginResult> loginBasic(String login, String password) async {
-    calls.add('loginBasic $login');
-    if (passwords[login] != password) {
+  Future<LoginResult> loginBasic(
+    String login,
+    String password, {
+    Map<String, String> codes = const {},
+  }) async {
+    calls.add(
+      'loginBasic $login'
+      '${codes.isEmpty ? '' : ' ${codes.values.join(',')}'}',
+    );
+    if ((passwords[login] ?? accounts[login]) != password) {
       throw const ServerException(401, 'authentication failed');
+    }
+    if (emailCodes[login] case final code?) {
+      if (codes['email'] != code) {
+        throw CredentialsRequiredException(const ['email'], userId: userId);
+      }
+      emailCodes.remove(login);
     }
     loggedIn = true;
     return LoginResult(userId: userId, token: token);
@@ -209,6 +282,134 @@ final class FakeTinodeSession implements TinodeSession {
     }
     loggedIn = true;
     return LoginResult(userId: userId, token: token);
+  }
+
+  /// Logs in as the fake's [userId] under the new [login].
+  @override
+  Future<LoginResult> createAccount({
+    required String login,
+    required String password,
+    required Profile public,
+    String? email,
+  }) async {
+    calls.add(
+      'createAccount $login ${public.name}${email == null ? '' : ' $email'}',
+    );
+    await holdSignUp?.future;
+    _requireConnected();
+    if (failSignUp case final error?) {
+      failSignUp = null;
+      throw error;
+    }
+    if (passwords.containsKey(login) || accounts.containsKey(login)) {
+      throw const ServerException(
+        409,
+        'duplicate credential',
+        params: {'what': 'auth'},
+      );
+    }
+    if (email == null && requireEmail) {
+      throw const ServerException(422, 'policy violation');
+    }
+    if (email != null && !email.contains('@')) {
+      throw const ServerException(400, 'malformed', params: {'what': 'email'});
+    }
+    if (emails.containsKey(email)) {
+      throw const ServerException(409, 'duplicate credential');
+    }
+    accounts[login] = password;
+    profile = public;
+    if (email != null) {
+      emails[email] = login;
+      emailCodes[login] = '654321';
+      throw CredentialsRequiredException(const ['email'], userId: userId);
+    }
+    loggedIn = true;
+    return LoginResult(userId: userId, token: token);
+  }
+
+  @override
+  Future<void> changePassword(String password, {String? login}) async {
+    calls.add('changePassword${login == null ? '' : ' $login'}');
+    _requireConnected();
+    if (failChangePassword case final error?) {
+      failChangePassword = null;
+      throw error;
+    }
+    if (login != null && passwords.containsKey(login)) {
+      throw const ServerException(409, 'duplicate credential');
+    }
+    changedPassword = password;
+    changedLogin = login;
+  }
+
+  /// "Emails" the code `123456` when [email] is known; while that code is
+  /// unused, another request is refused, as the server does.
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    calls.add('requestPasswordReset $email');
+    _requireConnected();
+    if (resetCodes.containsKey(email)) {
+      throw const ServerException(409, 'duplicate credential');
+    }
+    if (emails.containsKey(email)) {
+      resetCodes[email] = '123456';
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) async {
+    calls.add('resetPassword $email $code');
+    _requireConnected();
+    if (failResetPassword case final error?) {
+      failResetPassword = null;
+      throw error;
+    }
+    if (resetCodes[email] != code) {
+      throw const ServerException(401, 'authentication failed');
+    }
+    passwords[emails[email]!] = password;
+    resetCodes.remove(email);
+  }
+
+  /// Closes the session, as the server's eviction does.
+  @override
+  Future<void> deleteAccount() async {
+    calls.add('deleteAccount');
+    _requireConnected();
+    if (failDeleteAccount case final error?) {
+      failDeleteAccount = null;
+      throw error;
+    }
+    accountDeleted = true;
+    await close();
+  }
+
+  @override
+  Future<TopicDescription?> description(String topic) async {
+    calls.add('description $topic');
+    _requireConnected();
+    if (failProfile case final error?) {
+      failProfile = null;
+      throw error;
+    }
+    return topic == 'me' ? TopicDescription(public: profile) : null;
+  }
+
+  @override
+  Future<void> updateProfile(Profile public) async {
+    calls.add('updateProfile ${public.name}');
+    await holdUpdateProfile?.future;
+    _requireConnected();
+    if (failUpdateProfile case final error?) {
+      failUpdateProfile = null;
+      throw error;
+    }
+    profile = public;
   }
 
   @override
@@ -301,6 +502,45 @@ final class FakeTinodeSession implements TinodeSession {
       throw const ServerException(403, 'permission denied');
     }
     addedMembers.putIfAbsent(topic, () => []).add(userId);
+  }
+
+  @override
+  Future<void> removeMember(String topic, String userId) async {
+    calls.add('removeMember $topic $userId');
+    _requireConnected();
+    if (failRemoveMember case final error?) {
+      failRemoveMember = null;
+      throw error;
+    }
+    removedMembers.putIfAbsent(topic, () => []).add(userId);
+    memberLists[topic]?.removeWhere((m) => m.userId == userId);
+  }
+
+  /// Drops the chat from [chats], as the server would.
+  @override
+  Future<void> deleteChat(String topic) async {
+    calls.add('deleteChat $topic');
+    _requireConnected();
+    if (failDeleteChat case final error?) {
+      failDeleteChat = null;
+      throw error;
+    }
+    deletedChats.add(topic);
+    chats.removeWhere((c) => c.topic == topic);
+    _holds.remove(topic);
+  }
+
+  @override
+  Future<void> leaveChat(String topic) async {
+    calls.add('leaveChat $topic');
+    _requireConnected();
+    if (failDeleteChat case final error?) {
+      failDeleteChat = null;
+      throw error;
+    }
+    leftChats.add(topic);
+    chats.removeWhere((c) => c.topic == topic);
+    _holds.remove(topic);
   }
 
   @override

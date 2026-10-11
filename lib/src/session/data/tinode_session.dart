@@ -15,9 +15,52 @@ typedef SessionRestorer =
 /// tests can swap in a fake, and so a cached or offline session can slot
 /// in later. Names follow the glossary: a session *attaches* to a topic.
 abstract interface class TinodeSession {
-  Future<LoginResult> loginBasic(String login, String password);
+  /// [codes] confirm the user's credentials, e.g. `{'email': '123456'}`;
+  /// while some wait to be confirmed this throws
+  /// `CredentialsRequiredException`.
+  Future<LoginResult> loginBasic(
+    String login,
+    String password, {
+    Map<String, String> codes = const {},
+  });
 
   Future<LoginResult> loginToken(String token);
+
+  /// Signs up a new user and logs this session in as them; see
+  /// `TinodeClient.createAccount`. A taken login throws
+  /// `ServerException` 409. With an [email] to confirm, it throws
+  /// `CredentialsRequiredException` instead: [loginBasic] with the mailed
+  /// code finishes.
+  Future<LoginResult> createAccount({
+    required String login,
+    required String password,
+    required Profile public,
+    String? email,
+  });
+
+  /// Changes the logged-in user's password, and with [login] their login.
+  Future<void> changePassword(String password, {String? login});
+
+  /// Emails a password reset code to [email]. Needs no login.
+  Future<void> requestPasswordReset(String email);
+
+  /// Sets a new password with the code [requestPasswordReset] sent. It
+  /// doesn't log in.
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  });
+
+  /// Deletes the logged-in user's account and closes the session.
+  Future<void> deleteAccount();
+
+  /// The description of [topic], e.g. `me` for the user's own profile;
+  /// null when the server has none.
+  Future<TopicDescription?> description(String topic);
+
+  /// Replaces the user's own profile, the `public` of `me`.
+  Future<void> updateProfile(Profile public);
 
   /// Starts receiving the topic's live traffic; returns its real name.
   ///
@@ -54,6 +97,19 @@ abstract interface class TinodeSession {
   /// Adds the user [userId] to the group [topic] with the group's default
   /// access. Needs the `S` permission.
   Future<void> addMember(String topic, String userId);
+
+  /// Removes [userId] from the group [topic], which must be attached.
+  /// Needs the `A` permission.
+  Future<void> removeMember(String topic, String userId);
+
+  /// Deletes the chat for this user: the owner of a group deletes it for
+  /// everyone, anyone else leaves; in a 1:1 chat the peer keeps their
+  /// side. It is no longer attached, whoever held it.
+  Future<void> deleteChat(String topic);
+
+  /// Leaves the group [topic] for good, on every device. It is no longer
+  /// attached, whoever held it.
+  Future<void> leaveChat(String topic);
 
   /// Up to [limit] messages with `since <= seq < before`, the newest of
   /// them, oldest first.

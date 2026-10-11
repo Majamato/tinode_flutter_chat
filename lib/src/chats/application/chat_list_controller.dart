@@ -74,6 +74,9 @@ class ChatListController extends _$ChatListController {
     }
   }
 
+  /// The chat [topic] is gone for this user: deleted, or left.
+  void remove(String topic) => state = state.without(topic);
+
   /// The user read [topic] up to [seq] on this device.
   void markRead(String topic, int seq) =>
       state = state.update(topic, (chat) => chat.withRead(seq));
@@ -143,6 +146,9 @@ class ChatListController extends _$ChatListController {
       case (PresenceEvent.read, final seq?):
         // Read on another of the user's devices.
         markRead(topic, seq);
+      case (PresenceEvent.gone, _):
+        // Deleted, or the user left or was removed, maybe elsewhere.
+        remove(topic);
       case _:
         break;
     }

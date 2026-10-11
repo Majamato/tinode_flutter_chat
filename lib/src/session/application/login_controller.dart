@@ -1,5 +1,6 @@
 import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_state.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
@@ -14,9 +15,11 @@ class LoginController extends _$LoginController {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  Future<void> submit(String login, String password) async {
+  /// Returns true when the server wants the user's email confirmed first:
+  /// the form then asks for the mailed code.
+  Future<bool> submit(String login, String password) async {
     if (state.isLoading) {
-      return;
+      return false;
     }
 
     state = const AsyncLoading();
@@ -25,9 +28,11 @@ class LoginController extends _$LoginController {
           .read(sessionControllerProvider.notifier)
           .login(TinodeCredentials.password(login.trim(), password)),
     );
+    final confirm = result.error is CredentialsRequiredException;
     if (ref.mounted) {
-      state = result;
+      state = confirm ? const AsyncData(null) : result;
     }
+    return confirm;
   }
 }
 

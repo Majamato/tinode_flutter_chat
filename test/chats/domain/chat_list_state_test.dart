@@ -82,4 +82,18 @@ void main() {
     );
     expect(summary.initials, 'TB');
   });
+
+  test('without drops a chat and its place in the order', () {
+    final updated = list.without(bob);
+    expect(updated.contains(bob), isFalse);
+    expect(updated.order, [friends, carol]);
+    expect(updated.without(bob), same(updated));
+  });
+
+  test('ownership and member management come from the access mode', () {
+    final owned = ChatSummary.fromSubscription(chat(friends, mode: 'JRWPASDO'));
+    expect((owned.isOwner, owned.canManageMembers), (true, true));
+    final member = ChatSummary.fromSubscription(chat(friends));
+    expect((member.isOwner, member.canManageMembers), (false, false));
+  });
 }

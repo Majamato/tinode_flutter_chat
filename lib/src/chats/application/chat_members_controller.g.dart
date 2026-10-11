@@ -89,7 +89,7 @@ final class ChatMembersControllerProvider
 }
 
 String _$chatMembersControllerHash() =>
-    r'9e40fd050f426ed2ad218f707f8355b00c663c1f';
+    r'b989074d5a57e05c0b80f69e2dfde4bd06795043';
 
 /// The members of one open chat: shown from the cache, fetched in full
 /// whenever the chat attaches ([sync], called by `ChatController`), and

@@ -43,6 +43,19 @@ final class ChatListState {
 
   bool contains(String topic) => byTopic.containsKey(topic);
 
+  /// The list without the chat named [topic], e.g. once it was deleted.
+  ChatListState without(String topic) {
+    if (!contains(topic)) {
+      return this;
+    }
+    return ChatListState._(
+      status,
+      failure,
+      Map.unmodifiable(Map.of(byTopic)..remove(topic)),
+      List.unmodifiable(order.where((t) => t != topic)),
+    );
+  }
+
   /// Applies [update] to the chat named [topic], if the list has it.
   ChatListState update(
     String topic,
