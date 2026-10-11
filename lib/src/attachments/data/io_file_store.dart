@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:math' show Random;
 
+import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
 
 import 'package:path_provider/path_provider.dart';
@@ -20,8 +21,20 @@ final class IoFileStore implements FileStore {
   final Directory _stagingDir;
   final _random = Random();
 
+  /// A hit counts as a use: pruning deletes the files used longest ago.
   @override
-  Future<LocalFile?> cached(Uri url) => _existing(_cacheFile(url));
+  Future<LocalFile?> cached(Uri url) async {
+    final file = _cacheFile(url);
+    final found = await _existing(file);
+    if (found != null) {
+      try {
+        await file.setLastModified(clock.now());
+      } on FileSystemException {
+        // Only the pruning order suffers.
+      }
+    }
+    return found;
+  }
 
   @override
   Future<LocalFile> cache(Uri url, Stream<List<int>> bytes) async {
@@ -69,6 +82,40 @@ final class IoFileStore implements FileStore {
   }
 
   @override
+  Future<void> prune({
+    required int maxCacheBytes,
+    required Set<String> keepStaged,
+  }) async {
+    final cached = <(File, FileStat)>[];
+    for (final file in await _files(_cacheDir)) {
+      if (file.path.endsWith('.part')) {
+        await _deleteQuietly(file);
+      } else {
+        cached.add((file, file.statSync()));
+      }
+    }
+    cached.sort((a, b) => a.$2.modified.compareTo(b.$2.modified));
+    var total = cached.fold(0, (sum, entry) => sum + entry.$2.size);
+    for (final (file, stat) in cached) {
+      if (total <= maxCacheBytes) {
+        break;
+      }
+      if (await _deleteQuietly(file)) {
+        total -= stat.size;
+      }
+    }
+
+    final before = clock.now().subtract(stagedGrace);
+    for (final file in await _files(_stagingDir)) {
+      final id = file.uri.pathSegments.last;
+      if (!keepStaged.contains(id) &&
+          file.lastModifiedSync().isBefore(before)) {
+        await _deleteQuietly(file);
+      }
+    }
+  }
+
+  @override
   Stream<List<int>> read(LocalFile file) => switch ((file.path, file.bytes)) {
     (final path?, _) => File(path).openRead(),
     (_, final bytes?) => Stream.value(bytes),
@@ -93,6 +140,20 @@ final class IoFileStore implements FileStore {
   static Future<LocalFile?> _existing(File file) async => file.existsSync()
       ? LocalFile.atPath(file.path, length: await file.length())
       : null;
+
+  static Future<List<File>> _files(Directory dir) async => dir.existsSync()
+      ? await dir.list().where((e) => e is File).cast<File>().toList()
+      : const [];
+
+  /// False when [file] could not be deleted, e.g. because it is open.
+  static Future<bool> _deleteQuietly(File file) async {
+    try {
+      await file.delete();
+      return true;
+    } on FileSystemException {
+      return false;
+    }
+  }
 
   /// Writes to a side file first, so a broken write leaves nothing.
   static Future<void> _write(File file, Stream<List<int>> bytes) async {

@@ -70,7 +70,7 @@ final class ChatControllerProvider
   }
 }
 
-String _$chatControllerHash() => r'597cb3f69af936c9bba1edd1769e14ff323fe3b1';
+String _$chatControllerHash() => r'71f302484b97a3bce5315a058c660c070f45115b';
 
 /// One open chat: shows what the cache holds, attaches to the topic,
 /// catches up with the server, merges live messages and the outbox, and
@@ -217,6 +217,97 @@ final class ChatMessageFamily extends $Family
 
   @override
   String toString() => r'chatMessageProvider';
+}
+
+/// Whether the bubble of message [seq] is highlighted, as the message the
+/// user asked to see.
+
+@ProviderFor(messageRevealed)
+final messageRevealedProvider = MessageRevealedFamily._();
+
+/// Whether the bubble of message [seq] is highlighted, as the message the
+/// user asked to see.
+
+final class MessageRevealedProvider
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  /// Whether the bubble of message [seq] is highlighted, as the message the
+  /// user asked to see.
+  MessageRevealedProvider._({
+    required MessageRevealedFamily super.from,
+    required (String, int) super.argument,
+  }) : super(
+         retry: null,
+         name: r'messageRevealedProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$messageRevealedHash();
+
+  @override
+  String toString() {
+    return r'messageRevealedProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    final argument = this.argument as (String, int);
+    return messageRevealed(ref, argument.$1, argument.$2);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is MessageRevealedProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$messageRevealedHash() => r'1bd75dcad460fdfc29ea52694c3860ea73e3f096';
+
+/// Whether the bubble of message [seq] is highlighted, as the message the
+/// user asked to see.
+
+final class MessageRevealedFamily extends $Family
+    with $FunctionalFamilyOverride<bool, (String, int)> {
+  MessageRevealedFamily._()
+    : super(
+        retry: null,
+        name: r'messageRevealedProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Whether the bubble of message [seq] is highlighted, as the message the
+  /// user asked to see.
+
+  MessageRevealedProvider call(String topic, int seq) =>
+      MessageRevealedProvider._(argument: (topic, seq), from: this);
+
+  @override
+  String toString() => r'messageRevealedProvider';
 }
 
 /// One message of an open chat that waits in the outbox.

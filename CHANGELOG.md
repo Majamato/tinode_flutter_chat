@@ -1,5 +1,21 @@
 ## Unreleased
 
+- Message search within a chat: the search button in the chat's app bar searches its messages
+  kept on the device. Every word must start a word of the message, and accents don't count. A
+  result goes back to the chat scrolled to the message, loading back to it from the cache or the
+  server, and highlights it for a moment; one that can't be shown (deleted, or offline and not
+  cached) says so. It needs no network. The cache
+  moves to schema v3 and indexes the messages it already holds.
+- The cache is pruned each time a user's chats open: each chat keeps its newest 1000 messages,
+  older ones load from the server again on scroll, chats no longer in the list lose theirs, and
+  the downloaded files used longest ago go until the rest fit in 200 MiB. Files staged for a
+  message that was never sent go too. `TinodeChat(cacheLimits:)` with `TinodeCacheLimits` sets
+  both limits; message search finds only what is kept.
+- `TinodeChatTheme.revealedMessageColor` colours the highlight; it is a new required argument
+  of the theme's constructor (`TinodeChatTheme.fallback` and `copyWith` fill it in).
+- The chat list has a search button that finds people and groups, like the new chat button.
+- The message list uses `super_sliver_list`, which can jump to a message of any height.
+
 - Push notifications, from `tinode_dart_client` 0.9.0. `TinodeChat(pushToken:)` takes the device
   token from the host's push service: it is registered for whoever logs in, sent again when the
   host rebuilds with a new one, and removed from the server when the user logs out (account

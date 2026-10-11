@@ -4,6 +4,7 @@ import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
+import 'package:tinode_flutter_chat/src/search/domain/found_message.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 
 /// A logged-in [TinodeSession] with a local cache: what the chats see.
@@ -84,6 +85,16 @@ abstract interface class ChatSession implements TinodeSession {
   Future<LocalFile> fetchFile(
     String ref, {
     void Function(int received, int? total)? onProgress,
+  });
+
+  /// The cached messages of [topic] matching [match] (see `messageMatch`),
+  /// newest first, and before seq [before] when given. Never asks the
+  /// server, which has no message search.
+  Future<List<FoundMessage>> searchMessages(
+    String topic,
+    String match, {
+    required int limit,
+    int? before,
   });
 
   /// Changes of the outbox, for the chats that show it.

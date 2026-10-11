@@ -122,6 +122,17 @@ A soft delete hides messages for the user on all their devices; a hard one delet
 members and needs the `D` permission. Both show at once and go to the server through the outbox.
 *In code:* `ChatController.delete`, `ChatSummary.canDeleteForEveryone`.
 
+**Prune**
+Shrinking the cache once each time a user's chats open: each chat keeps its newest messages
+(the rest are uncovered, so they load from the server again), chats that left the list lose
+theirs, and the file cache drops the files used longest ago until it fits.
+*In code:* `ChatStore.prune`, `FileStore.prune`, `CachedTinodeSession` (`_prune`).
+*Avoid:* "clean", "evict".
+
+**Cache limits**
+How much pruning keeps: messages per chat (1000 by default) and the size of the file cache
+(200 MiB). The host sets them. *In code:* `TinodeCacheLimits`, `TinodeChat.cacheLimits`.
+
 **Log out**
 Ends the session for good: deletes the user's cache, including unsent messages, and forgets the
 credentials. *In code:* `SessionController.logout`, `TinodeChatController.logOut`, `onLoggedOut`.
@@ -185,7 +196,9 @@ leaves the list and the cache; an open one says it is no longer available. *In c
 **Search**
 Finding people and groups to chat with, by their tags, as the user types. It needs the server.
 *In code:* `FindController`, `FindState`. The client's term is `fnd`; see its glossary.
-*Avoid:* "contacts". A result isn't in the chat list until a chat with it exists.
+*Avoid:* "contacts". A result isn't in the chat list until a chat with it exists. The chat
+list's search button opens it (`FindPeopleButton`). Finding messages is **message search**,
+never plain "search".
 
 **Search result**
 A user or group the search found, shown as a tile. A user's result is named by their user ID,
@@ -202,6 +215,31 @@ A group the user creates with a name and members picked from a search; the user 
 **Add a member**
 Making a user a member of a group (`set sub` on the wire), which needs `S`. The member can read the
 group at once. *Avoid:* "invite"; Tinode's docs use it, but nothing waits for an answer.
+
+## Message search
+
+**Message search**
+Finding messages of one chat by their words in the cache, as the user types, from the search
+button in the chat's app bar. Every word must start a word of the message; accents don't count ("cafe" finds "café").
+Tinode has no message search, so it needs no network and finds only what the cache keeps.
+*In code:* `MessageSearchController`, `MessageSearchState`, `messageMatch`,
+`ChatSession.searchMessages`, the `message_search` table.
+*Avoid:* plain "search" (that finds people), "find" (the client's `fnd`).
+
+**Found message**
+A message that message search found, shown as a tile with its sender, its time and a snippet. *In code:* `FoundMessage`, `FoundMessageTile`, `FoundSender`.
+*Avoid:* "search result" (`SearchResult` is a person or group).
+
+**Snippet**
+The words around what matched, the matches marked. *In code:* `MessageSnippet`, `SnippetPart`,
+`MessageSnippetText`.
+
+**Reveal**
+Showing one message in its chat: loading back to it if needed, scrolling to it and highlighting
+it for a moment. A message that can't be had (deleted, or offline and not cached) is
+**unavailable**. *In code:* `ChatController.reveal`, `MessageReveal`, `RevealStatus`,
+`RevealHighlight`.
+*Avoid:* "jump to", "scroll to" for the whole flow.
 
 ## Group chats
 

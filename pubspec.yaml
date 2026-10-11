@@ -31,6 +31,7 @@ dependencies:
   path_provider: ^2.1.6
   riverpod: 3.1.0
   riverpod_annotation: 4.0.0
+  super_sliver_list: ^0.4.1
   tinode_dart_client:
     path: ../tinode_dart_client
   web_socket: ^1.0.1

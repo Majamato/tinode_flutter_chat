@@ -21,6 +21,8 @@ import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_retry.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
+import 'package:tinode_flutter_chat/src/search/domain/found_message.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
@@ -36,13 +38,18 @@ const _maxDeleteLogPages = 20;
 ///
 /// What the server sends is written to the store in arrival order; reads
 /// wait for those writes, so they see everything that arrived before.
+///
+/// It prunes the cache to its `TinodeCacheLimits` once, when it starts:
+/// reads wait for the messages, the files go after.
 final class CachedTinodeSession implements ChatSession {
   CachedTinodeSession(
     this._remote,
     this._store, {
     required this.userId,
     FileStore? files,
+    TinodeCacheLimits limits = const TinodeCacheLimits(),
   }) : _files = files ?? MemoryFileStore() {
+    unawaited(_prune(limits));
     _subscriptions = [
       _remote.messages.listen(_onMessage),
       _remote.presence.listen(_onPresence),
@@ -1190,6 +1197,34 @@ final class CachedTinodeSession implements ChatSession {
     } else {
       // Started over on the next connect.
       _abortUpload();
+    }
+  }
+
+  // Message search and pruning.
+
+  @override
+  Future<List<FoundMessage>> searchMessages(
+    String topic,
+    String match, {
+    required int limit,
+    int? before,
+  }) async {
+    await _writes;
+    return _store.searchMessages(topic, match, limit: limit, before: before);
+  }
+
+  Future<void> _prune(TinodeCacheLimits limits) async {
+    await _write(() => _store.prune(keepPerChat: limits.messagesPerChat));
+    try {
+      final staged = {
+        for (final entry in await _store.outbox()) ?entry.attachment?.stagedId,
+      };
+      await _files.prune(
+        maxCacheBytes: limits.fileCacheBytes,
+        keepStaged: staged,
+      );
+    } on Object catch (e, stackTrace) {
+      _log('Could not prune the file cache', e, stackTrace);
     }
   }
 

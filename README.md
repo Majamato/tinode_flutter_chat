@@ -35,6 +35,12 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
   `firebase_messaging`) and it is registered for whoever logs in, and removed on log out. Read
   the pushes with `TinodePush.tryParse`, and open the tapped chat with
   `TinodeChatController.openChat`.
+- Message search within a chat, from the search button in its app bar, over the messages kept
+  on the device and ignoring accents. A result goes back to the chat scrolled to the message,
+  highlighted for a moment. Tinode has no server-side message search, so it works offline too.
+  The chat list's search button finds people and groups.
+- Keeps the cache small: each chat keeps its newest 1000 messages and the downloaded files
+  stay under 200 MiB, both adjustable with `TinodeCacheLimits`.
 - Restyle it with a `TinodeChatTheme` theme extension, and translate or reword it with
   `TinodeChatStrings`.
 - Needs no `ProviderScope` or other setup in your app.
@@ -179,6 +185,26 @@ TinodeChat(
 await chat.logOut();
 ```
 
+### Cache limits
+
+The cache is pruned once each time a user's chats open: each chat keeps its newest messages,
+older ones go and load from the server again when the user scrolls back to them, and the
+downloaded files used longest ago go until the rest fit. Messages of chats that left the list,
+and files left behind by a message that was never sent, go too.
+
+```dart
+TinodeChat(
+  config: config,
+  cacheLimits: const TinodeCacheLimits(
+    messagesPerChat: 5000, // default 1000
+    fileCacheBytes: 500 * 1024 * 1024, // default 200 MiB
+  ),
+)
+```
+
+Message search finds only what the cache keeps, so `messagesPerChat` is also how far back it
+reaches. Files waiting to be sent never count and are never pruned.
+
 ## Push: platform setup
 
 The package depends on no push service. The host app sets one up, typically `firebase_messaging`
@@ -251,8 +277,9 @@ class _ChatPageState extends State<ChatPage> {
 ## Roadmap
 
 Built so far: the happy path, reconnection, calls, offline, finding people and starting chats,
-group chat essentials, attachments, account and profile, push notifications.
-Next, in this order. Each feature lands in [`tinode_dart_client`](../tinode_dart_client) first
+group chat essentials, attachments, account and profile, push notifications, message search and
+cache upkeep.
+Still to come. Each feature lands in [`tinode_dart_client`](../tinode_dart_client) first
 where it needs the protocol:
 
 1. ~~**Find people and start chats**~~: done (search, 1:1 chats, new groups with members).
@@ -270,9 +297,9 @@ where it needs the protocol:
    ring only while the app is open and connected, and on Android a call may lose the microphone
    and camera in the background. Later still: group calls, switching between voice and video
    during a call.
-7. **Search and cache upkeep**: message search, pruning the cache, encrypting it at rest (today
-   it is a plain SQLite file per user).
-8. **UI/UX improvements.**
+7. ~~**Message search and cache upkeep**~~: done (search a chat's cached messages and jump to a
+   result; prune each chat to its newest messages and the file cache to a size, both set with
+   `TinodeCacheLimits`).
 
 ## Development
 

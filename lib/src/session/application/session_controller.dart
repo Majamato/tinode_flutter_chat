@@ -63,6 +63,7 @@ class SessionController extends _$SessionController {
           store,
           userId: userId,
           files: files,
+          limits: ref.read(tinodeCacheLimitsProvider),
         );
         open.session = session;
         if (lifetime.isActive) {
@@ -295,6 +296,7 @@ class SessionController extends _$SessionController {
       store,
       userId: login.userId,
       files: files,
+      limits: ref.read(tinodeCacheLimitsProvider),
     );
     _open.session = cached;
     return SessionLoggedIn(cached, userId: login.userId, login: login);

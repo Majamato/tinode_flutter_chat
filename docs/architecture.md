@@ -31,18 +31,25 @@ lib/
     chats/                        chat list and open chats
       domain/                     ChatSummary, ChatListState, ChatMessage, ChatState, CallRecord,
                                   ChatMembers, ChatMember, MessageReceipt, MessageSender,
-                                  TypingMembers, ChatExit
+                                  TypingMembers, ChatExit, MessageReveal
       application/                providers: chat list, chat, send, members, typing, chat actions,
                                   requested chat
       presentation/chat_list/     list screen and its tile parts, the account menu
-      presentation/chat/          chat screen, message list, bubbles, composer
+      presentation/chat/          chat screen, message list, bubbles, reveal highlight, composer
       presentation/chat_info/     chat info screen: members, delete, leave
-    offline/                      the cache, catching up and the outbox
-      domain/                     SeqRanges, OutgoingMessage, outbox events, merge and retry rules
-      data/                       ChatDatabase (drift, v2), ChatStore, ChatStoreOpener,
-                                  ChatSession, CachedTinodeSession
-      application/                chatStoreOpener
-    new_chat/                     finding people and starting chats
+    offline/                      the cache, catching up, the outbox and pruning
+      domain/                     SeqRanges, OutgoingMessage, outbox events, merge and retry rules,
+                                  TinodeCacheLimits (public)
+      data/                       ChatDatabase (drift, v3; message search in chat_search.drift),
+                                  ChatStore, ChatStoreOpener, ChatSession, CachedTinodeSession
+      application/                chatStoreOpener, tinodeCacheLimits
+    search/                       message search over the cache
+      domain/                     messageMatch, FoundMessage, MessageSnippet, FoundSender,
+                                  MessageSearchState
+      application/                MessageSearchController(topic), foundSender
+      presentation/               message search screen, field, results and tiles, the chat's
+                                  search button
+    new_chat/                     finding people and starting chats (the chat list's search)
       domain/                     findQuery, SearchResult, FindState, NewGroup
       application/                FindController(scope), NewGroupController
       presentation/               search and new group screens, the chat list's new chat button
@@ -76,8 +83,7 @@ lib/
 
 A feature is something the user *does* (connect, chat), not a screen. New work goes into an
 existing feature when it shares its state, otherwise into a new folder with the same four layers.
-Expected next features, in the README's roadmap order: background calls (in `calls`), then
-`search` (local message search).
+Expected next: background calls (in `calls`).
 
 ## Layers
 
@@ -86,7 +92,7 @@ Expected next features, in the README's roadmap order: background calls (in `cal
 | `domain` | Immutable models and pure rules (merging, counters) | Dart, `collection`, `meta`, `tinode_dart_client` models, `webrtc_interface` types | Flutter, Riverpod, other layers |
 | `data` | Talking to the outside world: the server, the OS's network reports, WebRTC, the local cache and files | `domain`, `tinode_dart_client`, `web_socket`, `drift`, `crypto`, `mime`, platform plugins behind an interface (`connectivity_plus`, `flutter_webrtc`, `drift_flutter`, `path_provider`, `image_picker`, `file_picker`, `open_filex`) | Flutter itself, Riverpod, `application`, `presentation` |
 | `application` | Riverpod providers: state, use cases, the glue between data and UI | `domain`, `data`, `riverpod`, `riverpod_annotation` | Flutter, `flutter_riverpod`, `presentation` |
-| `presentation` | Widgets only | `domain`, `application`, Flutter, `flutter_riverpod` | `data` (except the composition root in `app/`) |
+| `presentation` | Widgets only | `domain`, `application`, Flutter, `flutter_riverpod`, `super_sliver_list` | `data` (except the composition root in `app/`) |
 
 Two of these are deliberate stretches. A plugin is Flutter code, but `data` may wrap one behind a
 Dart interface (`NetworkMonitor`, `CallMedia`) as long as the file imports no `package:flutter/`;
@@ -107,12 +113,13 @@ provider.
 - The host app needs no `ProviderScope`. If it has one, our providers don't mix with its own.
 - The session lives exactly as long as the widget: removing `TinodeChat` disposes the container,
   which closes the connection.
-- The container overrides the inputs: `tinodeConfigProvider`, `initialCredentialsProvider` and,
+- The container overrides the inputs: `tinodeConfigProvider`, `initialCredentialsProvider`,
+  `tinodeChatFeaturesProvider`, `tinodeCacheLimitsProvider` and,
   in tests, `sessionConnectorProvider`, `sessionRestorerProvider`, `chatStoreOpenerProvider`
   (`MemoryChatStoreOpener`), `networkMonitorProvider` and `callMediaFactoryProvider`.
 - Automatic retry is off for the whole container. Retrying a rejected login or a failed connect
   would hide errors the user has to act on, so every retry is a button.
-- `config` and `credentials` are read once. To switch server or user, give `TinodeChat` a new `Key`.
+- `config`, `credentials`, `features` and `cacheLimits` are read once. To switch server or user, give `TinodeChat` a new `Key`.
   `pushToken` is read on every build and handed to `PushTokenController`.
 
 Trade-off: host-provided builders (future customisation hooks) won't see the host's providers.
@@ -134,11 +141,13 @@ TinodeChat                      owns the container
         │ └ PasswordResetScreen
         ├ SessionErrorView      "Reconnect"
         └ ChatNavigator         nested Navigator, only while logged in
-          ├ ChatListScreen      first route; NewChatButton, AccountMenuButton
+          ├ ChatListScreen      first route; NewChatButton, FindPeopleButton, AccountMenuButton
           ├ ProfileScreen       pushed from the account menu; ChangePasswordScreen over it
-          ├ FindPeopleScreen    pushed by NewChatButton
+          ├ FindPeopleScreen    pushed by NewChatButton or FindPeopleButton
           ├ NewGroupScreen      pushed from the search
-          ├ ChatScreen(topic)   pushed per chat; CallButtons in its app bar
+          ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`); MessageSearchButton
+          │                     and CallButtons in its app bar
+          ├ MessageSearchScreen pushed by MessageSearchButton, over its chat
           ├ ChatInfoScreen      pushed by tapping the chat's title
           ├ CallLayer           over the routes: IncomingCallView or CallView
           └ ReconnectingBanner  below the routes, while the link is restored
@@ -275,6 +284,20 @@ cache. `CachedTinodeSession` decorates the server session:
   aborts its upload and deletes the staged file. Upload errors follow the outbox rules, plus: a
   413 fails the message as `tooLarge`, a network failure backs off, an abort is no error.
 
+- **Pruning.** Each `CachedTinodeSession` prunes once when it starts, to the host's
+  `TinodeCacheLimits`. In the write queue, so reads wait for it, `ChatStore.prune` drops the
+  messages of chats in neither the list nor the outbox, and in each chat all but the newest
+  `messagesPerChat`; their seqs are uncovered, so they load from the server again as a gap.
+  Then `FileStore.prune` deletes the cached files used longest ago (a cache hit touches the file)
+  until the rest fit in `fileCacheBytes`, leftover `.part` files, and staged files no outbox entry
+  names that are older than `stagedGrace` (an hour, so a file being queued is safe).
+- **Message search.** `message_search`, an FTS5 table (`unicode61 remove_diacritics 2`), holds
+  each message's text under its rowid in `messages`. Triggers on `messages` keep it in step, so
+  every path that writes, replaces or deletes messages (pruning included) needs no code for it.
+  The text is plain text or Drafty's `txt`, read from the JSON in SQL; messages that update
+  others (`head.replace`) stay out. `ChatStore.searchMessages(topic, match)` searches one chat,
+  newest first, pages by seq (`before`), and returns a `snippet()` with the matches marked.
+
 **Chat list** (`ChatListController`, keepAlive, sync `Notifier<ChatListState>`):
 
 1. Subscribes to `presence` on `me` and to `messages`, **then** shows the cached list, attaches
@@ -376,6 +399,37 @@ during a call doesn't end the call.
    events, the held-back candidates and the setup timer. Ending the call releases it in one step,
    and work started for the call checks `isReleased` after every `await`.
 
+**Message search** (`MessageSearchController(topic)`, autoDispose, sync
+`Notifier<MessageSearchState>`), within one chat, from the search button in its app bar:
+
+1. Each change of the input goes to `search`; after `messageSearchDebounce` (300 ms) without
+   changes it asks the cache (`ChatSession.searchMessages`). Answers to older input are dropped.
+   Input with fewer than 2 letters or digits searches nothing.
+2. `messageMatch` turns the input into an FTS5 query: every word must match, each as the start
+   of a word (`"word"*`). Anything but letters and digits separates words, so the input can't
+   carry query syntax.
+3. Pages of `messageSearchPageSize` (30); `loadMore` asks for the ones after the last result as
+   the list nears its end.
+4. It needs no network: Tinode has no message search, so it finds only what the cache keeps (see
+   pruning).
+5. A tap on a result calls `ChatController.reveal` and goes back to the chat below
+   (`ChatScreen.backTo`).
+
+**Revealing a message** (`ChatController.reveal(seq)`, `ChatState.reveal`):
+
+1. The reveal waits for the chat to load. If the message is older than the loaded ones, one
+   `olderPage` loads back to it, from the cache or the server, at most `maxRevealSpan` (3000)
+   messages.
+2. It ends `shown` or `unavailable` (deleted, or offline and not cached), and clears after
+   `revealHighlight` (2 s).
+3. `MessageList` (a `SuperListView`, whose `ListController` can jump to an item of any height)
+   listens with `fireImmediately`, since the reveal may end before the list first shows. On
+   `shown` it jumps to the message after the frame, centred; on `unavailable` a snack bar says
+   so. Riverpod replays the last change to a listener paused under another route, so a reveal
+   asked for from the search over the chat still scrolls.
+4. Only that message's `RevealHighlight` watches it (`messageRevealed(topic, seq)`): a band
+   behind the bubble in `TinodeChatTheme.revealedMessageColor`, fading in and out.
+
 **Sending** (`SendController(topic)`): puts plain text in the outbox and clears the composer; the
 chat shows it with a clock until the server numbers it, or with an error mark if it refuses it.
 Only a local failure (no session) keeps the text and shows a snack bar.
@@ -438,6 +492,9 @@ and
 | Saving the profile or its photo fails | Text under the profile's fields |
 | Deleting the account, deleting or leaving a chat, or removing a member fails | Snack bar; nothing changes |
 | An open chat is deleted, or the user removed (`pres gone`) | "No longer available" in place of the messages, no composer |
+| Message search fails | `ErrorRetryView` in place of the results |
+| A message picked from message search can't be shown (deleted, or offline and not cached) | Snack bar in the chat |
+| Pruning the cache or the files fails | Logged; the cache stays as it was |
 
 Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); widgets never catch.
 
@@ -446,7 +503,7 @@ Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); wi
 Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `TinodeChatController`,
 `TinodeCredentials`
 (`PasswordCredentials`, `TokenCredentials`), `TinodeChatFeatures` (`PasswordResetMode`),
-`TinodeChatTheme`, `TinodeChatStrings`, and the
+`TinodeCacheLimits`, `TinodeChatTheme`, `TinodeChatStrings`, and the
 client's `TinodeConfig`, `LoginResult`, `DevicePlatform` and `TinodePush` (`MessagePush`,
 `SubscriptionPush`, `ReadPush`). Everything else may change freely. Every exported symbol
 carries dartdoc. Adding an export is an API decision: keep the list short.

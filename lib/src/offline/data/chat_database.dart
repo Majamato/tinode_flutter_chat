@@ -87,20 +87,31 @@ class Outbox extends Table {
   IntColumn get attempts => integer().withDefault(const Constant(0))();
 }
 
-/// One user's cache on one server.
-@DriftDatabase(tables: [Chats, Members, TopicSyncs, Messages, Outbox])
+/// One user's cache on one server. Message search lives in
+/// `chat_search.drift`.
+@DriftDatabase(
+  tables: [Chats, Members, TopicSyncs, Messages, Outbox],
+  include: {'chat_search.drift'},
+)
 final class ChatDatabase extends _$ChatDatabase {
   ChatDatabase(super.e);
 
-  /// 2: [Members].
+  /// 2: [Members]. 3: message search.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.createTable(members);
+      }
+      if (from < 3) {
+        await m.create(messageSearch);
+        await m.create(messagesSearchInsert);
+        await m.create(messagesSearchUpdate);
+        await m.create(messagesSearchDelete);
+        await backfillMessageSearch();
       }
     },
   );

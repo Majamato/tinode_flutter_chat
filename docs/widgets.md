@@ -58,8 +58,9 @@ business logic in UI files. Flutter's own guidance is in
   field via `ValueListenableBuilder`); typing or sending never rebuilds the composer or the screen.
   `LoginSubmitButton` does the same for the login form.
 - **Side effects use `ref.listen`** (snack bars, navigation), which never rebuilds.
-- **Lists:** `ListView.builder`, one widget per item with a `ValueKey` (topic or seq), each item
-  watching its own family provider (`chatSummaryProvider(topic)`, `chatMessageProvider(topic, seq)`).
+- **Lists:** `ListView.builder` (`SuperListView.builder` for the messages, which must jump to any
+  one of them), one widget per item with a `ValueKey` (topic or seq), each item watching its own
+  family provider (`chatSummaryProvider(topic)`, `chatMessageProvider(topic, seq)`).
 - **`const` everywhere it compiles.** Lints flag missing ones.
 - Use `MediaQuery.sizeOf(context)` (and the other `…Of` getters) instead of `MediaQuery.of`, so a
   keyboard opening doesn't rebuild every widget that reads the size.

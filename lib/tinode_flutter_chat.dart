@@ -18,6 +18,7 @@ export 'package:tinode_dart_client/tinode_dart_client.dart'
 
 export 'src/app/presentation/tinode_chat.dart'
     show TinodeChat, TinodeChatController;
+export 'src/offline/domain/tinode_cache_limits.dart' show TinodeCacheLimits;
 export 'src/session/domain/tinode_chat_features.dart'
     show PasswordResetMode, TinodeChatFeatures;
 export 'src/session/domain/tinode_credentials.dart'

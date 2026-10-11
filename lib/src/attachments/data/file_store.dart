@@ -1,5 +1,9 @@
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 
+/// How old a staged file that no message refers to must be before pruning
+/// deletes it: younger ones may belong to a message being queued.
+const stagedGrace = Duration(hours: 1);
+
 /// One user's files on this device: downloads and sent files kept by
 /// their URL (the cache, which the OS may clear), and files staged for
 /// sending, kept until the server has them.
@@ -26,6 +30,14 @@ abstract interface class FileStore {
 
   /// The contents of [file].
   Stream<List<int>> read(LocalFile file);
+
+  /// Frees space: deletes the cached files used longest ago until the rest
+  /// take at most [maxCacheBytes], and staged files left behind, e.g. by a
+  /// crash: those not in [keepStaged] and older than [stagedGrace].
+  Future<void> prune({
+    required int maxCacheBytes,
+    required Set<String> keepStaged,
+  });
 }
 
 /// Opens and deletes the per-user [FileStore]s.

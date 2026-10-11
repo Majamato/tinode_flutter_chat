@@ -1,10 +1,13 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
 import 'package:tinode_flutter_chat/src/offline/data/cached_tinode_session.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
+import 'package:tinode_flutter_chat/src/search/domain/message_match.dart';
 
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
@@ -220,5 +223,51 @@ void main() {
   test('closing closes the remote session', () async {
     await session.close();
     expect(remote.isClosed, isTrue);
+  });
+
+  group('pruning', () {
+    test('a new session prunes the cache before it serves it', () async {
+      await session.chatList();
+      await session.history(bob, limit: 40);
+      final files = MemoryFileStore();
+      final big = Uri.parse('https://example.com/big.bin');
+      await files.cache(big, Stream.value(List.filled(2048, 0)));
+
+      final pruned = CachedTinodeSession(
+        remote,
+        store,
+        userId: alice,
+        files: files,
+        limits: const TinodeCacheLimits(
+          messagesPerChat: 10,
+          fileCacheBytes: 1024,
+        ),
+      );
+      final page = await pruned.storedPage(bob, limit: 32);
+
+      expect(page.messages.map((m) => m.seq), [
+        for (var seq = 91; seq <= 100; seq++) seq,
+      ]);
+      await pumpEventQueue();
+      expect(files.isCached(big), isFalse);
+
+      // The pruned messages load from the server again.
+      remote.calls.clear();
+      final older = await pruned.olderPage(bob, before: 91, limit: 5);
+      expect(older.messages.map((m) => m.seq), [86, 87, 88, 89, 90]);
+      expect(requests(), ['history $bob before 91']);
+    });
+
+    test('message search waits for what arrived before', () async {
+      await session.chatList();
+      remote.emitMessage(message(bob, 101, text: 'see you at noon'));
+
+      final found = await session.searchMessages(
+        bob,
+        messageMatch('noon')!,
+        limit: 5,
+      );
+      expect(found.single.seq, 101);
+    });
   });
 }

@@ -10,6 +10,7 @@ import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/chats/application/requested_chat_controller.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
 import 'package:tinode_flutter_chat/src/push/application/push_registration.dart';
 import 'package:tinode_flutter_chat/src/push/application/push_token_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
@@ -60,6 +61,7 @@ class TinodeChat extends StatefulWidget {
     this.pushToken,
     this.strings = const TinodeChatStrings(),
     this.features = const TinodeChatFeatures(),
+    this.cacheLimits = const TinodeCacheLimits(),
     super.key,
   }) : connector = null,
        restorer = null,
@@ -93,6 +95,7 @@ class TinodeChat extends StatefulWidget {
     this.pushToken,
     this.strings = const TinodeChatStrings(),
     this.features = const TinodeChatFeatures(),
+    this.cacheLimits = const TinodeCacheLimits(),
     super.key,
   });
 
@@ -131,6 +134,11 @@ class TinodeChat extends StatefulWidget {
   /// resetting a forgotten password (by default only where the server
   /// sends email).
   final TinodeChatFeatures features;
+
+  /// How much of each user's chats stays on the device: messages per chat
+  /// and the size of the file cache. Message search finds only what is
+  /// kept.
+  final TinodeCacheLimits cacheLimits;
 
   /// Opens sessions; null for a real connection.
   @visibleForTesting
@@ -174,6 +182,7 @@ class _TinodeChatState extends State<TinodeChat> {
     config: _withPlatform(widget.config),
     credentials: widget.credentials,
     features: widget.features,
+    cacheLimits: widget.cacheLimits,
     connector: widget.connector,
     restorer: widget.restorer,
     storeOpener: widget.storeOpener,

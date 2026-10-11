@@ -3,6 +3,489 @@
 part of 'chat_database.dart';
 
 // ignore_for_file: type=lint
+class MessageSearch extends Table
+    with
+        TableInfo<MessageSearch, MessageSearchData>,
+        VirtualTableInfo<MessageSearch, MessageSearchData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  MessageSearch(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: '',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [body];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'message_search';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MessageSearchData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => const {};
+  @override
+  MessageSearchData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MessageSearchData(
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+    );
+  }
+
+  @override
+  MessageSearch createAlias(String alias) {
+    return MessageSearch(attachedDatabase, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+  @override
+  String get moduleAndArgs =>
+      'fts5(body, tokenize = \'unicode61 remove_diacritics 2\')';
+}
+
+class MessageSearchData extends DataClass
+    implements Insertable<MessageSearchData> {
+  final String body;
+  const MessageSearchData({required this.body});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['body'] = Variable<String>(body);
+    return map;
+  }
+
+  MessageSearchCompanion toCompanion(bool nullToAbsent) {
+    return MessageSearchCompanion(body: Value(body));
+  }
+
+  factory MessageSearchData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MessageSearchData(body: serializer.fromJson<String>(json['body']));
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{'body': serializer.toJson<String>(body)};
+  }
+
+  MessageSearchData copyWith({String? body}) =>
+      MessageSearchData(body: body ?? this.body);
+  MessageSearchData copyWithCompanion(MessageSearchCompanion data) {
+    return MessageSearchData(
+      body: data.body.present ? data.body.value : this.body,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageSearchData(')
+          ..write('body: $body')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => body.hashCode;
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MessageSearchData && other.body == this.body);
+}
+
+class MessageSearchCompanion extends UpdateCompanion<MessageSearchData> {
+  final Value<String> body;
+  final Value<int> rowid;
+  const MessageSearchCompanion({
+    this.body = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MessageSearchCompanion.insert({
+    required String body,
+    this.rowid = const Value.absent(),
+  }) : body = Value(body);
+  static Insertable<MessageSearchData> custom({
+    Expression<String>? body,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (body != null) 'body': body,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MessageSearchCompanion copyWith({Value<String>? body, Value<int>? rowid}) {
+    return MessageSearchCompanion(
+      body: body ?? this.body,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageSearchCompanion(')
+          ..write('body: $body, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MessagesTable extends Messages
+    with TableInfo<$MessagesTable, MessageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MessagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _topicMeta = const VerificationMeta('topic');
+  @override
+  late final GeneratedColumn<String> topic = GeneratedColumn<String>(
+    'topic',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _seqMeta = const VerificationMeta('seq');
+  @override
+  late final GeneratedColumn<int> seq = GeneratedColumn<int>(
+    'seq',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _jsonMeta = const VerificationMeta('json');
+  @override
+  late final GeneratedColumn<String> json = GeneratedColumn<String>(
+    'json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  @override
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [topic, seq, json, clientId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'messages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MessageRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('topic')) {
+      context.handle(
+        _topicMeta,
+        topic.isAcceptableOrUnknown(data['topic']!, _topicMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_topicMeta);
+    }
+    if (data.containsKey('seq')) {
+      context.handle(
+        _seqMeta,
+        seq.isAcceptableOrUnknown(data['seq']!, _seqMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seqMeta);
+    }
+    if (data.containsKey('json')) {
+      context.handle(
+        _jsonMeta,
+        json.isAcceptableOrUnknown(data['json']!, _jsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_jsonMeta);
+    }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {topic, seq};
+  @override
+  MessageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MessageRow(
+      topic: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}topic'],
+      )!,
+      seq: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seq'],
+      )!,
+      json: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}json'],
+      )!,
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      ),
+    );
+  }
+
+  @override
+  $MessagesTable createAlias(String alias) {
+    return $MessagesTable(attachedDatabase, alias);
+  }
+}
+
+class MessageRow extends DataClass implements Insertable<MessageRow> {
+  final String topic;
+  final int seq;
+
+  /// `DataMessage.toJson`.
+  final String json;
+
+  /// Set on the messages this package sent, from their head.
+  final String? clientId;
+  const MessageRow({
+    required this.topic,
+    required this.seq,
+    required this.json,
+    this.clientId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['topic'] = Variable<String>(topic);
+    map['seq'] = Variable<int>(seq);
+    map['json'] = Variable<String>(json);
+    if (!nullToAbsent || clientId != null) {
+      map['client_id'] = Variable<String>(clientId);
+    }
+    return map;
+  }
+
+  MessagesCompanion toCompanion(bool nullToAbsent) {
+    return MessagesCompanion(
+      topic: Value(topic),
+      seq: Value(seq),
+      json: Value(json),
+      clientId: clientId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientId),
+    );
+  }
+
+  factory MessageRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MessageRow(
+      topic: serializer.fromJson<String>(json['topic']),
+      seq: serializer.fromJson<int>(json['seq']),
+      json: serializer.fromJson<String>(json['json']),
+      clientId: serializer.fromJson<String?>(json['clientId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'topic': serializer.toJson<String>(topic),
+      'seq': serializer.toJson<int>(seq),
+      'json': serializer.toJson<String>(json),
+      'clientId': serializer.toJson<String?>(clientId),
+    };
+  }
+
+  MessageRow copyWith({
+    String? topic,
+    int? seq,
+    String? json,
+    Value<String?> clientId = const Value.absent(),
+  }) => MessageRow(
+    topic: topic ?? this.topic,
+    seq: seq ?? this.seq,
+    json: json ?? this.json,
+    clientId: clientId.present ? clientId.value : this.clientId,
+  );
+  MessageRow copyWithCompanion(MessagesCompanion data) {
+    return MessageRow(
+      topic: data.topic.present ? data.topic.value : this.topic,
+      seq: data.seq.present ? data.seq.value : this.seq,
+      json: data.json.present ? data.json.value : this.json,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageRow(')
+          ..write('topic: $topic, ')
+          ..write('seq: $seq, ')
+          ..write('json: $json, ')
+          ..write('clientId: $clientId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(topic, seq, json, clientId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MessageRow &&
+          other.topic == this.topic &&
+          other.seq == this.seq &&
+          other.json == this.json &&
+          other.clientId == this.clientId);
+}
+
+class MessagesCompanion extends UpdateCompanion<MessageRow> {
+  final Value<String> topic;
+  final Value<int> seq;
+  final Value<String> json;
+  final Value<String?> clientId;
+  final Value<int> rowid;
+  const MessagesCompanion({
+    this.topic = const Value.absent(),
+    this.seq = const Value.absent(),
+    this.json = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MessagesCompanion.insert({
+    required String topic,
+    required int seq,
+    required String json,
+    this.clientId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : topic = Value(topic),
+       seq = Value(seq),
+       json = Value(json);
+  static Insertable<MessageRow> custom({
+    Expression<String>? topic,
+    Expression<int>? seq,
+    Expression<String>? json,
+    Expression<String>? clientId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (topic != null) 'topic': topic,
+      if (seq != null) 'seq': seq,
+      if (json != null) 'json': json,
+      if (clientId != null) 'client_id': clientId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MessagesCompanion copyWith({
+    Value<String>? topic,
+    Value<int>? seq,
+    Value<String>? json,
+    Value<String?>? clientId,
+    Value<int>? rowid,
+  }) {
+    return MessagesCompanion(
+      topic: topic ?? this.topic,
+      seq: seq ?? this.seq,
+      json: json ?? this.json,
+      clientId: clientId ?? this.clientId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (topic.present) {
+      map['topic'] = Variable<String>(topic.value);
+    }
+    if (seq.present) {
+      map['seq'] = Variable<int>(seq.value);
+    }
+    if (json.present) {
+      map['json'] = Variable<String>(json.value);
+    }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessagesCompanion(')
+          ..write('topic: $topic, ')
+          ..write('seq: $seq, ')
+          ..write('json: $json, ')
+          ..write('clientId: $clientId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ChatsTable extends Chats with TableInfo<$ChatsTable, ChatRow> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -745,320 +1228,6 @@ class TopicSyncsCompanion extends UpdateCompanion<TopicSyncRow> {
   }
 }
 
-class $MessagesTable extends Messages
-    with TableInfo<$MessagesTable, MessageRow> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $MessagesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _topicMeta = const VerificationMeta('topic');
-  @override
-  late final GeneratedColumn<String> topic = GeneratedColumn<String>(
-    'topic',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _seqMeta = const VerificationMeta('seq');
-  @override
-  late final GeneratedColumn<int> seq = GeneratedColumn<int>(
-    'seq',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _jsonMeta = const VerificationMeta('json');
-  @override
-  late final GeneratedColumn<String> json = GeneratedColumn<String>(
-    'json',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _clientIdMeta = const VerificationMeta(
-    'clientId',
-  );
-  @override
-  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
-    'client_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [topic, seq, json, clientId];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'messages';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<MessageRow> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('topic')) {
-      context.handle(
-        _topicMeta,
-        topic.isAcceptableOrUnknown(data['topic']!, _topicMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_topicMeta);
-    }
-    if (data.containsKey('seq')) {
-      context.handle(
-        _seqMeta,
-        seq.isAcceptableOrUnknown(data['seq']!, _seqMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_seqMeta);
-    }
-    if (data.containsKey('json')) {
-      context.handle(
-        _jsonMeta,
-        json.isAcceptableOrUnknown(data['json']!, _jsonMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_jsonMeta);
-    }
-    if (data.containsKey('client_id')) {
-      context.handle(
-        _clientIdMeta,
-        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {topic, seq};
-  @override
-  MessageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return MessageRow(
-      topic: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}topic'],
-      )!,
-      seq: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}seq'],
-      )!,
-      json: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}json'],
-      )!,
-      clientId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}client_id'],
-      ),
-    );
-  }
-
-  @override
-  $MessagesTable createAlias(String alias) {
-    return $MessagesTable(attachedDatabase, alias);
-  }
-}
-
-class MessageRow extends DataClass implements Insertable<MessageRow> {
-  final String topic;
-  final int seq;
-
-  /// `DataMessage.toJson`.
-  final String json;
-
-  /// Set on the messages this package sent, from their head.
-  final String? clientId;
-  const MessageRow({
-    required this.topic,
-    required this.seq,
-    required this.json,
-    this.clientId,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['topic'] = Variable<String>(topic);
-    map['seq'] = Variable<int>(seq);
-    map['json'] = Variable<String>(json);
-    if (!nullToAbsent || clientId != null) {
-      map['client_id'] = Variable<String>(clientId);
-    }
-    return map;
-  }
-
-  MessagesCompanion toCompanion(bool nullToAbsent) {
-    return MessagesCompanion(
-      topic: Value(topic),
-      seq: Value(seq),
-      json: Value(json),
-      clientId: clientId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(clientId),
-    );
-  }
-
-  factory MessageRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return MessageRow(
-      topic: serializer.fromJson<String>(json['topic']),
-      seq: serializer.fromJson<int>(json['seq']),
-      json: serializer.fromJson<String>(json['json']),
-      clientId: serializer.fromJson<String?>(json['clientId']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'topic': serializer.toJson<String>(topic),
-      'seq': serializer.toJson<int>(seq),
-      'json': serializer.toJson<String>(json),
-      'clientId': serializer.toJson<String?>(clientId),
-    };
-  }
-
-  MessageRow copyWith({
-    String? topic,
-    int? seq,
-    String? json,
-    Value<String?> clientId = const Value.absent(),
-  }) => MessageRow(
-    topic: topic ?? this.topic,
-    seq: seq ?? this.seq,
-    json: json ?? this.json,
-    clientId: clientId.present ? clientId.value : this.clientId,
-  );
-  MessageRow copyWithCompanion(MessagesCompanion data) {
-    return MessageRow(
-      topic: data.topic.present ? data.topic.value : this.topic,
-      seq: data.seq.present ? data.seq.value : this.seq,
-      json: data.json.present ? data.json.value : this.json,
-      clientId: data.clientId.present ? data.clientId.value : this.clientId,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('MessageRow(')
-          ..write('topic: $topic, ')
-          ..write('seq: $seq, ')
-          ..write('json: $json, ')
-          ..write('clientId: $clientId')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(topic, seq, json, clientId);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is MessageRow &&
-          other.topic == this.topic &&
-          other.seq == this.seq &&
-          other.json == this.json &&
-          other.clientId == this.clientId);
-}
-
-class MessagesCompanion extends UpdateCompanion<MessageRow> {
-  final Value<String> topic;
-  final Value<int> seq;
-  final Value<String> json;
-  final Value<String?> clientId;
-  final Value<int> rowid;
-  const MessagesCompanion({
-    this.topic = const Value.absent(),
-    this.seq = const Value.absent(),
-    this.json = const Value.absent(),
-    this.clientId = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  MessagesCompanion.insert({
-    required String topic,
-    required int seq,
-    required String json,
-    this.clientId = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : topic = Value(topic),
-       seq = Value(seq),
-       json = Value(json);
-  static Insertable<MessageRow> custom({
-    Expression<String>? topic,
-    Expression<int>? seq,
-    Expression<String>? json,
-    Expression<String>? clientId,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (topic != null) 'topic': topic,
-      if (seq != null) 'seq': seq,
-      if (json != null) 'json': json,
-      if (clientId != null) 'client_id': clientId,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  MessagesCompanion copyWith({
-    Value<String>? topic,
-    Value<int>? seq,
-    Value<String>? json,
-    Value<String?>? clientId,
-    Value<int>? rowid,
-  }) {
-    return MessagesCompanion(
-      topic: topic ?? this.topic,
-      seq: seq ?? this.seq,
-      json: json ?? this.json,
-      clientId: clientId ?? this.clientId,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (topic.present) {
-      map['topic'] = Variable<String>(topic.value);
-    }
-    if (seq.present) {
-      map['seq'] = Variable<int>(seq.value);
-    }
-    if (json.present) {
-      map['json'] = Variable<String>(json.value);
-    }
-    if (clientId.present) {
-      map['client_id'] = Variable<String>(clientId.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('MessagesCompanion(')
-          ..write('topic: $topic, ')
-          ..write('seq: $seq, ')
-          ..write('json: $json, ')
-          ..write('clientId: $clientId, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -1675,32 +1844,374 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
 abstract class _$ChatDatabase extends GeneratedDatabase {
   _$ChatDatabase(QueryExecutor e) : super(e);
   $ChatDatabaseManager get managers => $ChatDatabaseManager(this);
+  late final MessageSearch messageSearch = MessageSearch(this);
+  late final $MessagesTable messages = $MessagesTable(this);
+  late final Trigger messagesSearchInsert = Trigger(
+    'CREATE TRIGGER messages_search_insert AFTER INSERT ON messages BEGIN INSERT INTO message_search ("rowid", body) SELECT new."rowid", body FROM (SELECT CAST(CASE json_type(new.json, \'\$.content\') WHEN \'text\' THEN json_extract(new.json, \'\$.content\') WHEN \'object\' THEN json_extract(new.json, \'\$.content.txt\') END AS TEXT) AS body) WHERE trim(coalesce(body, \'\')) <> \'\' AND json_extract(new.json, \'\$.head.replace\') IS NULL;END',
+    'messages_search_insert',
+  );
+  late final Trigger messagesSearchUpdate = Trigger(
+    'CREATE TRIGGER messages_search_update AFTER UPDATE ON messages BEGIN DELETE FROM message_search WHERE "rowid" = old."rowid";INSERT INTO message_search ("rowid", body) SELECT new."rowid", body FROM (SELECT CAST(CASE json_type(new.json, \'\$.content\') WHEN \'text\' THEN json_extract(new.json, \'\$.content\') WHEN \'object\' THEN json_extract(new.json, \'\$.content.txt\') END AS TEXT) AS body) WHERE trim(coalesce(body, \'\')) <> \'\' AND json_extract(new.json, \'\$.head.replace\') IS NULL;END',
+    'messages_search_update',
+  );
+  late final Trigger messagesSearchDelete = Trigger(
+    'CREATE TRIGGER messages_search_delete AFTER DELETE ON messages BEGIN DELETE FROM message_search WHERE "rowid" = old."rowid";END',
+    'messages_search_delete',
+  );
   late final $ChatsTable chats = $ChatsTable(this);
   late final $MembersTable members = $MembersTable(this);
   late final $TopicSyncsTable topicSyncs = $TopicSyncsTable(this);
-  late final $MessagesTable messages = $MessagesTable(this);
   late final $OutboxTable outbox = $OutboxTable(this);
   late final Index messagesClientId = Index(
     'messages_client_id',
     'CREATE INDEX messages_client_id ON messages (topic, client_id)',
   );
+  Future<int> backfillMessageSearch() {
+    return customInsert(
+      'INSERT INTO message_search ("rowid", body) SELECT id, body FROM (SELECT m."rowid" AS id, m.json AS raw, CAST(CASE json_type(m.json, \'\$.content\') WHEN \'text\' THEN json_extract(m.json, \'\$.content\') WHEN \'object\' THEN json_extract(m.json, \'\$.content.txt\') END AS TEXT) AS body FROM messages AS m) WHERE trim(coalesce(body, \'\')) <> \'\' AND json_extract(raw, \'\$.head.replace\') IS NULL',
+      variables: [],
+      updates: {messageSearch},
+    );
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+    messageSearch,
+    messages,
+    messagesSearchInsert,
+    messagesSearchUpdate,
+    messagesSearchDelete,
     chats,
     members,
     topicSyncs,
-    messages,
     outbox,
     messagesClientId,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'messages',
+        limitUpdateKind: UpdateKind.insert,
+      ),
+      result: [TableUpdate('message_search', kind: UpdateKind.insert)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'messages',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [
+        TableUpdate('message_search', kind: UpdateKind.delete),
+        TableUpdate('message_search', kind: UpdateKind.insert),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'messages',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('message_search', kind: UpdateKind.delete)],
+    ),
+  ]);
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 }
 
+typedef $MessageSearchCreateCompanionBuilder =
+    MessageSearchCompanion Function({required String body, Value<int> rowid});
+typedef $MessageSearchUpdateCompanionBuilder =
+    MessageSearchCompanion Function({Value<String> body, Value<int> rowid});
+
+class $MessageSearchFilterComposer
+    extends Composer<_$ChatDatabase, MessageSearch> {
+  $MessageSearchFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $MessageSearchOrderingComposer
+    extends Composer<_$ChatDatabase, MessageSearch> {
+  $MessageSearchOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $MessageSearchAnnotationComposer
+    extends Composer<_$ChatDatabase, MessageSearch> {
+  $MessageSearchAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+}
+
+class $MessageSearchTableManager
+    extends
+        RootTableManager<
+          _$ChatDatabase,
+          MessageSearch,
+          MessageSearchData,
+          $MessageSearchFilterComposer,
+          $MessageSearchOrderingComposer,
+          $MessageSearchAnnotationComposer,
+          $MessageSearchCreateCompanionBuilder,
+          $MessageSearchUpdateCompanionBuilder,
+          (
+            MessageSearchData,
+            BaseReferences<_$ChatDatabase, MessageSearch, MessageSearchData>,
+          ),
+          MessageSearchData,
+          PrefetchHooks Function()
+        > {
+  $MessageSearchTableManager(_$ChatDatabase db, MessageSearch table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $MessageSearchFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $MessageSearchOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $MessageSearchAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> body = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MessageSearchCompanion(body: body, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String body,
+                Value<int> rowid = const Value.absent(),
+              }) => MessageSearchCompanion.insert(body: body, rowid: rowid),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $MessageSearchProcessedTableManager =
+    ProcessedTableManager<
+      _$ChatDatabase,
+      MessageSearch,
+      MessageSearchData,
+      $MessageSearchFilterComposer,
+      $MessageSearchOrderingComposer,
+      $MessageSearchAnnotationComposer,
+      $MessageSearchCreateCompanionBuilder,
+      $MessageSearchUpdateCompanionBuilder,
+      (
+        MessageSearchData,
+        BaseReferences<_$ChatDatabase, MessageSearch, MessageSearchData>,
+      ),
+      MessageSearchData,
+      PrefetchHooks Function()
+    >;
+typedef $$MessagesTableCreateCompanionBuilder =
+    MessagesCompanion Function({
+      required String topic,
+      required int seq,
+      required String json,
+      Value<String?> clientId,
+      Value<int> rowid,
+    });
+typedef $$MessagesTableUpdateCompanionBuilder =
+    MessagesCompanion Function({
+      Value<String> topic,
+      Value<int> seq,
+      Value<String> json,
+      Value<String?> clientId,
+      Value<int> rowid,
+    });
+
+class $$MessagesTableFilterComposer
+    extends Composer<_$ChatDatabase, $MessagesTable> {
+  $$MessagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get topic => $composableBuilder(
+    column: $table.topic,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get json => $composableBuilder(
+    column: $table.json,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MessagesTableOrderingComposer
+    extends Composer<_$ChatDatabase, $MessagesTable> {
+  $$MessagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get topic => $composableBuilder(
+    column: $table.topic,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get json => $composableBuilder(
+    column: $table.json,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MessagesTableAnnotationComposer
+    extends Composer<_$ChatDatabase, $MessagesTable> {
+  $$MessagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get topic =>
+      $composableBuilder(column: $table.topic, builder: (column) => column);
+
+  GeneratedColumn<int> get seq =>
+      $composableBuilder(column: $table.seq, builder: (column) => column);
+
+  GeneratedColumn<String> get json =>
+      $composableBuilder(column: $table.json, builder: (column) => column);
+
+  GeneratedColumn<String> get clientId =>
+      $composableBuilder(column: $table.clientId, builder: (column) => column);
+}
+
+class $$MessagesTableTableManager
+    extends
+        RootTableManager<
+          _$ChatDatabase,
+          $MessagesTable,
+          MessageRow,
+          $$MessagesTableFilterComposer,
+          $$MessagesTableOrderingComposer,
+          $$MessagesTableAnnotationComposer,
+          $$MessagesTableCreateCompanionBuilder,
+          $$MessagesTableUpdateCompanionBuilder,
+          (
+            MessageRow,
+            BaseReferences<_$ChatDatabase, $MessagesTable, MessageRow>,
+          ),
+          MessageRow,
+          PrefetchHooks Function()
+        > {
+  $$MessagesTableTableManager(_$ChatDatabase db, $MessagesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MessagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MessagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MessagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> topic = const Value.absent(),
+                Value<int> seq = const Value.absent(),
+                Value<String> json = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MessagesCompanion(
+                topic: topic,
+                seq: seq,
+                json: json,
+                clientId: clientId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String topic,
+                required int seq,
+                required String json,
+                Value<String?> clientId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MessagesCompanion.insert(
+                topic: topic,
+                seq: seq,
+                json: json,
+                clientId: clientId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MessagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ChatDatabase,
+      $MessagesTable,
+      MessageRow,
+      $$MessagesTableFilterComposer,
+      $$MessagesTableOrderingComposer,
+      $$MessagesTableAnnotationComposer,
+      $$MessagesTableCreateCompanionBuilder,
+      $$MessagesTableUpdateCompanionBuilder,
+      (MessageRow, BaseReferences<_$ChatDatabase, $MessagesTable, MessageRow>),
+      MessageRow,
+      PrefetchHooks Function()
+    >;
 typedef $$ChatsTableCreateCompanionBuilder =
     ChatsCompanion Function({
       required String topic,
@@ -2150,184 +2661,6 @@ typedef $$TopicSyncsTableProcessedTableManager =
       TopicSyncRow,
       PrefetchHooks Function()
     >;
-typedef $$MessagesTableCreateCompanionBuilder =
-    MessagesCompanion Function({
-      required String topic,
-      required int seq,
-      required String json,
-      Value<String?> clientId,
-      Value<int> rowid,
-    });
-typedef $$MessagesTableUpdateCompanionBuilder =
-    MessagesCompanion Function({
-      Value<String> topic,
-      Value<int> seq,
-      Value<String> json,
-      Value<String?> clientId,
-      Value<int> rowid,
-    });
-
-class $$MessagesTableFilterComposer
-    extends Composer<_$ChatDatabase, $MessagesTable> {
-  $$MessagesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get topic => $composableBuilder(
-    column: $table.topic,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get seq => $composableBuilder(
-    column: $table.seq,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get json => $composableBuilder(
-    column: $table.json,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get clientId => $composableBuilder(
-    column: $table.clientId,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$MessagesTableOrderingComposer
-    extends Composer<_$ChatDatabase, $MessagesTable> {
-  $$MessagesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get topic => $composableBuilder(
-    column: $table.topic,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get seq => $composableBuilder(
-    column: $table.seq,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get json => $composableBuilder(
-    column: $table.json,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get clientId => $composableBuilder(
-    column: $table.clientId,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$MessagesTableAnnotationComposer
-    extends Composer<_$ChatDatabase, $MessagesTable> {
-  $$MessagesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get topic =>
-      $composableBuilder(column: $table.topic, builder: (column) => column);
-
-  GeneratedColumn<int> get seq =>
-      $composableBuilder(column: $table.seq, builder: (column) => column);
-
-  GeneratedColumn<String> get json =>
-      $composableBuilder(column: $table.json, builder: (column) => column);
-
-  GeneratedColumn<String> get clientId =>
-      $composableBuilder(column: $table.clientId, builder: (column) => column);
-}
-
-class $$MessagesTableTableManager
-    extends
-        RootTableManager<
-          _$ChatDatabase,
-          $MessagesTable,
-          MessageRow,
-          $$MessagesTableFilterComposer,
-          $$MessagesTableOrderingComposer,
-          $$MessagesTableAnnotationComposer,
-          $$MessagesTableCreateCompanionBuilder,
-          $$MessagesTableUpdateCompanionBuilder,
-          (
-            MessageRow,
-            BaseReferences<_$ChatDatabase, $MessagesTable, MessageRow>,
-          ),
-          MessageRow,
-          PrefetchHooks Function()
-        > {
-  $$MessagesTableTableManager(_$ChatDatabase db, $MessagesTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$MessagesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$MessagesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$MessagesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> topic = const Value.absent(),
-                Value<int> seq = const Value.absent(),
-                Value<String> json = const Value.absent(),
-                Value<String?> clientId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => MessagesCompanion(
-                topic: topic,
-                seq: seq,
-                json: json,
-                clientId: clientId,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String topic,
-                required int seq,
-                required String json,
-                Value<String?> clientId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => MessagesCompanion.insert(
-                topic: topic,
-                seq: seq,
-                json: json,
-                clientId: clientId,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$MessagesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$ChatDatabase,
-      $MessagesTable,
-      MessageRow,
-      $$MessagesTableFilterComposer,
-      $$MessagesTableOrderingComposer,
-      $$MessagesTableAnnotationComposer,
-      $$MessagesTableCreateCompanionBuilder,
-      $$MessagesTableUpdateCompanionBuilder,
-      (MessageRow, BaseReferences<_$ChatDatabase, $MessagesTable, MessageRow>),
-      MessageRow,
-      PrefetchHooks Function()
-    >;
 typedef $$OutboxTableCreateCompanionBuilder =
     OutboxCompanion Function({
       Value<int> id,
@@ -2618,14 +2951,16 @@ typedef $$OutboxTableProcessedTableManager =
 class $ChatDatabaseManager {
   final _$ChatDatabase _db;
   $ChatDatabaseManager(this._db);
+  $MessageSearchTableManager get messageSearch =>
+      $MessageSearchTableManager(_db, _db.messageSearch);
+  $$MessagesTableTableManager get messages =>
+      $$MessagesTableTableManager(_db, _db.messages);
   $$ChatsTableTableManager get chats =>
       $$ChatsTableTableManager(_db, _db.chats);
   $$MembersTableTableManager get members =>
       $$MembersTableTableManager(_db, _db.members);
   $$TopicSyncsTableTableManager get topicSyncs =>
       $$TopicSyncsTableTableManager(_db, _db.topicSyncs);
-  $$MessagesTableTableManager get messages =>
-      $$MessagesTableTableManager(_db, _db.messages);
   $$OutboxTableTableManager get outbox =>
       $$OutboxTableTableManager(_db, _db.outbox);
 }

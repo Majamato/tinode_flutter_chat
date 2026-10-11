@@ -1,0 +1,55 @@
+import 'chat_database.dart';
+
+-- The words of each message, for message search. Its rowid is the rowid
+-- of the message in `messages`; the triggers below keep it in step, so no
+-- write path has to remember it. Diacritics are ignored: "cafe" finds
+-- "café".
+CREATE VIRTUAL TABLE message_search USING fts5(
+  body,
+  tokenize = 'unicode61 remove_diacritics 2'
+);
+
+-- The text of a message: plain text, or the `txt` of Drafty. Updates of
+-- other messages (`head.replace`) are no bubble of their own and stay out.
+CREATE TRIGGER messages_search_insert AFTER INSERT ON messages BEGIN
+  INSERT INTO message_search (rowid, body)
+    SELECT new.rowid, body FROM (
+      SELECT CAST(CASE json_type(new.json, '$.content')
+        WHEN 'text' THEN json_extract(new.json, '$.content')
+        WHEN 'object' THEN json_extract(new.json, '$.content.txt')
+      END AS TEXT) AS body
+    )
+    WHERE trim(coalesce(body, '')) <> ''
+      AND json_extract(new.json, '$.head.replace') IS NULL;
+END;
+
+CREATE TRIGGER messages_search_update AFTER UPDATE ON messages BEGIN
+  DELETE FROM message_search WHERE rowid = old.rowid;
+  INSERT INTO message_search (rowid, body)
+    SELECT new.rowid, body FROM (
+      SELECT CAST(CASE json_type(new.json, '$.content')
+        WHEN 'text' THEN json_extract(new.json, '$.content')
+        WHEN 'object' THEN json_extract(new.json, '$.content.txt')
+      END AS TEXT) AS body
+    )
+    WHERE trim(coalesce(body, '')) <> ''
+      AND json_extract(new.json, '$.head.replace') IS NULL;
+END;
+
+CREATE TRIGGER messages_search_delete AFTER DELETE ON messages BEGIN
+  DELETE FROM message_search WHERE rowid = old.rowid;
+END;
+
+-- Indexes the messages already stored, when the cache gains this table.
+backfillMessageSearch:
+  INSERT INTO message_search (rowid, body)
+    SELECT id, body FROM (
+      SELECT m.rowid AS id, m.json AS raw,
+        CAST(CASE json_type(m.json, '$.content')
+          WHEN 'text' THEN json_extract(m.json, '$.content')
+          WHEN 'object' THEN json_extract(m.json, '$.content.txt')
+        END AS TEXT) AS body
+      FROM messages m
+    )
+    WHERE trim(coalesce(body, '')) <> ''
+      AND json_extract(raw, '$.head.replace') IS NULL;

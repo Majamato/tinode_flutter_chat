@@ -130,6 +130,9 @@ void main() {
 
   test('an expired ref is uploaded again', () async {
     var now = DateTime.utc(2026, 10, 9, 12);
+    // Its own files: the first session's start-up prune, on the real
+    // clock, would take this clock's staged file for an old orphan.
+    files = MemoryFileStore();
     await withClock(Clock(() => now), () async {
       final session = open();
       remote.failPublish = const ConnectionClosedException('dropped');

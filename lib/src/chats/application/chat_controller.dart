@@ -8,6 +8,7 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_members_controlle
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_state.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/chats/domain/message_reveal.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
@@ -20,6 +21,12 @@ part 'chat_controller.g.dart';
 /// Messages fetched per history request.
 const historyPageSize = 32;
 
+/// How long a revealed message stays highlighted.
+const revealHighlight = Duration(seconds: 2);
+
+/// How far back from the oldest loaded message a reveal loads at most.
+const maxRevealSpan = 3000;
+
 /// One open chat: shows what the cache holds, attaches to the topic,
 /// catches up with the server, merges live messages and the outbox, and
 /// marks what the user sees as read. Each attach also syncs the chat's
@@ -30,6 +37,8 @@ class ChatController extends _$ChatController {
   late String _me;
   late BuildLifetime _lifetime;
   var _lastMarkedRead = 0;
+  Timer? _revealTimer;
+  var _revealing = false;
 
   @override
   ChatState build(String topic) {
@@ -44,6 +53,7 @@ class ChatController extends _$ChatController {
     _session = session;
     _me = me;
     _lastMarkedRead = 0;
+    _revealing = false;
     final link = _Link();
     // Alive as long as the chat: it syncs once attached.
     ref.listen(chatMembersControllerProvider(topic), (_, _) {});
@@ -65,6 +75,7 @@ class ChatController extends _$ChatController {
           .listen((_) => _sync(lifetime, link)),
     ];
     ref.onDispose(() {
+      _revealTimer?.cancel();
       for (final subscription in subscriptions) {
         unawaited(subscription.cancel());
       }
@@ -105,6 +116,16 @@ class ChatController extends _$ChatController {
     }
   }
 
+  /// Shows message [seq]: loads the messages back to it if needed, then
+  /// marks it [RevealStatus.shown] for [revealHighlight], or
+  /// [RevealStatus.unavailable] when it can't be had. Waits for the chat to
+  /// load first.
+  Future<void> reveal(int seq) async {
+    _revealTimer?.cancel();
+    state = state.withReveal(MessageReveal(seq));
+    await _continueReveal();
+  }
+
   /// Loads the chat again, e.g. after a failure.
   void reload() => ref.invalidateSelf();
 
@@ -131,6 +152,7 @@ class ChatController extends _$ChatController {
             .withMessages(stored.messages.map(_toMessage))
             .ready(hasOlder: !stored.reachedStart);
         _markLastRead();
+        unawaited(_continueReveal());
       }
     } on Object {
       // The cache is a convenience: the server fills the chat instead.
@@ -205,11 +227,74 @@ class ChatController extends _$ChatController {
             : state.withMessages(messages);
       }
       _markLastRead();
+      unawaited(_continueReveal());
     } on Object catch (e) {
       if (lifetime.isActive && state.status != LoadStatus.ready) {
         state = state.failed(ChatFailure.of(e));
       }
     }
+  }
+
+  /// Goes on with a reveal once the chat is ready: loads back to its
+  /// message, then says whether it is there.
+  Future<void> _continueReveal() async {
+    final reveal = state.reveal;
+    if (_revealing ||
+        reveal == null ||
+        reveal.status != RevealStatus.loading ||
+        state.status != LoadStatus.ready) {
+      return;
+    }
+    final seq = reveal.seq;
+    final lifetime = _lifetime;
+    _revealing = true;
+    try {
+      final first = state.firstSeq;
+      if (!state.bySeq.containsKey(seq) &&
+          first != null &&
+          seq < first &&
+          state.hasOlder &&
+          first - seq <= maxRevealSpan) {
+        final page = await _session.olderPage(
+          topic,
+          before: first,
+          limit: first - seq + historyPageSize,
+        );
+        if (!lifetime.isActive) {
+          return;
+        }
+        state = state
+            .withMessages(page.messages.map(_toMessage))
+            .withLoadingOlder(
+              loading: state.loadingOlder,
+              hasOlder: !page.reachedStart,
+            );
+      }
+    } on Object {
+      // Not loaded: it shows as unavailable.
+    } finally {
+      _revealing = false;
+    }
+    if (!lifetime.isActive) {
+      return;
+    }
+    if (state.reveal != reveal) {
+      // Another message was asked for meanwhile.
+      return _continueReveal();
+    }
+    state = state.withReveal(
+      MessageReveal(
+        seq,
+        status: state.bySeq.containsKey(seq)
+            ? RevealStatus.shown
+            : RevealStatus.unavailable,
+      ),
+    );
+    _revealTimer = Timer(revealHighlight, () {
+      if (state.reveal?.seq == seq) {
+        state = state.withReveal(null);
+      }
+    });
   }
 
   void _onLive(DataMessage message) {
@@ -292,6 +377,15 @@ final class _Link {
 @riverpod
 ChatMessage? chatMessage(Ref ref, String topic, int seq) =>
     ref.watch(chatControllerProvider(topic).select((chat) => chat.bySeq[seq]));
+
+/// Whether the bubble of message [seq] is highlighted, as the message the
+/// user asked to see.
+@riverpod
+bool messageRevealed(Ref ref, String topic, int seq) => ref.watch(
+  chatControllerProvider(
+    topic,
+  ).select((chat) => chat.reveal?.highlights(seq) ?? false),
+);
 
 /// One message of an open chat that waits in the outbox.
 @riverpod

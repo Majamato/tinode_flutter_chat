@@ -11,6 +11,8 @@ import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
+import 'package:tinode_flutter_chat/src/search/application/message_search_controller.dart';
+import 'package:tinode_flutter_chat/src/search/domain/message_search_state.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/data/client_tinode_session.dart';
@@ -145,4 +147,42 @@ void main() {
     // Bob still has it: it was deleted for alice only.
     expect(bob, isNotNull);
   });
+
+  test(
+    'message search finds a message received live, without accents',
+    () async {
+      final (alice, aliceId) = await loginAs('alice');
+      final (bob, bobId) = await loginAs('bob');
+      await openChat(alice, bobId);
+      await openChat(bob, aliceId);
+
+      final word = 'Crème${DateTime.now().microsecondsSinceEpoch}';
+      await alice
+          .read(sendControllerProvider(bobId).notifier)
+          .send('see you at the $word brûlée');
+      await eventually(
+        'bob receives it',
+        () => bob
+            .read(chatControllerProvider(aliceId))
+            .bySeq
+            .values
+            .any((m) => m.content.text.contains(word)),
+      );
+
+      bob
+        ..listen(messageSearchControllerProvider(aliceId), (_, _) {})
+        ..read(
+          messageSearchControllerProvider(aliceId).notifier,
+        ).search('${word.replaceFirst('è', 'e').toLowerCase()} brul');
+      await eventually(
+        'the search finds it',
+        () =>
+            bob.read(messageSearchControllerProvider(aliceId)).status ==
+            MessageSearchStatus.done,
+      );
+      final found = bob.read(messageSearchControllerProvider(aliceId)).results;
+      expect(found.single.topic, aliceId);
+      expect(found.single.snippet.text, contains(word));
+    },
+  );
 }

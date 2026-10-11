@@ -163,6 +163,12 @@ class TinodeChatStrings {
     this.invalidEmail = 'This is not an email address.',
     this.confirmEmailFirst =
         'Confirm your email first: sign in with your password.',
+    this.findPeople = 'Find people and groups',
+    this.searchInChat = 'Search in chat',
+    this.messageSearchHint = 'Search this chat',
+    this.messageSearchIdle = 'Searches the messages kept on this device.',
+    this.noMessagesFound = 'No messages found',
+    this.messageUnavailable = 'This message is not available right now.',
     this.removeMemberConfirm = _removeMemberConfirm,
   });
 
@@ -587,6 +593,26 @@ class TinodeChatStrings {
 
   /// Asks before removing the member `name` from a group.
   final String Function(String name) removeMemberConfirm;
+
+  /// Opens the search for people and groups from the chat list.
+  final String findPeople;
+
+  /// Opens message search in a chat, from its app bar.
+  final String searchInChat;
+
+  /// The message search field.
+  final String messageSearchHint;
+
+  /// Shown before the user types: message search finds only what this
+  /// device keeps.
+  final String messageSearchIdle;
+
+  /// Message search found nothing.
+  final String noMessagesFound;
+
+  /// A message picked from message search can't be shown: deleted, or
+  /// not on the device while offline.
+  final String messageUnavailable;
 }
 
 String _typingOne(String name) => '$name is typing…';

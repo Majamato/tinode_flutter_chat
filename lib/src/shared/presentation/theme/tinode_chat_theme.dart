@@ -21,6 +21,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.missedCallColor,
     required this.readReceiptColor,
     required this.senderNameColors,
+    required this.revealedMessageColor,
   });
 
   /// A chat theme derived from [theme]'s color scheme.
@@ -42,6 +43,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
               ? swatch.shade300
               : swatch.shade700,
       ],
+      revealedMessageColor: colors.primary.withValues(alpha: 0.16),
     );
   }
 
@@ -96,6 +98,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// their user ID. Must not be empty.
   final List<Color> senderNameColors;
 
+  /// Behind a message the user jumped to, e.g. from message search, for a
+  /// moment after it shows.
+  final Color revealedMessageColor;
+
   /// The colour of the member [colorIndex] names, from [senderNameColors].
   Color senderNameColor(int colorIndex) =>
       senderNameColors[colorIndex % senderNameColors.length];
@@ -112,6 +118,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     Color? missedCallColor,
     Color? readReceiptColor,
     List<Color>? senderNameColors,
+    Color? revealedMessageColor,
   }) => TinodeChatTheme(
     ownBubbleColor: ownBubbleColor ?? this.ownBubbleColor,
     onOwnBubbleColor: onOwnBubbleColor ?? this.onOwnBubbleColor,
@@ -123,6 +130,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     missedCallColor: missedCallColor ?? this.missedCallColor,
     readReceiptColor: readReceiptColor ?? this.readReceiptColor,
     senderNameColors: senderNameColors ?? this.senderNameColors,
+    revealedMessageColor: revealedMessageColor ?? this.revealedMessageColor,
   );
 
   @override
@@ -166,6 +174,11 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
                 Color.lerp(senderNameColors[i], other.senderNameColors[i], t)!,
             ]
           : (t < 0.5 ? senderNameColors : other.senderNameColors),
+      revealedMessageColor: Color.lerp(
+        revealedMessageColor,
+        other.revealedMessageColor,
+        t,
+      )!,
     );
   }
 }

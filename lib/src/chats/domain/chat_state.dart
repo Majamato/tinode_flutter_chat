@@ -5,6 +5,7 @@ import 'package:meta/meta.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/chats/domain/message_reveal.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
@@ -37,7 +38,8 @@ final class ChatState {
       hasOlder = false,
       loadingOlder = false,
       outgoingIds = const [],
-      outgoingById = const {};
+      outgoingById = const {},
+      reveal = null;
 
   const ChatState._({
     required this.status,
@@ -51,6 +53,7 @@ final class ChatState {
     required this.loadingOlder,
     required this.outgoingIds,
     required this.outgoingById,
+    required this.reveal,
   });
 
   final LoadStatus status;
@@ -79,6 +82,9 @@ final class ChatState {
   /// instance until one is added or removed.
   final List<String> outgoingIds;
   final Map<String, OutgoingMessage> outgoingById;
+
+  /// The message the user asked to see, if any.
+  final MessageReveal? reveal;
 
   ChatState withMessages(Iterable<ChatMessage> messages) {
     Map<int, ChatMessage>? bySeq;
@@ -177,15 +183,36 @@ final class ChatState {
     );
   }
 
-  /// Starts over from [messages], keeping the outbox: after a gap too wide
-  /// to fill at once, older pages load from there.
+  /// Starts over from [messages], keeping the outbox and the reveal: after
+  /// a gap too wide to fill at once, older pages load from there.
   ChatState restartedWith(Iterable<ChatMessage> messages) {
     var restarted = const ChatState.loading();
     for (final id in outgoingIds) {
       restarted = restarted.withOutgoing(outgoingById[id]!);
     }
-    return restarted.withMessages(messages)._copy(status: status);
+    return restarted
+        .withMessages(messages)
+        ._copy(status: status)
+        .withReveal(reveal);
   }
+
+  /// Asks for a message to be shown, or with null, stops showing it.
+  ChatState withReveal(MessageReveal? reveal) => reveal == this.reveal
+      ? this
+      : ChatState._(
+          status: status,
+          failure: failure,
+          bySeq: bySeq,
+          seqs: seqs,
+          pending: pending,
+          firstSeq: firstSeq,
+          lastSeq: lastSeq,
+          hasOlder: hasOlder,
+          loadingOlder: loadingOlder,
+          outgoingIds: outgoingIds,
+          outgoingById: outgoingById,
+          reveal: reveal,
+        );
 
   ChatState _withoutOutgoing(Set<String> ids) {
     if (!ids.any(outgoingById.containsKey)) {
@@ -265,5 +292,6 @@ final class ChatState {
     loadingOlder: loadingOlder ?? this.loadingOlder,
     outgoingIds: outgoingIds ?? this.outgoingIds,
     outgoingById: outgoingById ?? this.outgoingById,
+    reveal: reveal,
   );
 }

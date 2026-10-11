@@ -9,6 +9,8 @@ import 'package:tinode_flutter_chat/src/offline/domain/chat_merge.dart'
 import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/seq_ranges.dart';
+import 'package:tinode_flutter_chat/src/search/domain/found_message.dart';
+import 'package:tinode_flutter_chat/src/search/domain/message_snippet.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
 /// One user's cache: the chat list, the messages fetched so far and the
@@ -307,6 +309,84 @@ final class ChatStore {
         }
       });
 
+  // Message search.
+
+  /// The stored messages of [topic] matching [match] (a full-text query,
+  /// see `messageMatch`), newest first, and before seq [before] when given.
+  Future<List<FoundMessage>> searchMessages(
+    String topic,
+    String match, {
+    required int limit,
+    int? before,
+  }) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT m.json AS json, '
+          "snippet(message_search, 0, ?, ?, '…', $_snippetTokens) AS snippet "
+          'FROM message_search '
+          'JOIN messages m ON m.rowid = message_search.rowid '
+          'WHERE message_search MATCH ? AND m.topic = ? '
+          '${before == null ? '' : 'AND m.seq < ? '}'
+          'ORDER BY m.seq DESC '
+          'LIMIT ?',
+          variables: [
+            Variable.withString(snippetMatchStart),
+            Variable.withString(snippetMatchEnd),
+            Variable.withString(match),
+            Variable.withString(topic),
+            if (before != null) Variable.withInt(before),
+            Variable.withInt(limit),
+          ],
+          readsFrom: {_db.messageSearch, _db.messages},
+        )
+        .get();
+    return [for (final row in rows) _found(row)];
+  }
+
+  // Pruning.
+
+  /// Keeps the cache small: drops the messages of chats no longer in the
+  /// list (unless the outbox still has something for them), and in every
+  /// chat all but the newest [keepPerChat] messages. What is dropped is
+  /// no longer covered, so it loads from the server again when needed.
+  Future<void> prune({required int keepPerChat}) => _db.transaction(() async {
+    const orphan =
+        'topic NOT IN (SELECT topic FROM chats) '
+        'AND topic NOT IN (SELECT topic FROM outbox)';
+    await _db.customUpdate(
+      'DELETE FROM messages WHERE $orphan',
+      updates: {_db.messages, _db.messageSearch},
+      updateKind: UpdateKind.delete,
+    );
+    await _db.customUpdate(
+      'DELETE FROM topic_syncs WHERE $orphan',
+      updates: {_db.topicSyncs},
+      updateKind: UpdateKind.delete,
+    );
+
+    final crowded = await _db
+        .customSelect(
+          'SELECT topic, (SELECT seq FROM messages n WHERE n.topic = m.topic '
+          'ORDER BY seq DESC LIMIT 1 OFFSET ?) AS cutoff '
+          'FROM messages m GROUP BY topic HAVING count(*) > ?',
+          variables: [
+            Variable.withInt(keepPerChat - 1),
+            Variable.withInt(keepPerChat),
+          ],
+          readsFrom: {_db.messages},
+        )
+        .get();
+    for (final row in crowded) {
+      final topic = row.read<String>('topic');
+      final cutoff = row.read<int>('cutoff');
+      await (_db.delete(_db.messages)..where(
+            (m) => m.topic.equals(topic) & m.seq.isSmallerThanValue(cutoff),
+          ))
+          .go();
+      await uncover(topic, [SeqRange(1, cutoff)]);
+    }
+  });
+
   // Outbox.
 
   /// Queues [content] for [topic] under [clientId].
@@ -475,6 +555,9 @@ final class ChatStore {
 
   // Rows.
 
+  /// How many words a snippet shows around the match.
+  static const _snippetTokens = 12;
+
   Future<(SeqRanges, int)?> _sync(String topic) async {
     final row = await (_db.select(
       _db.topicSyncs,
@@ -500,6 +583,19 @@ final class ChatStore {
               TopicSyncsCompanion(covered: Value(jsonEncode(covered.toJson()))),
         ),
       );
+
+  static FoundMessage _found(QueryRow row) {
+    final message = DataMessage.fromJson(
+      jsonDecode(row.read<String>('json')) as Json,
+    );
+    return FoundMessage(
+      topic: message.topic,
+      seq: message.seq,
+      time: message.time,
+      from: message.from,
+      snippet: MessageSnippet.parse(row.read<String>('snippet')),
+    );
+  }
 
   static Subscription _chat(ChatRow row) =>
       Subscription.fromJson(jsonDecode(row.json) as Json, 'chat');

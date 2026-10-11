@@ -8,6 +8,7 @@ import 'package:tinode_flutter_chat/src/calls/application/call_inputs.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/offline/application/offline_inputs.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
@@ -22,6 +23,7 @@ ProviderContainer createTinodeContainer({
   required TinodeConfig config,
   TinodeCredentials? credentials,
   TinodeChatFeatures features = const TinodeChatFeatures(),
+  TinodeCacheLimits cacheLimits = const TinodeCacheLimits(),
   SessionConnector? connector,
   SessionRestorer? restorer,
   ChatStoreOpener? storeOpener,
@@ -35,6 +37,7 @@ ProviderContainer createTinodeContainer({
     tinodeConfigProvider.overrideWithValue(config),
     initialCredentialsProvider.overrideWithValue(credentials),
     tinodeChatFeaturesProvider.overrideWithValue(features),
+    tinodeCacheLimitsProvider.overrideWithValue(cacheLimits),
     ?_override(connector, sessionConnectorProvider.overrideWithValue),
     ?_override(restorer, sessionRestorerProvider.overrideWithValue),
     ?_override(storeOpener, chatStoreOpenerProvider.overrideWithValue),
