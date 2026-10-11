@@ -32,7 +32,8 @@ lib/
       domain/                     ChatSummary, ChatListState, ChatMessage, ChatState, CallRecord,
                                   ChatMembers, ChatMember, MessageReceipt, MessageSender,
                                   TypingMembers, ChatExit
-      application/                providers: chat list, chat, send, members, typing, chat actions
+      application/                providers: chat list, chat, send, members, typing, chat actions,
+                                  requested chat
       presentation/chat_list/     list screen and its tile parts, the account menu
       presentation/chat/          chat screen, message list, bubbles, composer
       presentation/chat_info/     chat info screen: members, delete, leave
@@ -64,6 +65,8 @@ lib/
       domain/                     MyProfile
       application/                ProfileController, saving, photo, password, deleting the account
       presentation/               profile and password screens
+    push/                         push notifications; the host owns the push service
+      application/                PushTokenController, PushRegistration
     shared/                       used by several features
       domain/                     ValueObject, ChatFailure
       application/                BuildLifetime
@@ -73,7 +76,8 @@ lib/
 
 A feature is something the user *does* (connect, chat), not a screen. New work goes into an
 existing feature when it shares its state, otherwise into a new folder with the same four layers.
-Expected next features, in the README's roadmap order: push, then `search` (local message search).
+Expected next features, in the README's roadmap order: background calls (in `calls`), then
+`search` (local message search).
 
 ## Layers
 
@@ -109,6 +113,7 @@ provider.
 - Automatic retry is off for the whole container. Retrying a rejected login or a failed connect
   would hide errors the user has to act on, so every retry is a button.
 - `config` and `credentials` are read once. To switch server or user, give `TinodeChat` a new `Key`.
+  `pushToken` is read on every build and handed to `PushTokenController`.
 
 Trade-off: host-provided builders (future customisation hooks) won't see the host's providers.
 Revisit when those hooks arrive.
@@ -442,5 +447,6 @@ Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `Tinod
 `TinodeCredentials`
 (`PasswordCredentials`, `TokenCredentials`), `TinodeChatFeatures` (`PasswordResetMode`),
 `TinodeChatTheme`, `TinodeChatStrings`, and the
-client's `TinodeConfig` and `LoginResult`. Everything else may change freely. Every exported symbol
+client's `TinodeConfig`, `LoginResult`, `DevicePlatform` and `TinodePush` (`MessagePush`,
+`SubscriptionPush`, `ReadPush`). Everything else may change freely. Every exported symbol
 carries dartdoc. Adding an export is an API decision: keep the list short.

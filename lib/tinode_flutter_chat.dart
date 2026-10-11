@@ -7,7 +7,14 @@
 library;
 
 export 'package:tinode_dart_client/tinode_dart_client.dart'
-    show LoginResult, TinodeConfig;
+    show
+        DevicePlatform,
+        LoginResult,
+        MessagePush,
+        ReadPush,
+        SubscriptionPush,
+        TinodeConfig,
+        TinodePush;
 
 export 'src/app/presentation/tinode_chat.dart'
     show TinodeChat, TinodeChatController;

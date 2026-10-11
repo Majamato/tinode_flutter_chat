@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
@@ -7,7 +8,10 @@ import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart'
 import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
+import 'package:tinode_flutter_chat/src/chats/application/requested_chat_controller.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
+import 'package:tinode_flutter_chat/src/push/application/push_registration.dart';
+import 'package:tinode_flutter_chat/src/push/application/push_token_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
 import 'package:tinode_flutter_chat/src/session/application/credentials_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/network_policy.dart';
@@ -32,7 +36,8 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_theme_sco
 /// who last logged in, it opens their chats right away.
 ///
 /// [config], [credentials], [controller] and the callbacks are read once.
-/// To switch server or user, give the widget a new [key].
+/// To switch server or user, give the widget a new [key]. [pushToken] is
+/// read on every build: rebuild with the push service's new token.
 ///
 /// ```dart
 /// MaterialApp(
@@ -52,6 +57,7 @@ class TinodeChat extends StatefulWidget {
     this.onLoggedIn,
     this.onLoggedOut,
     this.controller,
+    this.pushToken,
     this.strings = const TinodeChatStrings(),
     this.features = const TinodeChatFeatures(),
     super.key,
@@ -84,6 +90,7 @@ class TinodeChat extends StatefulWidget {
     this.onLoggedIn,
     this.onLoggedOut,
     this.controller,
+    this.pushToken,
     this.strings = const TinodeChatStrings(),
     this.features = const TinodeChatFeatures(),
     super.key,
@@ -106,6 +113,16 @@ class TinodeChat extends StatefulWidget {
 
   /// Lets the host act on the chat, e.g. log out from its own settings.
   final TinodeChatController? controller;
+
+  /// This device's push token from the host's push service, e.g.
+  /// `FirebaseMessaging.instance.getToken()`; null for none. It is
+  /// registered for whoever logs in, sent again when it changes, and
+  /// removed from the server when the user logs out. Pushes reach the app,
+  /// not this widget: read them with `TinodePush.tryParse`.
+  ///
+  /// [config]'s `platform` tells the server how to push to it; when unset,
+  /// it is this device's (Android, iOS or web).
+  final String? pushToken;
 
   /// The texts the chat shows.
   final TinodeChatStrings strings;
@@ -154,7 +171,7 @@ class TinodeChat extends StatefulWidget {
 
 class _TinodeChatState extends State<TinodeChat> {
   late final ProviderContainer _container = createTinodeContainer(
-    config: widget.config,
+    config: _withPlatform(widget.config),
     credentials: widget.credentials,
     features: widget.features,
     connector: widget.connector,
@@ -176,8 +193,11 @@ class _TinodeChatState extends State<TinodeChat> {
       onHide: () => _container.read(backgroundPolicyProvider.notifier).hidden(),
       onShow: () => _container.read(backgroundPolicyProvider.notifier).shown(),
     );
+    _container.read(pushTokenControllerProvider.notifier).set(widget.pushToken);
     _container
       ..read(networkPolicyProvider)
+      // Listened to, so it rebuilds as the token and session change.
+      ..listen(pushRegistrationProvider, (_, _) {})
       ..listen(
         sessionControllerProvider.select(
           (s) => switch (s) {
@@ -196,13 +216,28 @@ class _TinodeChatState extends State<TinodeChat> {
           widget.onLoggedOut?.call();
         }
       });
-    widget.controller?._logOut = () =>
-        _container.read(sessionControllerProvider.notifier).logout();
+    widget.controller?._attach(
+      logOut: () =>
+          _container.read(sessionControllerProvider.notifier).logout(),
+      openChat: (topic) => _container
+          .read(requestedChatControllerProvider.notifier)
+          .request(topic),
+    );
+  }
+
+  @override
+  void didUpdateWidget(TinodeChat oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.pushToken != oldWidget.pushToken) {
+      _container
+          .read(pushTokenControllerProvider.notifier)
+          .set(widget.pushToken);
+    }
   }
 
   @override
   void dispose() {
-    widget.controller?._logOut = null;
+    widget.controller?._detach();
     _lifecycle.dispose();
     _container.dispose();
     super.dispose();
@@ -224,10 +259,59 @@ class _TinodeChatState extends State<TinodeChat> {
 /// its methods, e.g. from the host app's own settings screen.
 class TinodeChatController {
   Future<void> Function()? _logOut;
+  void Function(String topic)? _openChat;
 
-  /// Logs the user out: deletes the chats kept on the device, including
-  /// messages not sent yet, and shows the login screen. Does nothing while
-  /// no user is logged in, or before the controller is given to a
-  /// [TinodeChat].
+  /// A chat asked for before the controller was given to a [TinodeChat].
+  String? _pendingChat;
+
+  /// Logs the user out: removes this device's push token from the server,
+  /// deletes the chats kept on the device, including messages not sent
+  /// yet, and shows the login screen. Does nothing while no user is logged
+  /// in, or before the controller is given to a [TinodeChat].
   Future<void> logOut() async => _logOut?.call();
+
+  /// Opens the chat named [topic] over the chat list, e.g. when the user
+  /// taps a notification: pass `TinodePush.topic`. It waits for a login,
+  /// and for the [TinodeChat] when called before it is built, as when a
+  /// notification started the app. A later call replaces a waiting one.
+  void openChat(String topic) {
+    if (_openChat case final open?) {
+      open(topic);
+    } else {
+      _pendingChat = topic;
+    }
+  }
+
+  void _attach({
+    required Future<void> Function() logOut,
+    required void Function(String topic) openChat,
+  }) {
+    _logOut = logOut;
+    _openChat = openChat;
+    if (_pendingChat case final topic?) {
+      _pendingChat = null;
+      openChat(topic);
+    }
+  }
+
+  void _detach() {
+    _logOut = null;
+    _openChat = null;
+  }
+}
+
+/// [config] with this device's OS as its push platform, unless the host
+/// set one.
+TinodeConfig _withPlatform(TinodeConfig config) {
+  if (config.platform != null) {
+    return config;
+  }
+  final platform = kIsWeb
+      ? DevicePlatform.web
+      : switch (defaultTargetPlatform) {
+          TargetPlatform.android => DevicePlatform.android,
+          TargetPlatform.iOS => DevicePlatform.ios,
+          _ => null,
+        };
+  return platform == null ? config : config.copyWith(platform: platform);
 }

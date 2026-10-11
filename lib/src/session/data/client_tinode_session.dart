@@ -98,6 +98,9 @@ final class ClientTinodeSession implements TinodeSession {
   }
 
   @override
+  Future<void> setDeviceToken(String? token) => _client.setDeviceToken(token);
+
+  @override
   Future<TopicDescription?> description(String topic) =>
       _client.getDescription(topic);
 

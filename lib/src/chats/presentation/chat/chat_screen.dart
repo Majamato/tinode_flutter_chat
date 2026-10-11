@@ -12,18 +12,23 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.
 class ChatScreen extends StatelessWidget {
   const ChatScreen({required this.topic, super.key});
 
+  /// The route that shows the chat named [topic].
+  static Route<void> route(String topic) =>
+      MaterialPageRoute<void>(builder: (_) => ChatScreen(topic: topic));
+
   /// Pushes the chat named [topic] onto the chat's navigator.
-  static Future<void> open(BuildContext context, String topic) => Navigator.of(
-    context,
-  ).push(MaterialPageRoute<void>(builder: (_) => ChatScreen(topic: topic)));
+  static Future<void> open(BuildContext context, String topic) =>
+      Navigator.of(context).push(route(topic));
 
   /// Opens the chat named [topic] right over the chat list, closing the
   /// screens in between, e.g. the search that found it.
-  static Future<void> openOverList(BuildContext context, String topic) {
-    final navigator = Navigator.of(context)..popUntil((route) => route.isFirst);
-    return navigator.push(
-      MaterialPageRoute<void>(builder: (_) => ChatScreen(topic: topic)),
-    );
+  static Future<void> openOverList(BuildContext context, String topic) =>
+      openOn(Navigator.of(context), topic);
+
+  /// Like [openOverList], on the chat's own [navigator].
+  static Future<void> openOn(NavigatorState navigator, String topic) {
+    navigator.popUntil((route) => route.isFirst);
+    return navigator.push(route(topic));
   }
 
   final String topic;

@@ -55,6 +55,11 @@ abstract interface class TinodeSession {
   /// Deletes the logged-in user's account and closes the session.
   Future<void> deleteAccount();
 
+  /// Registers this device's push token for the user, or with null
+  /// removes it; see `TinodeClient.setDeviceToken`. Kept until a login
+  /// when there is none yet, and sent again after every reconnect.
+  Future<void> setDeviceToken(String? token);
+
   /// The description of [topic], e.g. `me` for the user's own profile;
   /// null when the server has none.
   Future<TopicDescription?> description(String topic);

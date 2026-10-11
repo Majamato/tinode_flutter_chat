@@ -31,6 +31,10 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 - 1:1 voice and video calls with `flutter_webrtc`, while the app is open: call buttons in direct
   chats, a ringing screen over any route, mute, camera on/off, front/back camera and speaker.
   Calls show in the chat with how they went. They need a server with ICE (STUN/TURN) servers.
+- Push notifications without a push dependency: pass the token from your push service (e.g.
+  `firebase_messaging`) and it is registered for whoever logs in, and removed on log out. Read
+  the pushes with `TinodePush.tryParse`, and open the tapped chat with
+  `TinodeChatController.openChat`.
 - Restyle it with a `TinodeChatTheme` theme extension, and translate or reword it with
   `TinodeChatStrings`.
 - Needs no `ProviderScope` or other setup in your app.
@@ -175,10 +179,79 @@ TinodeChat(
 await chat.logOut();
 ```
 
+## Push: platform setup
+
+The package depends on no push service. The host app sets one up, typically `firebase_messaging`
+with its platform setup (`google-services.json`, APNs key), and passes the device token in:
+
+```dart
+class ChatPage extends StatefulWidget {
+  const ChatPage({super.key});
+
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
+  final _chat = TinodeChatController();
+  final _messaging = FirebaseMessaging.instance;
+  String? _pushToken;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_messaging.requestPermission());
+    _messaging.getToken().then(_setToken);
+    _messaging.onTokenRefresh.listen(_setToken);
+    // A tapped notification opens its chat, also when it started the app.
+    _messaging.getInitialMessage().then(_open);
+    FirebaseMessaging.onMessageOpenedApp.listen(_open);
+  }
+
+  void _setToken(String? token) => setState(() => _pushToken = token);
+
+  void _open(RemoteMessage? message) {
+    if (TinodePush.tryParse(message?.data ?? {}) case final push?) {
+      _chat.openChat(push.topic);
+    }
+  }
+
+  /// Drops the old token at the push service, then takes a new one for the
+  /// next user.
+  Future<void> _renewToken() async {
+    _setToken(null);
+    await _messaging.deleteToken();
+    _setToken(await _messaging.getToken());
+  }
+
+  @override
+  Widget build(BuildContext context) => TinodeChat(
+    config: config,
+    controller: _chat,
+    pushToken: _pushToken,
+    onLoggedOut: () => unawaited(_renewToken()),
+  );
+}
+```
+
+- **The token** is registered for whoever logs in, sent again when it changes and after each
+  reconnect, and removed from the server on log out, before the socket closes. A log out while
+  offline can't reach the server, hence the new token in `onLoggedOut`: the push service drops
+  the old one, so the server's copy goes nowhere.
+- **The platform** (`TinodeConfig.platform`) is this device's, Android, iOS or web, unless you set
+  one.
+- **Showing notifications** is the host's job, e.g. with `flutter_local_notifications` from the
+  background handler. `TinodePush.tryParse(message.data)` reads a push; skip `silent` ones, which
+  have nothing to show. A `ReadPush` means the user read the chat on another device: its
+  notifications can go. While the app is open, the chat shows new messages itself.
+- **The server** sends pushes only with its push adapter set up (`push` in `tinode.conf`), for FCM
+  with a service account of the same Firebase project as the app.
+- Calls don't ring through pushes yet: see the roadmap.
+
 ## Roadmap
 
 Built so far: the happy path, reconnection, calls, offline, finding people and starting chats,
-group chat essentials, attachments, account and profile.
+group chat essentials, attachments, account and profile, push notifications.
 Next, in this order. Each feature lands in [`tinode_dart_client`](../tinode_dart_client) first
 where it needs the protocol:
 
@@ -191,13 +264,15 @@ where it needs the protocol:
 4. ~~**Account and profile**~~: done (sign up with email confirmation, password reset by email, edit name, note and
    photo, change the password and login, delete the account, delete or leave chats, remove group
    members).
-5. **Push and background calls**: push notifications, CallKit and ConnectionService. Today calls
+5. ~~**Push**~~: done (the host's push token registered for whoever logs in and removed on log
+   out, `TinodePush` to read pushes, `openChat` for tapped notifications).
+6. **Background calls**: CallKit and ConnectionService, so a call rings from a push. Today calls
    ring only while the app is open and connected, and on Android a call may lose the microphone
    and camera in the background. Later still: group calls, switching between voice and video
    during a call.
-6. **Search and cache upkeep**: message search, pruning the cache, encrypting it at rest (today
+7. **Search and cache upkeep**: message search, pruning the cache, encrypting it at rest (today
    it is a plain SQLite file per user).
-7. **UI/UX improvements.**
+8. **UI/UX improvements.**
 
 ## Development
 

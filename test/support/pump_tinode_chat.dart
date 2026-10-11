@@ -28,11 +28,13 @@ Future<void> pumpTinodeChat(
   VoidCallback? onLoggedOut,
   TinodeChatController? controller,
   TinodeChatFeatures features = const TinodeChatFeatures(),
+  TinodeConfig? config,
+  String? pushToken,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       home: TinodeChat.withConnector(
-        config: testConfig,
+        config: config ?? testConfig,
         connector: connectTo(session),
         restorer: restoreTo(session),
         storeOpener: storeOpener ?? MemoryChatStoreOpener(),
@@ -46,6 +48,7 @@ Future<void> pumpTinodeChat(
         onLoggedOut: onLoggedOut,
         controller: controller,
         features: features,
+        pushToken: pushToken,
       ),
     ),
   );

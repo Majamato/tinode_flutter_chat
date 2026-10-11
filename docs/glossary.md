@@ -300,3 +300,18 @@ The microphone, camera and WebRTC link of one call. *In code:* `CallMedia` (inte
 **Answered elsewhere**
 Another device of the same user took the call; this one stops ringing without showing an ended
 call.
+
+## Push
+
+The client's glossary defines **device token** (`dev`), **platform** (`platf`) and the **push
+payload**.
+
+**Push token**
+The host's device token, passed to `TinodeChat(pushToken:)`. Registered for whoever logs in,
+removed from the server on log out. *In code:* `PushTokenController`, `PushRegistration`.
+*Avoid:* device ID.
+
+**Requested chat**
+A chat the host asked to open, e.g. from a tapped notification. It waits for the widget and a
+login, then opens over the chat list. *In code:* `TinodeChatController.openChat`,
+`RequestedChatController`.

@@ -317,6 +317,37 @@ void main() {
       expect(session.calls, contains('close'));
     });
 
+    test('removes the push token before closing', () async {
+      final container = createTestContainer(
+        connector: connectTo(session),
+        credentials: TinodeCredentials.token(session.token),
+      );
+      await connect(container);
+
+      await container.read(sessionControllerProvider.notifier).logout();
+
+      expect(
+        session.calls.indexOf('deviceToken null'),
+        allOf(isNonNegative, lessThan(session.calls.indexOf('close'))),
+      );
+    });
+
+    test('a refused push token removal still logs out', () async {
+      final container = createTestContainer(
+        connector: connectTo(session),
+        credentials: TinodeCredentials.token(session.token),
+      );
+      await connect(container);
+      session.failDeviceToken = const ConnectionClosedException('gone');
+
+      await container.read(sessionControllerProvider.notifier).logout();
+
+      expect(
+        await container.read(sessionControllerProvider.future),
+        isA<SessionAwaitingLogin>(),
+      );
+    });
+
     test('a deleted user ends like a logout', () async {
       final stores = MemoryChatStoreOpener();
       final container = createTestContainer(
@@ -401,6 +432,8 @@ void main() {
       expect(await stores.lastUser(testConfig.server), isNull);
       // Its expected disconnect is no lost connection.
       expect(phases, isNot(contains(SessionPhase.failed)));
+      // The server drops the user's push tokens itself.
+      expect(session.calls, isNot(contains('deviceToken null')));
     });
 
     test('a refusal throws and keeps the session', () async {

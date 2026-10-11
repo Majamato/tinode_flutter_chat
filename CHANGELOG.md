@@ -1,5 +1,15 @@
 ## Unreleased
 
+- Push notifications, from `tinode_dart_client` 0.9.0. `TinodeChat(pushToken:)` takes the device
+  token from the host's push service: it is registered for whoever logs in, sent again when the
+  host rebuilds with a new one, and removed from the server when the user logs out (account
+  deletion drops it on the server's side). The package depends on no push service.
+- The config's push platform defaults to the device's (Android, iOS or web).
+- `TinodeChatController.openChat(topic)` opens a chat over the chat list, e.g. for a tapped
+  notification. Called before the widget is built or before login, it waits for them.
+- The package also exports `TinodePush` (`MessagePush`, `SubscriptionPush`, `ReadPush`) to read
+  pushes in the host's background handler, and `DevicePlatform`.
+
 - Account and profile, from `tinode_dart_client` 0.8.0. The login screen links to signing up (name,
   login and password; it logs in as the new user, so `onLoggedIn` hands over the token as after any
   login) and to resetting a forgotten password (a code sent to the account's email, then the new

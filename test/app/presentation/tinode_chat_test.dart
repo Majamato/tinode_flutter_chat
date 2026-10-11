@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
@@ -11,6 +12,7 @@ import '../../support/fake_network_monitor.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
+import '../../support/test_container.dart';
 
 void main() {
   late FakeTinodeSession session;
@@ -219,6 +221,99 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  group('push', () {
+    testWidgets("registers the host's token, and each new one", (tester) async {
+      await pumpTinodeChat(
+        tester,
+        session,
+        credentials: TinodeCredentials.token(session.token),
+        pushToken: 'fcm1',
+      );
+      expect(session.deviceToken, 'fcm1');
+
+      await pumpTinodeChat(
+        tester,
+        session,
+        credentials: TinodeCredentials.token(session.token),
+        pushToken: 'fcm2',
+      );
+      expect(session.deviceToken, 'fcm2');
+    });
+
+    testWidgets('logging out removes the token from the server', (
+      tester,
+    ) async {
+      final controller = TinodeChatController();
+      await pumpTinodeChat(
+        tester,
+        session,
+        credentials: TinodeCredentials.token(session.token),
+        controller: controller,
+        pushToken: 'fcm1',
+      );
+
+      unawaited(controller.logOut());
+      await tester.pumpAndSettle();
+
+      expect(session.deviceToken, isNull);
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
+
+    testWidgets('the host opens a chat, e.g. from a notification', (
+      tester,
+    ) async {
+      final controller = TinodeChatController();
+      await pumpTinodeChat(
+        tester,
+        session,
+        credentials: TinodeCredentials.token(session.token),
+        controller: controller,
+      );
+      await tester.tap(find.text('News'));
+      await tester.pumpAndSettle();
+
+      controller.openChat(bob);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hi Alice'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text('Chats'), findsOneWidget);
+    });
+
+    testWidgets('a chat asked for before the widget opens after login', (
+      tester,
+    ) async {
+      final controller = TinodeChatController()..openChat(bob);
+      await pumpTinodeChat(tester, session, controller: controller);
+      expect(find.byType(LoginScreen), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField).first, 'alice');
+      await tester.enterText(find.byType(TextField).last, 'alice123');
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hi Alice'), findsOneWidget);
+    });
+
+    testWidgets("the platform is this device's unless the host set one", (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      await pumpTinodeChat(tester, session);
+      debugDefaultTargetPlatformOverride = null;
+      expect(session.config?.platform, DevicePlatform.ios);
+
+      await tester.pumpWidget(const SizedBox());
+      await pumpTinodeChat(
+        tester,
+        session,
+        config: testConfig.copyWith(platform: DevicePlatform.web),
+      );
+      expect(session.config?.platform, DevicePlatform.web);
+    });
   });
 
   testWidgets('channel followers see a read-only notice', (tester) async {

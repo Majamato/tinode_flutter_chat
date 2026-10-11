@@ -18,6 +18,9 @@ import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
 part 'session_controller.g.dart';
 
+/// How long logging out waits for the server to drop the push token.
+const pushTokenClearTimeout = Duration(seconds: 3);
+
 /// Owns the connection: connects, logs in with the remembered credentials,
 /// opens the user's cache and files and closes it all when rebuilt or
 /// disposed.
@@ -175,12 +178,24 @@ class SessionController extends _$SessionController {
   /// Closes the current session, if any, and connects again.
   void reconnect() => ref.invalidateSelf();
 
-  /// Ends the session for good: deletes the user's cache, including what
-  /// the outbox still held, forgets the credentials and goes back to the
-  /// login screen.
+  /// Ends the session for good: removes the push token from the server,
+  /// so the device stops getting the user's pushes, deletes the user's
+  /// cache, including what the outbox still held, forgets the credentials
+  /// and goes back to the login screen. The host's token stays, for the
+  /// next user to log in.
   Future<void> logout() async {
-    if (state.value case SessionLoggedIn(:final userId)) {
+    if (state.value case SessionLoggedIn(:final session, :final userId)) {
+      await _clearPushToken(session);
       await _endSession(userId);
+    }
+  }
+
+  /// Offline, or on a slow link, the logout goes ahead without it.
+  static Future<void> _clearPushToken(TinodeSession session) async {
+    try {
+      await session.setDeviceToken(null).timeout(pushTokenClearTimeout);
+    } on Object catch (e, stackTrace) {
+      _log('Could not remove the push token', e, stackTrace);
     }
   }
 

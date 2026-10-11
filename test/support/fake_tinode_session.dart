@@ -93,6 +93,17 @@ final class FakeTinodeSession implements TinodeSession {
   /// Whether `deleteAccount` deleted the user.
   bool accountDeleted = false;
 
+  /// The config the session was last opened with.
+  TinodeConfig? config;
+
+  /// The push token `setDeviceToken` set last.
+  String? deviceToken;
+
+  /// Thrown by the next `setDeviceToken`; it never completes while
+  /// [holdDeviceToken] is set.
+  Exception? failDeviceToken;
+  bool holdDeviceToken = false;
+
   /// Chats deleted with `deleteChat`, and left with `leaveChat`.
   final deletedChats = <String>[];
   final leftChats = <String>[];
@@ -374,6 +385,20 @@ final class FakeTinodeSession implements TinodeSession {
     }
     passwords[emails[email]!] = password;
     resetCodes.remove(email);
+  }
+
+  /// Kept even while not connected, as the client keeps it.
+  @override
+  Future<void> setDeviceToken(String? token) async {
+    calls.add('deviceToken $token');
+    deviceToken = token;
+    if (holdDeviceToken) {
+      await Completer<void>().future;
+    }
+    if (failDeviceToken case final error?) {
+      failDeviceToken = null;
+      throw error;
+    }
   }
 
   /// Closes the session, as the server's eviction does.
@@ -830,8 +855,13 @@ final class FakeTinodeSession implements TinodeSession {
 
 /// A connector that hands out [session], or fails with [error].
 SessionConnector connectTo(FakeTinodeSession session, {Exception? error}) =>
-    (_) async => error == null ? session : throw error;
+    (config) async {
+      session.config = config;
+      return error == null ? session : throw error;
+    };
 
 /// A restorer that hands out [session], started as `TinodeClient.restore`.
-SessionRestorer restoreTo(FakeTinodeSession session) =>
-    (_, token) async => session..restoreWith(token);
+SessionRestorer restoreTo(FakeTinodeSession session) => (config, token) async {
+  session.config = config;
+  return session..restoreWith(token);
+};

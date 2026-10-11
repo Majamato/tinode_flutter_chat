@@ -218,6 +218,9 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   @override
+  Future<void> setDeviceToken(String? token) => _remote.setDeviceToken(token);
+
+  @override
   Future<TopicDescription?> description(String topic) =>
       _remote.description(topic);
 
