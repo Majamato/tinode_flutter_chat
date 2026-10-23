@@ -5,6 +5,7 @@ import 'package:tinode_flutter_chat/src/attachments/domain/file_download_state.d
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// A file in a message: an icon for its type, its name and size. A tap
 /// downloads it, with progress, and opens it. Watches its download.
@@ -27,7 +28,9 @@ class FileBubbleContent extends ConsumerWidget {
 
     return InkWell(
       onTap: fileRef == null ? null : () => _open(context, ref, fileRef),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(
+        TinodeChatTheme.of(context).photoRadius,
+      ),
       child: Semantics(
         button: true,
         onTapHint: strings.openFile,

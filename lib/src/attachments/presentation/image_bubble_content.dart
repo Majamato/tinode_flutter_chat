@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.da
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_viewer_screen.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/local_image.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// An image in a message, in the space its size asks for: shown at once
 /// when inline, otherwise a placeholder while it downloads and a retry
@@ -43,7 +44,9 @@ class ImageBubbleContent extends ConsumerWidget {
         width: width,
         height: width / image.aspectRatio,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(
+            TinodeChatTheme.of(context).photoRadius,
+          ),
           child: switch (provider) {
             final provider? => GestureDetector(
               onTap: () =>

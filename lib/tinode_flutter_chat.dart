@@ -26,5 +26,7 @@ export 'src/session/domain/tinode_credentials.dart'
     show PasswordCredentials, TinodeCredentials, TokenCredentials;
 export 'src/shared/presentation/l10n/tinode_chat_strings.dart'
     show TinodeChatStrings;
+export 'src/shared/presentation/theme/tinode_chat_palette.dart'
+    show TinodeChatPalette;
 export 'src/shared/presentation/theme/tinode_chat_theme.dart'
     show TinodeChatTheme;

@@ -1,5 +1,15 @@
 ## Unreleased
 
+- The chat's own design (`docs/design.md`). `TinodeChatPalette` holds the brand colors, with a
+  neutral slate blue by default. `TinodeChatTheme.materialTheme(palette:, brightness:,
+  fontFamily:, displayFontFamily:)` builds a whole app theme from it: colors, the type scale,
+  inputs, buttons, app bars, sheets and chips. `TinodeChatTheme.fromPalette` builds only the
+  extension. `TinodeChatTheme` gains the tokens the screens move to: meta colors, bubble tail,
+  photo radius, run gaps, wallpaper and dots, date chip, glass, link, muted badge, online,
+  waveform, field, button, composer and sheet radii, spring curve and durations. Its
+  constructor now needs them all; `fallback` and `copyWith` keep existing code working.
+  Photos and file tiles in bubbles use `photoRadius`.
+
 - Background calls: calls go through the phone's own call screens, CallKit on iOS and a
   self-managed Telecom connection on Android (`flutter_callkit_incoming`). Calls ring over the
   lock screen and can be accepted, declined, muted and hung up from there. On Android a

@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/local_image.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/upload_progress_ring.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// The image or file of a message still in the outbox, shown from its
 /// staged copy, with a progress ring while [uploading]. Watches the staged
@@ -84,7 +85,9 @@ class OutgoingAttachmentView extends ConsumerWidget {
       width: width,
       height: width / attachment.aspectRatio,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(
+          TinodeChatTheme.of(context).photoRadius,
+        ),
         child: Stack(
           fit: StackFit.expand,
           children: [

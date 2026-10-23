@@ -8,6 +8,7 @@ and the tests in `test/architecture/` enforce the mechanical ones.
 | [architecture.md](architecture.md) | Folder layout, layers and what each may import, how the session, chat list and chats fit together. |
 | [riverpod.md](riverpod.md) | How we use Riverpod 3: code generation, provider lifetimes, `select`, async safety, versions. |
 | [widgets.md](widgets.md) | Widget rules: one widget per file, nothing heavy in `build`, small rebuilds. |
+| [design.md](design.md) | The chat's design language: palette roles, neutrals, type, shapes, motion, and where each lives in `TinodeChatTheme`. |
 | [testing.md](testing.md) | Test layout, the fake session, widget tests and the integration test against a real server. |
 | [glossary.md](glossary.md) | Words used in code and docs. Builds on the client's Tinode glossary. |
 

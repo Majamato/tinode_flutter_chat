@@ -42,11 +42,8 @@ class ExampleApp extends StatelessWidget {
     final token = preferences.getString(_tokenKey);
     return MaterialApp(
       title: 'Tinode chat',
-      theme: ThemeData(colorSchemeSeed: Colors.teal),
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.teal,
-        brightness: Brightness.dark,
-      ),
+      theme: TinodeChatTheme.materialTheme(),
+      darkTheme: TinodeChatTheme.materialTheme(brightness: Brightness.dark),
       home: TinodeChat(
         config: TinodeConfig(
           server: Uri.parse(server),

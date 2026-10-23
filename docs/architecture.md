@@ -539,7 +539,7 @@ Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); wi
 Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `TinodeChatController`,
 `TinodeCalls`, `TinodeCredentials`
 (`PasswordCredentials`, `TokenCredentials`), `TinodeChatFeatures` (`PasswordResetMode`),
-`TinodeCacheLimits`, `TinodeChatTheme`, `TinodeChatStrings`, and the
+`TinodeCacheLimits`, `TinodeChatTheme`, `TinodeChatPalette`, `TinodeChatStrings`, and the
 client's `TinodeConfig`, `LoginResult`, `DevicePlatform` and `TinodePush` (`MessagePush`,
 `SubscriptionPush`, `ReadPush`). Everything else may change freely. Every exported symbol
 carries dartdoc. Adding an export is an API decision: keep the list short.

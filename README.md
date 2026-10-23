@@ -100,15 +100,35 @@ TinodeChat(
 Rules such as the shortest login or password, or how long codes last, are the server's
 (`tinode.conf`); the chat shows its refusals.
 
-To restyle the chat, add a theme extension:
+The chat has its own design, in a neutral slate blue by default. Brand it with a
+`TinodeChatPalette` and your fonts (bundled by your app), light and dark:
 
 ```dart
-ThemeData(
-  extensions: [
-    TinodeChatTheme.fallback(ThemeData()).copyWith(ownBubbleColor: Colors.teal),
-  ],
+const brand = TinodeChatPalette(
+  primary: Color(0xFF5B1A8C), // own messages, primary buttons; white text on it
+  night: Color(0xFF6E29A8), // primary in dark mode
+  bright: Color(0xFF8A3FD1), // decoration only
+  accent: Color(0xFFFF9A3D), // small pops
+  soft: Color(0xFFF1E5FA), // light chat wallpaper
+  ink: Color(0xFF42106A), // links on light backgrounds
+  onDark: Color(0xFFC08BFF), // links on dark backgrounds
+  deep: Color(0xFF1A0730), // behind voice calls
+  scene: Color(0xFF28133D), // in place of the remote video
+);
+
+MaterialApp(
+  theme: TinodeChatTheme.materialTheme(palette: brand, fontFamily: 'Inter'),
+  darkTheme: TinodeChatTheme.materialTheme(
+    palette: brand,
+    brightness: Brightness.dark,
+    fontFamily: 'Inter',
+  ),
 )
 ```
+
+Change any part with `copyWith`, on the `ThemeData` or on its `TinodeChatTheme` extension. An
+app theme without the extension still works: the chat derives one from its color scheme. See
+[`docs/design.md`](docs/design.md) for the design.
 
 See [`example/`](example/lib/main.dart) for a runnable app. To try it locally, start the server
 from `../tinode-tests` (`docker compose up -d`) and log in as `alice` / `alice123`.
@@ -391,6 +411,11 @@ where it needs the protocol:
 7. ~~**Message search and cache upkeep**~~: done (search a chat's cached messages and jump to a
    result; prune each chat to its newest messages and the file cache to a size, both set with
    `TinodeCacheLimits`).
+8. **Design** ([`docs/design.md`](docs/design.md)): the palette, the theme's tokens and
+   `TinodeChatTheme.materialTheme` are in. Next, the screens move to it: the chat (bubble
+   tails, wallpaper, frosted header, composer), then the chat list and login, the call
+   screens, an optional tab bar (Chats, Calls, Settings) with an Appearance screen, and voice
+   messages.
 
 ## Development
 
