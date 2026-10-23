@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:clock/clock.dart';
 import 'package:riverpod/riverpod.dart';
@@ -10,6 +11,7 @@ import 'package:tinode_flutter_chat/src/calls/domain/active_call.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_failure.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_invite.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
@@ -36,11 +38,18 @@ const _inviteCheckPageSize = 16;
 /// open. Incoming calls arrive as a call message in an attached chat, or,
 /// for other chats, as `pres msg` on `me`, after which an *invite check*
 /// attaches the chat and reads the new message.
+///
+/// Each call is reported to the phone's own call screens ([SystemCalls]),
+/// and what the user does there comes back here. A call accepted there
+/// that this session doesn't hold, e.g. rung by a push while the app was
+/// closed, is *accepted from the system*: it joins once the session is
+/// connected, if the call still waits.
 @Riverpod(keepAlive: true)
 class CallController extends _$CallController {
   late TinodeSession _session;
   late String _me;
   late CallMediaFactory _mediaFactory;
+  late SystemCalls _systemCalls;
   late BuildLifetime _lifetime;
 
   /// What the running call holds; null when no call runs.
@@ -60,6 +69,7 @@ class CallController extends _$CallController {
     final session = ref.watch(activeSessionProvider);
     final me = ref.watch(currentUserIdProvider);
     _mediaFactory = ref.watch(callMediaFactoryProvider);
+    _systemCalls = ref.watch(systemCallsProvider);
     listenSelf((_, call) {
       _latest = call;
       ref
@@ -81,6 +91,7 @@ class CallController extends _$CallController {
           .where((p) => p.topic == 'me' && p.event == PresenceEvent.message)
           .listen(_onNewMessageElsewhere),
       session.statusChanges.listen(_onStatus),
+      _systemCalls.actions.listen(_onSystemAction),
     ];
 
     ref.onDispose(() {
@@ -91,10 +102,14 @@ class CallController extends _$CallController {
       // A new session or a logout ends the call; the state goes with it.
       if (_latest case final call? when !call.isOver) {
         _notifyPeer(call, CallEvent.hangUp);
+        if (call.seq case final seq?) {
+          _report((s) => s.end(call.topic, seq));
+        }
       }
       _release();
       _checking.clear();
     });
+    unawaited(_joinAcceptedAtStart());
     return null;
   }
 
@@ -131,6 +146,17 @@ class CallController extends _$CallController {
         return;
       }
       _update((c) => c.copyWith(seq: published.seq, stage: CallStage.calling));
+      _report(
+        (s) => s.placed(
+          SystemCall(
+            topic: topic,
+            seq: published.seq,
+            direction: CallDirection.outgoing,
+            audioOnly: audioOnly,
+            callerName: _chatTitle(topic),
+          ),
+        ),
+      );
       _startSetupTimer(resources);
     } on Object catch (e) {
       if (!resources.isReleased) {
@@ -141,7 +167,10 @@ class CallController extends _$CallController {
 
   /// Takes the ringing call. Opens the microphone (and camera), then tells
   /// the caller, who answers with its WebRTC offer.
-  Future<void> accept() async {
+  Future<void> accept() => _accept(inApp: true);
+
+  /// Takes the ringing call, accepted [inApp] or on the system's screen.
+  Future<void> _accept({required bool inApp}) async {
     final call = state;
     final seq = call?.seq;
     final resources = _resources;
@@ -152,11 +181,34 @@ class CallController extends _$CallController {
       return;
     }
 
-    final media = _openMedia(resources);
     _update((c) => c.copyWith(stage: CallStage.connecting, acceptedHere: true));
+    if (inApp) {
+      _report(
+        (s) => s.acceptedInApp(
+          SystemCall(
+            topic: call.topic,
+            seq: seq,
+            direction: CallDirection.incoming,
+            audioOnly: call.audioOnly,
+            callerName: _chatTitle(call.topic),
+          ),
+        ),
+      );
+    }
+    await _join(resources, call.topic, seq, audioOnly: call.audioOnly);
+  }
 
+  /// Opens the microphone (and camera) for the accepted call [seq], then
+  /// tells the caller, who answers with its WebRTC offer.
+  Future<void> _join(
+    CallResources resources,
+    String topic,
+    int seq, {
+    required bool audioOnly,
+  }) async {
+    final media = _openMedia(resources);
     try {
-      final local = await media.open(video: !call.audioOnly);
+      final local = await media.open(video: !audioOnly);
       if (resources.isReleased) {
         return;
       }
@@ -165,7 +217,7 @@ class CallController extends _$CallController {
       if (!await resources.attached || resources.isReleased) {
         return;
       }
-      _session.sendCallEvent(call.topic, seq, CallEvent.accept);
+      _session.sendCallEvent(topic, seq, CallEvent.accept);
     } on Object catch (e) {
       if (!resources.isReleased) {
         // Hanging up declines the call for the caller.
@@ -182,6 +234,9 @@ class CallController extends _$CallController {
 
   void toggleMicrophone() => _update((c) {
     _resources?.media?.setMicrophoneEnabled(enabled: !c.micOn);
+    if (c.seq case final seq?) {
+      _report((s) => s.setMuted(c.topic, seq, muted: c.micOn));
+    }
     return c.copyWith(micOn: !c.micOn);
   });
 
@@ -333,12 +388,193 @@ class CallController extends _$CallController {
     }
   }
 
-  /// The server ends calls whose session dropped, so a drop ends ours.
+  /// The server ends calls whose session dropped, so a drop ends ours. A
+  /// call accepted from the system waits for the session to connect.
   void _onStatus(ConnectionStatus status) {
-    if (status is! Connected) {
+    if (status is! Connected && !(_resources?.awaitingServer ?? false)) {
       _end(failure: CallFailure.connectionLost, notifyPeer: false);
     }
   }
+
+  // The phone's own call screens.
+
+  void _onSystemAction(SystemCallAction action) {
+    final call = state;
+    final held =
+        call != null &&
+        !call.isOver &&
+        call.topic == action.topic &&
+        call.seq == action.seq;
+    switch (action) {
+      case SystemCallAccepted() when held:
+        unawaited(_accept(inApp: false));
+      case SystemCallAccepted(:final topic, :final seq, :final audioOnly):
+        _acceptFromSystem(topic, seq, audioOnly: audioOnly);
+      case SystemCallEnded() when held:
+        hangUp();
+      case SystemCallEnded(:final topic, :final seq):
+        // Rung by a push while this session was away: tell the caller.
+        unawaited(_hangUpUnheld(topic, seq));
+      case SystemCallMuted(:final muted) when held && muted == call.micOn:
+        toggleMicrophone();
+      case SystemCallMuted():
+    }
+  }
+
+  /// Joins the calls the user accepted on the system's screen before this
+  /// session started, e.g. from the lock screen while the app was closed.
+  Future<void> _joinAcceptedAtStart() async {
+    final lifetime = _lifetime;
+    final List<SystemCall> calls;
+    try {
+      calls = await _systemCalls.accepted();
+    } on Object {
+      return;
+    }
+    if (!lifetime.isActive) {
+      return;
+    }
+    for (final call in calls) {
+      _acceptFromSystem(call.topic, call.seq, audioOnly: call.audioOnly);
+    }
+  }
+
+  /// The user accepted call [seq] in [topic] on the system's screen, and
+  /// this session didn't know it. The call shows as connecting at once; it
+  /// joins once the session is connected and the call is found still
+  /// waiting, and ends otherwise.
+  void _acceptFromSystem(String topic, int seq, {required bool audioOnly}) {
+    if (state case final call? when !call.isOver) {
+      if (call.topic != topic || call.seq != seq) {
+        // Busy: hanging up declines the other call.
+        _send(topic, seq, CallEvent.hangUp);
+        _report((s) => s.end(topic, seq));
+      }
+      return;
+    }
+    final resources = _begin(
+      ActiveCall(
+        topic: topic,
+        direction: CallDirection.incoming,
+        audioOnly: audioOnly,
+        stage: CallStage.connecting,
+        seq: seq,
+        cameraOn: !audioOnly,
+        acceptedHere: true,
+      ),
+    )..awaitingServer = true;
+    _startSetupTimer(resources);
+    unawaited(_joinFromSystem(resources, topic, seq, audioOnly: audioOnly));
+  }
+
+  Future<void> _joinFromSystem(
+    CallResources resources,
+    String topic,
+    int seq, {
+    required bool audioOnly,
+  }) async {
+    final session = _session;
+    try {
+      if (!await _connected(session, resources) ||
+          !await resources.attach(topic)) {
+        return;
+      }
+      final page = await session.history(
+        topic,
+        since: seq,
+        limit: _inviteCheckPageSize,
+      );
+      if (resources.isReleased) {
+        return;
+      }
+      if (CallInvite.findIn(page, seq, me: _me) == null) {
+        // Answered elsewhere, or over: nothing to join.
+        _end(notifyPeer: false);
+        return;
+      }
+      resources.awaitingServer = false;
+      await _join(resources, topic, seq, audioOnly: audioOnly);
+    } on Object catch (e) {
+      if (!resources.isReleased) {
+        _end(failure: CallFailure.of(e), notifyPeer: true);
+      }
+    }
+  }
+
+  /// Hangs up call [seq] in [topic], which the user declined on the
+  /// system's screen though this session doesn't hold it. Best effort: the
+  /// server ends an unanswered call by itself.
+  Future<void> _hangUpUnheld(String topic, int seq) async {
+    final session = _session;
+    if (session.status is! Connected) {
+      _wakeSession();
+      try {
+        await session.statusChanges
+            .firstWhere((s) => s is Connected)
+            .timeout(_callTimeout);
+      } on Object {
+        return;
+      }
+    }
+    if (_lifetime.isActive && identical(session, _session)) {
+      _send(topic, seq, CallEvent.hangUp);
+    }
+  }
+
+  /// Completes with true once [session] is connected, or with false when
+  /// the call ends first.
+  static Future<bool> _connected(
+    TinodeSession session,
+    CallResources resources,
+  ) async {
+    if (session.status is Connected) {
+      return !resources.isReleased;
+    }
+    final ready = Completer<bool>();
+    final subscription = session.statusChanges.listen((status) {
+      if (status is Connected && !ready.isCompleted) {
+        ready.complete(true);
+      }
+    });
+    unawaited(
+      resources.whenReleased.then((_) {
+        if (!ready.isCompleted) {
+          ready.complete(false);
+        }
+      }),
+    );
+    try {
+      return await ready.future && !resources.isReleased;
+    } finally {
+      await subscription.cancel();
+    }
+  }
+
+  /// Opens a session suspended in the background, which a call from the
+  /// system's screen needs.
+  void _wakeSession() => ref.read(backgroundPolicyProvider.notifier).wake();
+
+  /// Reports a step of a call to the system's call screens. A failure there
+  /// leaves the call to the app's own screens.
+  void _report(Future<void> Function(SystemCalls calls) step) {
+    unawaited(
+      step(_systemCalls).then(
+        (_) {},
+        onError: (Object e, StackTrace stackTrace) => log(
+          'The system call screen failed',
+          name: 'tinode_flutter_chat',
+          error: e,
+          stackTrace: stackTrace,
+        ),
+      ),
+    );
+  }
+
+  /// The chat's name as the chat list shows it, for the system's screens;
+  /// a list nobody shows isn't loaded for it.
+  String? _chatTitle(String topic) => ref.exists(chatListControllerProvider)
+      ? ref.read(chatListControllerProvider).byTopic[topic]?.title
+      : null;
 
   // WebRTC setup. The caller offers once the callee accepted; each side
   // holds the peer's candidates back until the peer's description is set.
@@ -422,6 +658,9 @@ class CallController extends _$CallController {
           (c) =>
               c.copyWith(stage: CallStage.connected, connectedAt: clock.now()),
         );
+        if (state case ActiveCall(:final topic, :final seq?)) {
+          _report((s) => s.connected(topic, seq));
+        }
         if (state case ActiveCall(audioOnly: false)) {
           unawaited(_setSpeaker(on: true));
         }
@@ -479,6 +718,18 @@ class CallController extends _$CallController {
       unawaited(resources.attach(invite.topic));
     }
     _send(invite.topic, invite.seq, CallEvent.ringing);
+    _report(
+      (s) => s.ring(
+        SystemCall(
+          topic: invite.topic,
+          seq: invite.seq,
+          direction: CallDirection.incoming,
+          audioOnly: invite.audioOnly,
+          callerName: _chatTitle(invite.topic),
+        ),
+        ringFor: _callTimeout,
+      ),
+    );
     _startSetupTimer(resources);
     return true;
   }
@@ -507,11 +758,8 @@ class CallController extends _$CallController {
   /// unanswered call by itself; this covers a lost hang-up or a link that
   /// never comes up.
   void _startSetupTimer(CallResources resources) {
-    final timeout =
-        (_session.serverInfo.callTimeout ?? const Duration(seconds: 30)) +
-        callSetupMargin;
     resources.startSetupTimer(
-      timeout,
+      _callTimeout + callSetupMargin,
       () => _end(
         failure: state?.stage == CallStage.connecting
             ? CallFailure.mediaFailed
@@ -521,8 +769,13 @@ class CallController extends _$CallController {
     );
   }
 
+  /// How long the server lets a call ring unanswered.
+  Duration get _callTimeout =>
+      _session.serverInfo.callTimeout ?? const Duration(seconds: 30);
+
   /// Ends the call: tells the peer if [notifyPeer], releases the media and
-  /// the topic, and shows the ended call for [callEndedLinger].
+  /// the topic, and shows the ended call for [callEndedLinger]. An incoming
+  /// call that stops ringing without a decline here was missed.
   void _end({required bool notifyPeer, CallFailure? failure}) {
     final call = state;
     if (call == null || call.isOver) {
@@ -530,6 +783,10 @@ class CallController extends _$CallController {
     }
     if (notifyPeer) {
       _notifyPeer(call, CallEvent.hangUp);
+    }
+    if (call.seq case final seq?) {
+      final missed = call.stage == CallStage.incoming && !notifyPeer;
+      _report((s) => s.end(call.topic, seq, missed: missed));
     }
     _release();
     state = call.copyWith(stage: CallStage.ended, failure: failure);
@@ -542,6 +799,9 @@ class CallController extends _$CallController {
 
   /// Ends a call that another device of this user took: nothing to show.
   void _dismiss() {
+    if (state case ActiveCall(:final topic, :final seq?)) {
+      _report((s) => s.end(topic, seq));
+    }
     _release();
     state = null;
   }

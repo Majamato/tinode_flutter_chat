@@ -16,6 +16,7 @@ final class CallResources {
 
   final TinodeSession _session;
   var _released = false;
+  final _whenReleased = Completer<void>();
 
   Future<bool>? _attached;
   String? _topic;
@@ -31,6 +32,13 @@ final class CallResources {
 
   /// True once the call is over; nothing here is held any more.
   bool get isReleased => _released;
+
+  /// Completes when the call is over.
+  Future<void> get whenReleased => _whenReleased.future;
+
+  /// The call was accepted on the system's screen and hasn't reached the
+  /// server yet: the session may still be connecting, which doesn't end it.
+  bool awaitingServer = false;
 
   /// Null until [useMedia], and again after [release].
   CallMedia? get media => _media;
@@ -113,6 +121,7 @@ final class CallResources {
       return;
     }
     _released = true;
+    _whenReleased.complete();
     _setupTimer?.cancel();
     for (final s in _subscriptions) {
       unawaited(s.cancel());

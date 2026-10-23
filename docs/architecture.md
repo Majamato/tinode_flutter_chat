@@ -20,7 +20,8 @@ lib/
   src/
     app/                          composition root
       application/                createTinodeContainer()
-      presentation/               TinodeChat (public), SessionGate, AuthNavigator, ChatNavigator
+      presentation/               TinodeChat and TinodeCalls (public), SessionGate, AuthNavigator,
+                                  ChatNavigator
     session/                      connecting and logging in
       data/                       TinodeSession interface + ClientTinodeSession
       domain/                     TinodeCredentials, TinodeChatFeatures (public),
@@ -64,10 +65,15 @@ lib/
       presentation/               image and file bubbles, image viewer, attach sheet, preview
                                   screen, outgoing attachment view, upload progress ring
     calls/                        1:1 voice and video calls
-      domain/                     ActiveCall, CallInvite, CallFailure, the CallMedia interface
-      data/                       WebRtcCallMedia (flutter_webrtc)
-      application/                CallController, CallResources, callsAvailable, callMediaFactory
-      presentation/               call layer, ringing and call screens, call buttons
+      domain/                     ActiveCall, CallInvite, CallFailure, the CallMedia and
+                                  SystemCalls interfaces, SystemCall, SystemCallTexts
+      data/                       WebRtcCallMedia (flutter_webrtc), CallKitSystemCalls
+                                  (flutter_callkit_incoming), NoSystemCalls, systemCallId, the
+                                  background hang-up
+      application/                CallController, CallResources, callsAvailable, callMediaFactory,
+                                  systemCalls, handleCallPush
+      presentation/               call layer, ringing and call screens, call buttons,
+                                  systemCallTextsOf
     profile/                      the user's own profile and account
       domain/                     MyProfile
       application/                ProfileController, saving, photo, password, deleting the account
@@ -83,19 +89,19 @@ lib/
 
 A feature is something the user *does* (connect, chat), not a screen. New work goes into an
 existing feature when it shares its state, otherwise into a new folder with the same four layers.
-Expected next: background calls (in `calls`).
 
 ## Layers
 
 | Layer | Holds | May import | Must not import |
 |-------|-------|------------|-----------------|
 | `domain` | Immutable models and pure rules (merging, counters) | Dart, `collection`, `meta`, `tinode_dart_client` models, `webrtc_interface` types | Flutter, Riverpod, other layers |
-| `data` | Talking to the outside world: the server, the OS's network reports, WebRTC, the local cache and files | `domain`, `tinode_dart_client`, `web_socket`, `drift`, `crypto`, `mime`, platform plugins behind an interface (`connectivity_plus`, `flutter_webrtc`, `drift_flutter`, `path_provider`, `image_picker`, `file_picker`, `open_filex`) | Flutter itself, Riverpod, `application`, `presentation` |
+| `data` | Talking to the outside world: the server, the OS's network reports, WebRTC, the local cache and files | `domain`, `tinode_dart_client`, `web_socket`, `drift`, `crypto`, `mime`, platform plugins behind an interface (`connectivity_plus`, `flutter_webrtc`, `flutter_callkit_incoming`, `drift_flutter`, `path_provider`, `image_picker`, `file_picker`, `open_filex`) | Flutter itself, Riverpod, `application`, `presentation` |
 | `application` | Riverpod providers: state, use cases, the glue between data and UI | `domain`, `data`, `riverpod`, `riverpod_annotation` | Flutter, `flutter_riverpod`, `presentation` |
 | `presentation` | Widgets only | `domain`, `application`, Flutter, `flutter_riverpod`, `super_sliver_list` | `data` (except the composition root in `app/`) |
 
 Two of these are deliberate stretches. A plugin is Flutter code, but `data` may wrap one behind a
-Dart interface (`NetworkMonitor`, `CallMedia`) as long as the file imports no `package:flutter/`;
+Dart interface (`NetworkMonitor`, `CallMedia`, `SystemCalls`) as long as the file imports no
+`package:flutter/`;
 tests swap in a fake through a provider. And `domain` may use `webrtc_interface`, which is pure
 Dart with no dependencies, so a call's `MediaStream` can travel from `data` to the widgets without
 casts; only `presentation` draws it.
@@ -114,9 +120,10 @@ provider.
 - The session lives exactly as long as the widget: removing `TinodeChat` disposes the container,
   which closes the connection.
 - The container overrides the inputs: `tinodeConfigProvider`, `initialCredentialsProvider`,
-  `tinodeChatFeaturesProvider`, `tinodeCacheLimitsProvider` and,
-  in tests, `sessionConnectorProvider`, `sessionRestorerProvider`, `chatStoreOpenerProvider`
-  (`MemoryChatStoreOpener`), `networkMonitorProvider` and `callMediaFactoryProvider`.
+  `tinodeChatFeaturesProvider`, `tinodeCacheLimitsProvider`, `systemCallTextsProvider` (from the
+  host's strings) and, in tests, `sessionConnectorProvider`, `sessionRestorerProvider`,
+  `chatStoreOpenerProvider` (`MemoryChatStoreOpener`), `networkMonitorProvider`,
+  `callMediaFactoryProvider` and `systemCallsProvider`.
 - Automatic retry is off for the whole container. Retrying a rejected login or a failed connect
   would hide errors the user has to act on, so every retry is a button.
 - `config`, `credentials`, `features` and `cacheLimits` are read once. To switch server or user, give `TinodeChat` a new `Key`.
@@ -220,8 +227,10 @@ failed     ── reconnect() ────────────► connecting
 - **Background:** `TinodeChat` forwards `AppLifecycleListener` hide/show to `BackgroundPolicy`.
   After `backgroundGrace` (15 s) hidden it suspends the session; push notifications cover the time
   after that. During a call it doesn't: `CallController` tells it a call is running
-  (`keepOpen`), and the grace starts when the call ends. Showing the app cancels the timer and resumes, which also probes a socket that
-  stayed open but may have died while the phone slept.
+  (`keepOpen`), and the grace starts when the call ends. A call that begins while the session is
+  suspended, accepted on the system call screen, resumes it; `wake()` resumes it for one grace,
+  e.g. to hang up a call declined there. Showing the app cancels the timer and resumes, which
+  also probes a socket that stayed open but may have died while the phone slept.
 - **Network hints:** `NetworkMonitor` (data, over `connectivity_plus`: OS callbacks, no polling)
   reports network changes to `NetworkPolicy`. After 1 s of quiet (`networkSettle`) it probes a
   connected socket with a 4 s deadline, or retries at once while reconnecting with a network up.
@@ -398,6 +407,30 @@ during a call doesn't end the call.
 7. `CallResources` holds what one call owns: the attach of its topic, its `CallMedia` and their
    events, the held-back candidates and the setup timer. Ending the call releases it in one step,
    and work started for the call checks `isReleased` after every `await`.
+8. *The system call screen* (`SystemCalls`, `CallKitSystemCalls` over `flutter_callkit_incoming`):
+   each call is reported there, named by its topic and seq (`systemCallId`, a UUID made from
+   them, so a call rung by a push and by the app is one call). Ringing → `ring`, a published
+   outgoing call → `placed`, an accept in the app → `acceptedInApp` (Android: stop the ringing,
+   then `startCall`, which starts the foreground service; iOS: CallKit's answer), the link up →
+   `connected`, the end → `end` (`missed` when an incoming call stopped ringing without a decline
+   here). Its `actions` come back: accept → `accept`, ended → `hangUp`, muted → the microphone.
+   The plugin reports the ends this device asked for as if the user had ended them;
+   `CallKitSystemCalls` drops those.
+9. *Accepted from the system*: an accept for a call this session doesn't hold (`actions`, or
+   `SystemCalls.accepted()` when the controller starts, for a call accepted before the app ran)
+   begins an incoming call already `connecting` and `acceptedHere`. With
+   `CallResources.awaitingServer` set, a status other than `Connected` doesn't end it; once
+   connected it attaches, checks the call with `CallInvite.findIn`, and joins like an accept, or
+   ends when the call is over. A decline there for a call this session doesn't hold wakes the
+   session and hangs up.
+10. *Call pushes* (`TinodeCalls.handlePush`, `handleCallPush`), in the host's background handler,
+    with no container: a `started` push less than `callPushLifetime` (30 s) old rings on the
+    system call screen, named from the cache of the server's last user (`ChatStore.chat`,
+    best effort within 2 s); a later state (`replacesSeq`) stops the ringing of a call not
+    accepted here, `missed` with a notification. With the host's token the call carries
+    `HangUpCredentials`, and `registerBackgroundHangUp` registers `hangUpDeclined`, which the
+    plugin runs in a background isolate on a decline while the app is closed (Android): log in
+    with the token, send `hang-up` (the callee needs no attach for it), close.
 
 **Message search** (`MessageSearchController(topic)`, autoDispose, sync
 `Notifier<MessageSearchState>`), within one chat, from the search button in its app bar:
@@ -481,6 +514,9 @@ and
 | The server refuses a message, or it keeps failing | Error mark on its bubble; long press to retry or discard |
 | The server refuses a deletion | The messages come back |
 | A call fails (permission, busy, link) | Snack bar from `CallLayer`; the call screen says why for 2 s |
+| A call accepted on the system call screen is already over | The call screen shows it ended for 2 s |
+| The system call screen fails | Logged; the call goes on in the app |
+| Hanging up from the background fails | Logged; the server ends the call when it times out |
 | A search fails, e.g. offline | `ErrorRetryView` in place of the results; it searches again on connect |
 | The server refuses a new group, or some of its members | Snack bar; the group screen stays, or the group opens |
 | A picked file is over the server's limit | Snack bar naming the limit; nothing is queued |
@@ -501,7 +537,7 @@ Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); wi
 ## Public API
 
 Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `TinodeChatController`,
-`TinodeCredentials`
+`TinodeCalls`, `TinodeCredentials`
 (`PasswordCredentials`, `TokenCredentials`), `TinodeChatFeatures` (`PasswordResetMode`),
 `TinodeCacheLimits`, `TinodeChatTheme`, `TinodeChatStrings`, and the
 client's `TinodeConfig`, `LoginResult`, `DevicePlatform` and `TinodePush` (`MessagePush`,

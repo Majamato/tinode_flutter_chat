@@ -6,6 +6,8 @@ import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_inputs.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/system_call_texts.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/offline/application/offline_inputs.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
@@ -32,6 +34,8 @@ ProviderContainer createTinodeContainer({
   AttachmentPicker? attachmentPicker,
   NetworkMonitor? network,
   CallMediaFactory? callMedia,
+  SystemCalls? systemCalls,
+  SystemCallTexts? systemCallTexts,
 }) => ProviderContainer(
   overrides: [
     tinodeConfigProvider.overrideWithValue(config),
@@ -46,6 +50,8 @@ ProviderContainer createTinodeContainer({
     ?_override(attachmentPicker, attachmentPickerProvider.overrideWithValue),
     ?_override(network, networkMonitorProvider.overrideWithValue),
     ?_override(callMedia, callMediaFactoryProvider.overrideWithValue),
+    ?_override(systemCalls, systemCallsProvider.overrideWithValue),
+    ?_override(systemCallTexts, systemCallTextsProvider.overrideWithValue),
   ],
   retry: (_, _) => null,
 );

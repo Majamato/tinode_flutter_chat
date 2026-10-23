@@ -16,6 +16,7 @@ export 'package:tinode_dart_client/tinode_dart_client.dart'
         TinodeConfig,
         TinodePush;
 
+export 'src/app/presentation/tinode_calls.dart' show TinodeCalls;
 export 'src/app/presentation/tinode_chat.dart'
     show TinodeChat, TinodeChatController;
 export 'src/offline/domain/tinode_cache_limits.dart' show TinodeCacheLimits;

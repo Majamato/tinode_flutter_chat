@@ -339,6 +339,31 @@ The microphone, camera and WebRTC link of one call. *In code:* `CallMedia` (inte
 Another device of the same user took the call; this one stops ringing without showing an ended
 call.
 
+**System call screen**
+The phone's own call screens: CallKit on iOS, a self-managed Telecom connection on Android, with
+its ringing notification and ongoing call notification. Every call is reported there, and what the
+user does there (accept, decline, hang up, mute) comes back to the call controller. On Android it
+also holds the microphone and camera in a foreground service while the call goes on.
+*In code:* `SystemCalls` (interface), `CallKitSystemCalls`, `NoSystemCalls`, `FakeSystemCalls` in
+tests; the host turns it off with `TinodeChatFeatures.systemCalls`.
+*Avoid:* "native call UI", "CallKit" for both platforms.
+
+**Accepted from the system**
+A call the user accepted on the system call screen that this session didn't know: rung by a push
+while the app was closed or its session suspended. It shows as connecting at once, waits for the
+session to connect, and joins if the call still waits, or ends. *In code:*
+`CallController` (`_acceptFromSystem`), `SystemCalls.accepted`, `CallResources.awaitingServer`.
+
+**Call push**
+A push about a call: `webrtc: started` for one that rings, later states as replacements of the call
+message. Always `silent`. The host hands it to `TinodeCalls.handlePush` from its background
+handler. *In code:* `TinodeCalls`, `handleCallPush`, `callPushLifetime`.
+
+**Background hang-up**
+Declining on the system call screen while the app is closed: a background isolate logs in with the
+token the push handler was given and hangs up, so the caller sees it declined at once (Android).
+*In code:* `hangUpDeclined`, `hangUpFromBackground`, `HangUpCredentials`.
+
 ## Push
 
 The client's glossary defines **device token** (`dev`), **platform** (`platf`) and the **push

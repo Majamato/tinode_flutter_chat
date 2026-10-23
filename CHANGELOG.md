@@ -1,5 +1,27 @@
 ## Unreleased
 
+- Background calls: calls go through the phone's own call screens, CallKit on iOS and a
+  self-managed Telecom connection on Android (`flutter_callkit_incoming`). Calls ring over the
+  lock screen and can be accepted, declined, muted and hung up from there. On Android a
+  foreground service holds the microphone and camera while a call goes on, so a call keeps them
+  with the app in the background. An unanswered call leaves a missed call notification.
+- `TinodeCalls.handlePush(push, config:, token:)`, from the host's background push handler, rings
+  for a call push while the app is in the background or closed, with the caller's name from the
+  cache, and stops the ringing when the call is taken on another device or is over. Accepting
+  opens the app straight into the call, which joins once connected if the call still waits.
+  With the user's saved `token`, declining while the app is closed hangs up for the caller at
+  once (Android). Call pushes are all `silent`: hand pushes to it before skipping silent ones.
+  On iOS this is best effort: Tinode sends no VoIP pushes, so iOS may hold back call pushes and
+  never wakes an app the user swiped away.
+- `TinodeCalls.requestPermissions()` asks Android for notifications and full screen
+  notifications, which the ringing screen needs.
+- `TinodeChatFeatures(systemCalls: false)` keeps calls inside the app, e.g. where CallKit isn't
+  allowed (the App Store in China).
+- A call that starts while the app is in the background resumes a suspended session.
+- New dependency: `flutter_callkit_incoming`. New `TinodeChatStrings`: `unknownCaller`,
+  `ongoingCall`, `missedVoiceCall`, `missedVideoCall`. Host apps need some platform setup; see
+  the README.
+
 - Message search within a chat: the search button in the chat's app bar searches its messages
   kept on the device. Every word must start a word of the message, and accents don't count. A
   result goes back to the chat scrolled to the message, loading back to it from the cache or the

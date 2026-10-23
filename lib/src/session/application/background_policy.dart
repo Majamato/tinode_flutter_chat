@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 
@@ -11,8 +12,9 @@ part 'background_policy.g.dart';
 const backgroundGrace = Duration(seconds: 15);
 
 /// Suspends the session a while after the app is hidden and resumes it
-/// when the app is shown again. During a call the session stays open: the
-/// grace starts when the call ends.
+/// when the app is shown again. During a call the session stays open: a
+/// call that begins in the background, e.g. accepted on the lock screen,
+/// resumes it, and the grace starts when the call ends.
 @Riverpod(keepAlive: true)
 class BackgroundPolicy extends _$BackgroundPolicy {
   Timer? _suspend;
@@ -44,6 +46,25 @@ class BackgroundPolicy extends _$BackgroundPolicy {
     _inCall = inCall;
     _suspend?.cancel();
     _suspend = !inCall && _hidden ? Timer(backgroundGrace, _suspendNow) : null;
+    if (inCall) {
+      _resumeSuspended();
+    }
+  }
+
+  /// Opens a session suspended in the background for a moment, e.g. to
+  /// hang up a call declined on the lock screen; the grace starts over.
+  void wake() {
+    _resumeSuspended();
+    if (_hidden && !_inCall) {
+      _suspend?.cancel();
+      _suspend = Timer(backgroundGrace, _suspendNow);
+    }
+  }
+
+  void _resumeSuspended() {
+    if (_session case final session? when session.status is Suspended) {
+      session.resume();
+    }
   }
 
   void _suspendNow() => _session?.suspend();

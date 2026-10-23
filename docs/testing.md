@@ -91,6 +91,22 @@ expect(media.last.log, contains('open audio'));  // what the call asked of it
 Its offer and answer are the fixed strings `local offer` and `local answer`. `CallVideoView` draws
 nothing in widget tests (the plugin isn't there), so call screens can be pumped like any other.
 
+## Fake system calls
+
+The phone's call screens are a `FakeSystemCalls` in tests: `createTestContainer`,
+`loggedInContainer` and `pumpTinodeChat` make one unless you pass `systemCalls`. It records each
+report in `log` (`ring usrBob 4 video Bob 30s`, `acceptedInApp usrBob 4`, `end usrBob 4 missed`),
+and `emit` acts on the system's screen:
+
+```dart
+final system = FakeSystemCalls();
+final container = await loggedInContainer(session, systemCalls: system);
+system.emit(const SystemCallAccepted(topic: bob, seq: 4, audioOnly: false));
+```
+
+`acceptedCalls` are the calls accepted before the app started. `handleCallPush` takes the fake
+and a `MemoryChatStoreOpener` directly (`test/calls/application/call_push_handler_test.dart`).
+
 ## The cache in tests
 
 Every container gets its own `MemoryChatStoreOpener` (`createTestContainer`, `pumpTinodeChat`),
@@ -176,3 +192,20 @@ runs the server; browsers only give camera and microphone to `localhost` or http
    UI shows the call as declined.
 7. A video call on a phone on mobile data, to the web UI on Wi-Fi, goes through the TURN server;
    its traffic shows in the TURN provider's dashboard.
+
+The phone's call screens (Android emulator or device, or an iPhone):
+
+8. Call the app while it is open: the system's ringing notification (CallKit's banner on iOS)
+   shows over the app's ringing screen. Decline from the notification: the caller sees it
+   declined. Call again and accept in the app: the notification goes away.
+9. In the call, go to the home screen: an ongoing call notification stays (Android:
+   `adb shell dumpsys activity services <app id>` shows the foreground service with the
+   microphone, and the camera for video). Hang up from it.
+10. Within 15 s of leaving the app, call it: the ringing notification shows. Accept there: the
+    app opens on the call.
+11. On iOS, accept from the lock screen and talk: two-way audio checks the AppDelegate's audio
+    session wiring.
+
+Ringing from a push needs the server's FCM adapter (`FCM_CRED_FILE` and the project in
+`../tinode-tests`) and a host app with Firebase; `call_push_handler_test.dart` covers it
+otherwise.

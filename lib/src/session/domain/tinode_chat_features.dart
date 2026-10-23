@@ -14,14 +14,17 @@ enum PasswordResetMode {
   never,
 }
 
-/// Which account features `TinodeChat` offers, for servers that don't
-/// support them all, e.g. one whose accounts an admin creates.
+/// Which features `TinodeChat` offers, for servers that don't support them
+/// all, e.g. one whose accounts an admin creates, or apps that can't use
+/// them.
 final class TinodeChatFeatures with ValueObject {
-  /// Creates the switches; by default users can sign up, and reset their
-  /// password where the server sends email.
+  /// Creates the switches; by default users can sign up, reset their
+  /// password where the server sends email, and calls use the phone's own
+  /// call screens.
   const TinodeChatFeatures({
     this.signUp = true,
     this.passwordReset = PasswordResetMode.automatic,
+    this.systemCalls = true,
   });
 
   /// Whether the login screen offers to create an account.
@@ -29,6 +32,13 @@ final class TinodeChatFeatures with ValueObject {
 
   /// When the login screen offers to reset a forgotten password.
   final PasswordResetMode passwordReset;
+
+  /// Whether calls go through the phone's own call screens: CallKit on
+  /// iOS, a self-managed Telecom connection on Android. They ring over the
+  /// lock screen and keep the microphone and camera while the app is in
+  /// the background. Turn it off where CallKit isn't allowed, such as the
+  /// App Store in China: calls then ring only inside the app.
+  final bool systemCalls;
 
   /// Whether to offer the password reset, given the credentials the
   /// server requires at sign-up, e.g. `email`.
@@ -40,5 +50,5 @@ final class TinodeChatFeatures with ValueObject {
       };
 
   @override
-  List<Object?> get props => [signUp, passwordReset];
+  List<Object?> get props => [signUp, passwordReset, systemCalls];
 }

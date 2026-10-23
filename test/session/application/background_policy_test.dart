@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -61,6 +62,39 @@ void main() {
         ..keepOpen(inCall: false);
       async.elapse(backgroundGrace * 2);
       expect(session.calls, isNot(contains('suspend')));
+    });
+  });
+
+  test('a call beginning while suspended resumes the session', () {
+    run((async) {
+      policy().hidden();
+      async.elapse(backgroundGrace);
+      session.emitStatus(const Suspended());
+      policy().keepOpen(inCall: true);
+      expect(session.calls.last, 'resume');
+    });
+  });
+
+  test('a call leaves an open session alone', () {
+    run((async) {
+      policy()
+        ..hidden()
+        ..keepOpen(inCall: true);
+      expect(session.calls, isNot(contains('resume')));
+    });
+  });
+
+  test('waking resumes for a moment, then suspends again', () {
+    run((async) {
+      policy().hidden();
+      async.elapse(backgroundGrace);
+      session
+        ..emitStatus(const Suspended())
+        ..calls.clear();
+      policy().wake();
+      expect(session.calls, ['resume']);
+      async.elapse(backgroundGrace);
+      expect(session.calls, ['resume', 'suspend']);
     });
   });
 }

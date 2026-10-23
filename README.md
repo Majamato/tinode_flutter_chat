@@ -28,9 +28,13 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
   typing. The user's own messages get delivered and read ticks, and a "Read by" list in groups.
 - Finds people and groups by login, email, phone or tag, opens 1:1 chats with them, and creates
   groups with members. This needs the network.
-- 1:1 voice and video calls with `flutter_webrtc`, while the app is open: call buttons in direct
-  chats, a ringing screen over any route, mute, camera on/off, front/back camera and speaker.
-  Calls show in the chat with how they went. They need a server with ICE (STUN/TURN) servers.
+- 1:1 voice and video calls with `flutter_webrtc`: call buttons in direct chats, a ringing screen
+  over any route, mute, camera on/off, front/back camera and speaker. Calls show in the chat with
+  how they went. They need a server with ICE (STUN/TURN) servers.
+- Calls use the phone's own call screens, CallKit on iOS and a self-managed Telecom connection
+  on Android: they ring over the lock screen, can be answered and hung up from there, and keep
+  the microphone and camera with the app in the background. With `TinodeCalls.handlePush` in your
+  push handler, a call rings even while the app is closed.
 - Push notifications without a push dependency: pass the token from your push service (e.g.
   `firebase_messaging`) and it is registered for whoever logs in, and removed on log out. Read
   the pushes with `TinodePush.tryParse`, and open the tapped chat with
@@ -135,7 +139,8 @@ and `UIBackgroundModes` with `audio` so a call keeps its sound when the screen l
 needs `platform :ios, '13.0'` or later.
 
 The OS asks the user for access when the first call starts. See [`example/`](example/) for a
-complete setup.
+complete setup, and [Background calls](#background-calls-platform-setup) for the phone's own
+call screens, which need a little more.
 
 ## Attachments: platform setup
 
@@ -268,17 +273,103 @@ class _ChatPageState extends State<ChatPage> {
   one.
 - **Showing notifications** is the host's job, e.g. with `flutter_local_notifications` from the
   background handler. `TinodePush.tryParse(message.data)` reads a push; skip `silent` ones, which
-  have nothing to show. A `ReadPush` means the user read the chat on another device: its
-  notifications can go. While the app is open, the chat shows new messages itself.
+  have nothing to show, after handing it to `TinodeCalls.handlePush` (call pushes are all
+  silent; see [Background calls](#background-calls-platform-setup)). A `ReadPush` means the user
+  read the chat on another device: its notifications can go. While the app is open, the chat
+  shows new messages and rings for calls itself.
 - **The server** sends pushes only with its push adapter set up (`push` in `tinode.conf`), for FCM
   with a service account of the same Firebase project as the app.
-- Calls don't ring through pushes yet: see the roadmap.
+- **Calls** ring from pushes through `TinodeCalls.handlePush`: see below.
+
+## Background calls: platform setup
+
+Every call goes through the phone's own call screens (`flutter_callkit_incoming`): CallKit on iOS,
+a self-managed Telecom connection on Android, which also runs a foreground service that keeps the
+microphone and camera while a call goes on. For calls to ring while the app is in the background
+or closed, hand each push from your background handler to `TinodeCalls.handlePush` first:
+
+```dart
+@pragma('vm:entry-point')
+Future<void> onBackgroundPush(RemoteMessage message) async {
+  final push = TinodePush.tryParse(message.data);
+  if (push == null) return;
+  final token = (await SharedPreferences.getInstance()).getString('token');
+  if (await TinodeCalls.handlePush(push, config: config, token: token)) {
+    return; // a call: it rings, or stops ringing
+  }
+  if (!push.silent) await showNotification(push);
+}
+
+// In main(): FirebaseMessaging.onBackgroundMessage(onBackgroundPush);
+```
+
+- **The caller's name** comes from the chats kept on the device for the user who last logged in
+  to `config`'s server. A chat that isn't there yet rings as `TinodeChatStrings.unknownCaller`.
+- **Accepting** opens the app straight into the call: pass the saved token as
+  `TinodeCredentials.token`, as for an offline start, and the call joins once connected.
+- **Declining while the app is closed** hangs up for the caller at once when you pass `token`
+  (Android). The token stays with the ringing call until it ends. Without it, the caller hears it
+  ring until the server's call timeout.
+- **While the app is open** the chat rings by itself; leave call pushes from `onMessage` alone.
+- **Permissions:** call `TinodeCalls.requestPermissions()` at a good moment, e.g. after login:
+  notifications (Android 13+) and full screen notifications (Android 14+, which opens the
+  system's settings). iOS asks nothing for CallKit.
+
+**Android:** the plugin declares its permissions, services and the Telecom connection itself.
+Set `android:launchMode="singleInstance"` on `MainActivity`, and keep the plugin from R8:
+`-keep class com.hiennv.flutter_callkit_incoming.** { *; }` in `proguard-rules.pro`. Google Play
+allows full screen notifications (`USE_FULL_SCREEN_INTENT`) for calling apps; declare it in the
+Play Console.
+
+**iOS:** CallKit owns the audio session, so WebRTC has to wait for it. In `AppDelegate.swift`
+(see [`example/`](example/ios/Runner/AppDelegate.swift)):
+
+```swift
+import WebRTC
+import flutter_callkit_incoming
+
+@main
+@objc class AppDelegate: FlutterAppDelegate, CallkitIncomingAppDelegate {
+  override func application(...) -> Bool {
+    GeneratedPluginRegistrant.register(with: self)
+    RTCAudioSession.sharedInstance().useManualAudio = true
+    RTCAudioSession.sharedInstance().isAudioEnabled = false
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  func onAccept(_ call: Call, _ action: CXAnswerCallAction) { action.fulfill() }
+  func onDecline(_ call: Call, _ action: CXEndCallAction) { action.fulfill() }
+  func onEnd(_ call: Call, _ action: CXEndCallAction) { action.fulfill() }
+  func onTimeOut(_ call: Call) {}
+  func didActivateAudioSession(_ audioSession: AVAudioSession) {
+    RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
+    RTCAudioSession.sharedInstance().isAudioEnabled = true
+  }
+  func didDeactivateAudioSession(_ audioSession: AVAudioSession) {
+    RTCAudioSession.sharedInstance().audioSessionDidDeactivate(audioSession)
+    RTCAudioSession.sharedInstance().isAudioEnabled = false
+  }
+  func providerDidReset() {}
+}
+```
+
+`UIBackgroundModes` needs `audio` (above) and, for call pushes, `remote-notification`.
+
+**What iOS can't do:** Tinode sends no VoIP (PushKit) pushes, only a regular background push for
+a call. iOS may hold those back, and never wakes an app the user swiped away, so on iOS a call
+rings from a push only while the app is suspended in the background. Calls in the app, and in the
+background while the session is open, always ring through CallKit.
+
+**Turning it off:** `TinodeChatFeatures(systemCalls: false)` keeps calls inside the app, e.g.
+for the App Store in China, which doesn't allow CallKit. Leave out the AppDelegate's
+`useManualAudio` then, or calls have no sound. On Android, calls then lose the foreground
+service.
 
 ## Roadmap
 
 Built so far: the happy path, reconnection, calls, offline, finding people and starting chats,
-group chat essentials, attachments, account and profile, push notifications, message search and
-cache upkeep.
+group chat essentials, attachments, account and profile, push notifications, background calls,
+message search and cache upkeep.
 Still to come. Each feature lands in [`tinode_dart_client`](../tinode_dart_client) first
 where it needs the protocol:
 
@@ -293,10 +384,10 @@ where it needs the protocol:
    members).
 5. ~~**Push**~~: done (the host's push token registered for whoever logs in and removed on log
    out, `TinodePush` to read pushes, `openChat` for tapped notifications).
-6. **Background calls**: CallKit and ConnectionService, so a call rings from a push. Today calls
-   ring only while the app is open and connected, and on Android a call may lose the microphone
-   and camera in the background. Later still: group calls, switching between voice and video
-   during a call.
+6. ~~**Background calls**~~: done (CallKit and a self-managed Telecom connection, ringing from a
+   push with `TinodeCalls.handlePush`, a foreground service for the microphone and camera on
+   Android). On iOS a call rings from a push only while the app is suspended: Tinode sends no
+   VoIP pushes. Later still: switching between voice and video during a call.
 7. ~~**Message search and cache upkeep**~~: done (search a chat's cached messages and jump to a
    result; prune each chat to its newest messages and the file cache to a size, both set with
    `TinodeCacheLimits`).

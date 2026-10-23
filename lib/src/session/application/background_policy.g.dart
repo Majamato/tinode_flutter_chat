@@ -9,20 +9,23 @@ part of 'background_policy.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Suspends the session a while after the app is hidden and resumes it
-/// when the app is shown again. During a call the session stays open: the
-/// grace starts when the call ends.
+/// when the app is shown again. During a call the session stays open: a
+/// call that begins in the background, e.g. accepted on the lock screen,
+/// resumes it, and the grace starts when the call ends.
 
 @ProviderFor(BackgroundPolicy)
 final backgroundPolicyProvider = BackgroundPolicyProvider._();
 
 /// Suspends the session a while after the app is hidden and resumes it
-/// when the app is shown again. During a call the session stays open: the
-/// grace starts when the call ends.
+/// when the app is shown again. During a call the session stays open: a
+/// call that begins in the background, e.g. accepted on the lock screen,
+/// resumes it, and the grace starts when the call ends.
 final class BackgroundPolicyProvider
     extends $NotifierProvider<BackgroundPolicy, void> {
   /// Suspends the session a while after the app is hidden and resumes it
-  /// when the app is shown again. During a call the session stays open: the
-  /// grace starts when the call ends.
+  /// when the app is shown again. During a call the session stays open: a
+  /// call that begins in the background, e.g. accepted on the lock screen,
+  /// resumes it, and the grace starts when the call ends.
   BackgroundPolicyProvider._()
     : super(
         from: null,
@@ -50,11 +53,12 @@ final class BackgroundPolicyProvider
   }
 }
 
-String _$backgroundPolicyHash() => r'0584fd5ce373d79cfbc17347cb52cb25e58d0417';
+String _$backgroundPolicyHash() => r'7ce69da0cb67af61879cf1cbfaf62a4c551a657b';
 
 /// Suspends the session a while after the app is hidden and resumes it
-/// when the app is shown again. During a call the session stays open: the
-/// grace starts when the call ends.
+/// when the app is shown again. During a call the session stays open: a
+/// call that begins in the background, e.g. accepted on the lock screen,
+/// resumes it, and the grace starts when the call ends.
 
 abstract class _$BackgroundPolicy extends $Notifier<void> {
   void build();

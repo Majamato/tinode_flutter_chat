@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
@@ -52,7 +54,12 @@ class ExampleApp extends StatelessWidget {
           userAgent: 'tinode_flutter_chat-example/0.1',
         ),
         credentials: token == null ? null : TinodeCredentials.token(token),
-        onLoggedIn: (login) => preferences.setString(_tokenKey, login.token),
+        onLoggedIn: (login) {
+          unawaited(preferences.setString(_tokenKey, login.token));
+          // The ringing screen needs notifications, and on Android 14+ full
+          // screen ones.
+          unawaited(TinodeCalls.requestPermissions());
+        },
         onLoggedOut: () => preferences.remove(_tokenKey),
       ),
     );

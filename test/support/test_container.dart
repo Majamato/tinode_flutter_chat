@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart'
 import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
@@ -14,6 +15,7 @@ import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 import 'fake_attachment_picker.dart';
 import 'fake_call_media.dart';
 import 'fake_network_monitor.dart';
+import 'fake_system_calls.dart';
 import 'fake_tinode_session.dart';
 
 final testConfig = TinodeConfig(
@@ -27,7 +29,8 @@ final testConfig = TinodeConfig(
 /// session [connector] hands out, restored. Caches live in [storeOpener],
 /// by default a fresh one in memory, and files in [fileStoreOpener], also
 /// in memory. Opened files go to [fileOpener], by default one that opens
-/// nothing. Calls get fake media unless [callMedia] says otherwise.
+/// nothing. Calls get fake media unless [callMedia] says otherwise, and
+/// fake system call screens unless [systemCalls] does.
 ProviderContainer createTestContainer({
   required SessionConnector connector,
   SessionRestorer? restorer,
@@ -37,6 +40,7 @@ ProviderContainer createTestContainer({
   AttachmentPicker? attachmentPicker,
   TinodeCredentials? credentials,
   CallMediaFactory? callMedia,
+  SystemCalls? systemCalls,
 }) {
   final container = createTinodeContainer(
     config: testConfig,
@@ -52,6 +56,7 @@ ProviderContainer createTestContainer({
     attachmentPicker: attachmentPicker ?? FakeAttachmentPicker(),
     network: FakeNetworkMonitor(),
     callMedia: callMedia ?? FakeCallMedia.new,
+    systemCalls: systemCalls ?? FakeSystemCalls(),
   );
   addTearDown(container.dispose);
   return container;
@@ -64,6 +69,7 @@ Future<void> settle() => Future<void>.delayed(Duration.zero);
 Future<ProviderContainer> loggedInContainer(
   FakeTinodeSession session, {
   CallMediaFactory? callMedia,
+  SystemCalls? systemCalls,
   MemoryFileStoreOpener? fileStoreOpener,
   FileOpener? fileOpener,
   AttachmentPicker? attachmentPicker,
@@ -72,6 +78,7 @@ Future<ProviderContainer> loggedInContainer(
     connector: connectTo(session),
     credentials: TinodeCredentials.token(session.token),
     callMedia: callMedia,
+    systemCalls: systemCalls,
     fileStoreOpener: fileStoreOpener,
     fileOpener: fileOpener,
     attachmentPicker: attachmentPicker,

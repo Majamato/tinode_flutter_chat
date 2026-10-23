@@ -8,6 +8,8 @@ import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart'
 import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
+import 'package:tinode_flutter_chat/src/calls/presentation/system_call_texts_of.dart';
 import 'package:tinode_flutter_chat/src/chats/application/requested_chat_controller.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
@@ -70,13 +72,15 @@ class TinodeChat extends StatefulWidget {
        fileOpener = null,
        attachmentPicker = null,
        network = null,
-       callMedia = null;
+       callMedia = null,
+       systemCalls = null;
 
   /// Like the default constructor, with sessions opened by [connector]
   /// (or [restorer] for a remembered user) instead of a real connection,
   /// caches from [storeOpener], files from [fileStoreOpener], opened with
   /// [fileOpener] and picked with [attachmentPicker], network reports from
-  /// [network] and the media of calls from [callMedia].
+  /// [network], the media of calls from [callMedia] and the phone's call
+  /// screens from [systemCalls].
   @visibleForTesting
   const TinodeChat.withConnector({
     required this.config,
@@ -88,6 +92,7 @@ class TinodeChat extends StatefulWidget {
     this.attachmentPicker,
     this.network,
     this.callMedia,
+    this.systemCalls,
     this.credentials,
     this.onLoggedIn,
     this.onLoggedOut,
@@ -121,7 +126,9 @@ class TinodeChat extends StatefulWidget {
   /// `FirebaseMessaging.instance.getToken()`; null for none. It is
   /// registered for whoever logs in, sent again when it changes, and
   /// removed from the server when the user logs out. Pushes reach the app,
-  /// not this widget: read them with `TinodePush.tryParse`.
+  /// not this widget: read them with `TinodePush.tryParse`, and hand those
+  /// that arrive in the background to `TinodeCalls.handlePush`, which rings
+  /// for calls.
   ///
   /// [config]'s `platform` tells the server how to push to it; when unset,
   /// it is this device's (Android, iOS or web).
@@ -130,9 +137,9 @@ class TinodeChat extends StatefulWidget {
   /// The texts the chat shows.
   final TinodeChatStrings strings;
 
-  /// Which account features the login screen offers: signing up, and
-  /// resetting a forgotten password (by default only where the server
-  /// sends email).
+  /// Which features the chat offers: signing up and resetting a forgotten
+  /// password (by default only where the server sends email) on the login
+  /// screen, and the phone's own call screens for calls.
   final TinodeChatFeatures features;
 
   /// How much of each user's chats stays on the device: messages per chat
@@ -173,6 +180,10 @@ class TinodeChat extends StatefulWidget {
   @visibleForTesting
   final CallMediaFactory? callMedia;
 
+  /// The phone's call screens; null for this device's.
+  @visibleForTesting
+  final SystemCalls? systemCalls;
+
   @override
   State<TinodeChat> createState() => _TinodeChatState();
 }
@@ -191,6 +202,8 @@ class _TinodeChatState extends State<TinodeChat> {
     attachmentPicker: widget.attachmentPicker,
     network: widget.network,
     callMedia: widget.callMedia,
+    systemCalls: widget.systemCalls,
+    systemCallTexts: systemCallTextsOf(widget.strings),
   );
 
   late final AppLifecycleListener _lifecycle;

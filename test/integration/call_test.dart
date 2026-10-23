@@ -6,14 +6,17 @@ import 'package:riverpod/riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
+import 'package:tinode_flutter_chat/src/calls/data/background_hang_up.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/active_call.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
+import 'package:tinode_flutter_chat/src/session/data/client_tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
 import '../support/fake_call_media.dart';
@@ -171,6 +174,38 @@ void main() {
     alice.container.listen(chatControllerProvider(bob.id), (_, _) {});
     await eventually(
       'the call is recorded as declined',
+      () =>
+          alice.container.read(chatMessageProvider(bob.id, seq))?.call?.state ==
+          CallState.declined,
+    );
+  });
+
+  test('bob declines on the lock screen with the app closed', () async {
+    final token = bob.container.read(currentLoginProvider)!.token;
+    await alice.calls.start(bob.id, audioOnly: true);
+    final seq = alice.call!.seq!;
+    await eventually('bob rings', () => bob.stage == CallStage.incoming);
+
+    // What the plugin's background isolate runs, with the push's token.
+    await hangUpFromBackground(
+      ClientTinodeSession.connect,
+      HangUpCredentials(
+        server: config.server,
+        apiKey: config.apiKey,
+        userAgent: config.userAgent,
+        token: token,
+      ),
+      alice.id,
+      seq,
+    );
+
+    await eventually(
+      'alice sees the end',
+      () => alice.stage == CallStage.ended,
+    );
+    alice.container.listen(chatControllerProvider(bob.id), (_, _) {});
+    await eventually(
+      'alice sees the declined call',
       () =>
           alice.container.read(chatMessageProvider(bob.id, seq))?.call?.state ==
           CallState.declined,

@@ -8,8 +8,11 @@ import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/active_call.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_failure.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
+import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 
 import '../../support/fake_call_media.dart';
+import '../../support/fake_system_calls.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/test_container.dart';
@@ -48,6 +51,7 @@ InfoMessage callInfo(CallEvent event, int seq, {Json? payload}) => InfoMessage(
 void main() {
   late FakeTinodeSession session;
   late FakeCallMediaFactory media;
+  late FakeSystemCalls system;
   late ProviderContainer container;
 
   ActiveCall? call() => container.read(callControllerProvider);
@@ -55,13 +59,19 @@ void main() {
       container.read(callControllerProvider.notifier);
 
   Future<void> setUpCalls() async {
-    container = await loggedInContainer(session, callMedia: media.call)
-      ..listen(callControllerProvider, (_, _) {});
+    container =
+        await loggedInContainer(
+            session,
+            callMedia: media.call,
+            systemCalls: system,
+          )
+          ..listen(callControllerProvider, (_, _) {});
   }
 
   setUp(() async {
     session = FakeTinodeSession(chats: [chat(bob, name: 'Bob')]);
     media = FakeCallMediaFactory();
+    system = FakeSystemCalls();
     await setUpCalls();
   });
 
@@ -418,6 +428,227 @@ void main() {
         async.elapse(const Duration(minutes: 5));
         expect(call()!.stage, CallStage.connected);
       });
+    });
+  });
+
+  group("the phone's call screen", () {
+    test('an incoming call rings there with the chat name', () async {
+      container.listen(chatListControllerProvider, (_, _) {});
+      await settle();
+
+      session.emitMessage(invite(4));
+      await settle();
+      expect(system.log, ['ring usrBob 4 video Bob 30s']);
+
+      await controller().accept();
+      expect(system.log.last, 'acceptedInApp usrBob 4');
+
+      media.last.emitLink(CallLinkState.connected);
+      await settle();
+      expect(system.log.last, 'connected usrBob 4');
+
+      controller().hangUp();
+      await settle();
+      expect(system.log.last, 'end usrBob 4');
+    });
+
+    test('an outgoing call is placed there', () async {
+      await controller().start(bob, audioOnly: true);
+      await settle();
+      expect(system.reported.single.direction, CallDirection.outgoing);
+      expect(system.log, ['placed usrBob 1 null']);
+
+      controller().hangUp();
+      await settle();
+      expect(system.log.last, 'end usrBob 1');
+    });
+
+    test('a call the caller gives up on is missed', () async {
+      session.emitMessage(invite(4));
+      await settle();
+
+      session.emitInfo(callInfo(CallEvent.hangUp, 4));
+      await settle();
+
+      expect(system.log.last, 'end usrBob 4 missed');
+    });
+
+    test('a call declined in the app is not missed', () async {
+      session.emitMessage(invite(4));
+      await settle();
+
+      controller().decline();
+      await settle();
+
+      expect(system.log.last, 'end usrBob 4');
+    });
+
+    test('accepting there takes the ringing call', () async {
+      session.emitMessage(invite(4));
+      await settle();
+
+      system.emit(
+        const SystemCallAccepted(topic: bob, seq: 4, audioOnly: false),
+      );
+      await settle();
+
+      expect(session.calls.last, 'call usrBob 4 accept');
+      expect(call()!.acceptedHere, isTrue);
+      expect(system.log, isNot(contains('acceptedInApp usrBob 4')));
+    });
+
+    test('declining there hangs up', () async {
+      session.emitMessage(invite(4));
+      await settle();
+
+      system.emit(const SystemCallEnded(topic: bob, seq: 4));
+      await settle();
+
+      expect(session.calls, contains('call usrBob 4 hangUp'));
+      expect(call()!.stage, CallStage.ended);
+    });
+
+    test('muting there mutes the microphone, once', () async {
+      session.emitMessage(invite(4));
+      await settle();
+      await controller().accept();
+
+      system
+        ..emit(const SystemCallMuted(topic: bob, seq: 4, muted: true))
+        // The system reports the change it was told about back.
+        ..emit(const SystemCallMuted(topic: bob, seq: 4, muted: true));
+
+      expect(call()!.micOn, isFalse);
+      expect(media.last.log.where((l) => l == 'mic off'), hasLength(1));
+    });
+
+    test('muting in the app shows there', () async {
+      await controller().start(bob, audioOnly: true);
+      await settle();
+
+      controller().toggleMicrophone();
+      await settle();
+
+      expect(system.log.last, 'muted usrBob 1 true');
+    });
+
+    test(
+      'declining there a call this session never saw tells the caller',
+      () async {
+        system.emit(const SystemCallEnded(topic: bob, seq: 9));
+        await settle();
+
+        expect(session.calls.last, 'call usrBob 9 hangUp');
+        expect(call(), isNull);
+      },
+    );
+
+    test('declining there while suspended wakes the session first', () async {
+      session.emitStatus(const Suspended());
+
+      system.emit(const SystemCallEnded(topic: bob, seq: 9));
+      await settle();
+      expect(session.calls.last, 'resume');
+
+      session.emitStatus(const Connected());
+      await settle();
+      expect(session.calls.last, 'call usrBob 9 hangUp');
+    });
+
+    test('a call accepted there that this session never saw joins', () async {
+      session.histories[bob] = [invite(4)];
+
+      system.emit(
+        const SystemCallAccepted(topic: bob, seq: 4, audioOnly: true),
+      );
+      expect(call()!.stage, CallStage.connecting);
+      await settle();
+
+      expect(
+        session.calls,
+        containsAllInOrder([
+          'attach usrBob',
+          'history usrBob since 4',
+          'call usrBob 4 accept',
+        ]),
+      );
+      expect(media.last.log, ['open audio']);
+      expect(call()!.acceptedHere, isTrue);
+    });
+
+    test('a call accepted there that is already over ends', () async {
+      session.histories[bob] = [invite(4), update(5, 4, CallState.finished)];
+
+      system.emit(
+        const SystemCallAccepted(topic: bob, seq: 4, audioOnly: true),
+      );
+      await settle();
+
+      expect(call()!.stage, CallStage.ended);
+      expect(session.calls, isNot(contains('call usrBob 4 accept')));
+      expect(session.attachCount(bob), 0);
+    });
+
+    test('a call accepted there waits for the connection', () async {
+      session
+        ..histories[bob] = [invite(4)]
+        ..emitStatus(const Reconnecting(attempt: 1, retryIn: Duration.zero));
+
+      system.emit(
+        const SystemCallAccepted(topic: bob, seq: 4, audioOnly: true),
+      );
+      await settle();
+      session.emitStatus(
+        const Reconnecting(attempt: 2, retryIn: Duration.zero),
+      );
+      expect(call()!.stage, CallStage.connecting);
+      expect(session.calls, isNot(contains('attach usrBob')));
+
+      session.emitStatus(const Connected());
+      await settle();
+      expect(session.calls.last, 'call usrBob 4 accept');
+
+      // Once joined, a drop ends it as before.
+      session.emitStatus(
+        const Reconnecting(attempt: 1, retryIn: Duration.zero),
+      );
+      expect(call()!.failure, CallFailure.connectionLost);
+    });
+
+    test('a call accepted there before the app started joins', () async {
+      session = FakeTinodeSession(
+        chats: [chat(bob, name: 'Bob')],
+        histories: {
+          bob: [invite(4)],
+        },
+      );
+      system = FakeSystemCalls()
+        ..acceptedCalls.add(
+          const SystemCall(
+            topic: bob,
+            seq: 4,
+            direction: CallDirection.incoming,
+            audioOnly: false,
+          ),
+        );
+      await setUpCalls();
+      await settle();
+
+      expect(session.calls.last, 'call usrBob 4 accept');
+      expect(call()!.stage, CallStage.connecting);
+    });
+
+    test('a call accepted there while in another is declined', () async {
+      await controller().start(bob, audioOnly: true);
+
+      system.emit(
+        const SystemCallAccepted(topic: carol, seq: 7, audioOnly: true),
+      );
+
+      expect(session.calls.last, 'call usrCarol 7 hangUp');
+      await settle();
+      expect(system.log.last, 'end usrCarol 7');
+      expect(call()!.topic, bob);
     });
   });
 }

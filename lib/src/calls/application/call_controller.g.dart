@@ -16,6 +16,12 @@ part of 'call_controller.dart';
 /// open. Incoming calls arrive as a call message in an attached chat, or,
 /// for other chats, as `pres msg` on `me`, after which an *invite check*
 /// attaches the chat and reads the new message.
+///
+/// Each call is reported to the phone's own call screens ([SystemCalls]),
+/// and what the user does there comes back here. A call accepted there
+/// that this session doesn't hold, e.g. rung by a push while the app was
+/// closed, is *accepted from the system*: it joins once the session is
+/// connected, if the call still waits.
 
 @ProviderFor(CallController)
 final callControllerProvider = CallControllerProvider._();
@@ -28,6 +34,12 @@ final callControllerProvider = CallControllerProvider._();
 /// open. Incoming calls arrive as a call message in an attached chat, or,
 /// for other chats, as `pres msg` on `me`, after which an *invite check*
 /// attaches the chat and reads the new message.
+///
+/// Each call is reported to the phone's own call screens ([SystemCalls]),
+/// and what the user does there comes back here. A call accepted there
+/// that this session doesn't hold, e.g. rung by a push while the app was
+/// closed, is *accepted from the system*: it joins once the session is
+/// connected, if the call still waits.
 final class CallControllerProvider
     extends $NotifierProvider<CallController, ActiveCall?> {
   /// The call of this device: places calls, rings for incoming ones, and
@@ -38,6 +50,12 @@ final class CallControllerProvider
   /// open. Incoming calls arrive as a call message in an attached chat, or,
   /// for other chats, as `pres msg` on `me`, after which an *invite check*
   /// attaches the chat and reads the new message.
+  ///
+  /// Each call is reported to the phone's own call screens ([SystemCalls]),
+  /// and what the user does there comes back here. A call accepted there
+  /// that this session doesn't hold, e.g. rung by a push while the app was
+  /// closed, is *accepted from the system*: it joins once the session is
+  /// connected, if the call still waits.
   CallControllerProvider._()
     : super(
         from: null,
@@ -65,7 +83,7 @@ final class CallControllerProvider
   }
 }
 
-String _$callControllerHash() => r'e407b5e2b0bc154250b755c32fb29322002b4bf1';
+String _$callControllerHash() => r'0db9d8979c69c4958d4360ee4312bfff64f4fc2e';
 
 /// The call of this device: places calls, rings for incoming ones, and
 /// drives the WebRTC link through [CallMedia] as the peer's call events
@@ -75,6 +93,12 @@ String _$callControllerHash() => r'e407b5e2b0bc154250b755c32fb29322002b4bf1';
 /// open. Incoming calls arrive as a call message in an attached chat, or,
 /// for other chats, as `pres msg` on `me`, after which an *invite check*
 /// attaches the chat and reads the new message.
+///
+/// Each call is reported to the phone's own call screens ([SystemCalls]),
+/// and what the user does there comes back here. A call accepted there
+/// that this session doesn't hold, e.g. rung by a push while the app was
+/// closed, is *accepted from the system*: it joins once the session is
+/// connected, if the call still waits.
 
 abstract class _$CallController extends $Notifier<ActiveCall?> {
   ActiveCall? build();

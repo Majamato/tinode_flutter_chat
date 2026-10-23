@@ -68,6 +68,10 @@ class TinodeChatStrings {
     this.callPermissionDenied =
         'Allow access to the microphone and camera to make calls.',
     this.callFailed = 'The call could not be connected.',
+    this.unknownCaller = 'Unknown caller',
+    this.ongoingCall = 'Call in progress',
+    this.missedVoiceCall = 'Missed voice call',
+    this.missedVideoCall = 'Missed video call',
     this.logOut = 'Log out',
     this.messageWaiting = 'Waiting to send',
     this.messageSent = 'Sent',
@@ -289,6 +293,19 @@ class TinodeChatStrings {
 
   /// Tooltip of the button that ends a call.
   final String hangUp;
+
+  /// The caller on the phone's own ringing screen, when the chat isn't on
+  /// the device yet.
+  final String unknownCaller;
+
+  /// The phone's notification while a call goes on.
+  final String ongoingCall;
+
+  /// The phone's notification for a voice call the user didn't answer.
+  final String missedVoiceCall;
+
+  /// The phone's notification for a video call the user didn't answer.
+  final String missedVideoCall;
 
   /// Tooltip of the button that mutes the microphone.
   final String muteMicrophone;
