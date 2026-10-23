@@ -29,10 +29,32 @@ may write. *In code:* `ChatSummary`.
 One row of the chat list. *In code:* `ChatListTile`.
 
 **Bubble**
-One message on the chat screen. *In code:* `MessageBubble`.
+One message on the chat screen. *In code:* `MessageBubble`, `OutgoingBubble`, `BubbleFrame`.
+A host may wrap or replace it with `TinodeChat.bubbleBuilder`, which gets a `TinodeBubble`.
+
+**Run**
+Messages from one sender in a row, each within 5 minutes (`runGap`) of the one before. The
+first of a run names the sender in groups and has a wider gap above it; the last has the tail
+and, in groups, the avatar. The user's newest numbered message and the outbox make one run.
+*In code:* `MessageRun`, `messageRunProvider`, `outgoingRunProvider`.
+
+**Tail**
+The small point at the bottom corner of the last bubble of a run. *In code:* `BubbleTail`.
+
+**Date chip**
+The date above the first message of a day ("Today", "Yesterday", or the date).
+*In code:* `DateChip`, `ChatState.startsDay`.
+
+**Wallpaper**
+Behind a chat's messages: a color with a faint dot grid. *In code:* `ChatWallpaper`.
+
+**Frosted bar**
+A translucent, blurring bar that content scrolls under: the chat header and the composer, later
+the chat list header and the tab bar. *In code:* `FrostedBar`.
 
 **Composer**
-The message field and send button. *In code:* `Composer`, `SendButton`.
+The attach button, the pill-shaped message field and the send button, which fills with the
+brand color once there is text. *In code:* `Composer`, `SendButton`.
 
 **Unread count / unread badge**
 `lastSeq − read`, never negative, shown as a badge on the tile.

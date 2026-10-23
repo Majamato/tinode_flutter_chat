@@ -11,6 +11,7 @@ import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/system_call_texts_of.dart';
 import 'package:tinode_flutter_chat/src/chats/application/requested_chat_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_builder_scope.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
 import 'package:tinode_flutter_chat/src/push/application/push_registration.dart';
@@ -64,6 +65,7 @@ class TinodeChat extends StatefulWidget {
     this.strings = const TinodeChatStrings(),
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
+    this.bubbleBuilder,
     super.key,
   }) : connector = null,
        restorer = null,
@@ -101,6 +103,7 @@ class TinodeChat extends StatefulWidget {
     this.strings = const TinodeChatStrings(),
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
+    this.bubbleBuilder,
     super.key,
   });
 
@@ -146,6 +149,11 @@ class TinodeChat extends StatefulWidget {
   /// and the size of the file cache. Message search finds only what is
   /// kept.
   final TinodeCacheLimits cacheLimits;
+
+  /// Builds message bubbles in place of the default ones, e.g. to wrap or
+  /// restyle them beyond `TinodeChatTheme`; null for the default bubbles.
+  /// Read on every build.
+  final TinodeBubbleBuilder? bubbleBuilder;
 
   /// Opens sessions; null for a real connection.
   @visibleForTesting
@@ -271,7 +279,10 @@ class _TinodeChatState extends State<TinodeChat> {
       container: _container,
       child: TinodeChatStringsScope(
         strings: widget.strings,
-        child: const ChatThemeScope(child: SessionGate()),
+        child: BubbleBuilderScope(
+          builder: widget.bubbleBuilder,
+          child: const ChatThemeScope(child: SessionGate()),
+        ),
       ),
     );
   }

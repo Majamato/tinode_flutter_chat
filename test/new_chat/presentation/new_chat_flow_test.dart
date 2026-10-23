@@ -68,7 +68,7 @@ void main() {
     expect(session.calls, contains('attach $bob'));
 
     // Back goes straight to the chat list, which now has the chat.
-    await tester.pageBack();
+    await tester.tap(find.byTooltip('Back to chats'));
     await tester.pumpAndSettle();
     expect(find.text(strings.chatListTitle), findsOneWidget);
     expect(find.text('Bob'), findsOneWidget);
@@ -118,7 +118,7 @@ void main() {
     expect(find.byType(ChatScreen), findsOneWidget);
     expect(find.text('Hikers'), findsOneWidget);
 
-    await tester.pageBack();
+    await tester.tap(find.byTooltip('Back to chats'));
     await tester.pumpAndSettle();
     expect(find.text(strings.chatListTitle), findsOneWidget);
     expect(find.text('Hikers'), findsOneWidget);

@@ -19,7 +19,7 @@ class MessageFooter extends ConsumerWidget {
   final int seq;
   final DateTime time;
 
-  /// The colour of the bubble's text.
+  /// The colour of the time and ticks.
   final Color color;
   final bool own;
 

@@ -25,7 +25,21 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
   wait in the outbox like any message, and can be cancelled. Profile photos given by reference
   show too.
 - In groups, names the sender of each run of messages and shows their avatar. Shows who is
-  typing. The user's own messages get delivered and read ticks, and a "Read by" list in groups.
+  typing, under the chat's name and as a bubble with bouncing dots. The user's own messages get
+  delivered and read ticks, and a "Read by" list in groups.
+- Bubbles in the chat's design: a tail on the last of each run, the time inline after the
+  last line, a date above each day, a dotted wallpaper, and frosted bars over the messages. A
+  sent message pops in. Wrap or replace bubbles with `bubbleBuilder`:
+
+  ```dart
+  TinodeChat(
+    config: config,
+    bubbleBuilder: (context, bubble, defaultBubble) => bubble.kind ==
+            TinodeBubbleKind.call
+        ? MyCallBubble(bubble)
+        : defaultBubble,
+  )
+  ```
 - Finds people and groups by login, email, phone or tag, opens 1:1 chats with them, and creates
   groups with members. This needs the network.
 - 1:1 voice and video calls with `flutter_webrtc`: call buttons in direct chats, a ringing screen
@@ -412,10 +426,10 @@ where it needs the protocol:
    result; prune each chat to its newest messages and the file cache to a size, both set with
    `TinodeCacheLimits`).
 8. **Design** ([`docs/design.md`](docs/design.md)): the palette, the theme's tokens and
-   `TinodeChatTheme.materialTheme` are in. Next, the screens move to it: the chat (bubble
-   tails, wallpaper, frosted header, composer), then the chat list and login, the call
-   screens, an optional tab bar (Chats, Calls, Settings) with an Appearance screen, and voice
-   messages.
+   `TinodeChatTheme.materialTheme` are in, and so is the chat screen (bubble tails, runs, date
+   chips, wallpaper, frosted header and composer, the send button's morph and the bubble
+   builder). Next: online presence, the chat list and login, the call screens, an optional tab
+   bar (Chats, Calls, Settings) with an Appearance screen, and voice messages.
 
 ## Development
 

@@ -129,8 +129,10 @@ provider.
 - `config`, `credentials`, `features` and `cacheLimits` are read once. To switch server or user, give `TinodeChat` a new `Key`.
   `pushToken` is read on every build and handed to `PushTokenController`.
 
-Trade-off: host-provided builders (future customisation hooks) won't see the host's providers.
-Revisit when those hooks arrive.
+Host-provided builders (`TinodeChat.bubbleBuilder`) run inside the chat's own container, so they
+can't watch the host's providers. They get plain data instead (`TinodeBubble`) through an
+inherited widget (`BubbleBuilderScope`), never a provider. A builder that needs host state reads
+it from the widget tree above `TinodeChat`.
 
 ## Widget tree
 
@@ -152,8 +154,10 @@ TinodeChat                      owns the container
           ├ ProfileScreen       pushed from the account menu; ChangePasswordScreen over it
           ├ FindPeopleScreen    pushed by NewChatButton or FindPeopleButton
           ├ NewGroupScreen      pushed from the search
-          ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`); MessageSearchButton
-          │                     and CallButtons in its app bar
+          ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`): ChatWallpaper,
+          │                     MessageList scrolling under the frosted ChatHeader (back with
+          │                     the other chats' unread count, MessageSearchButton, CallButtons)
+          │                     and the frosted composer, whose height it reports
           ├ MessageSearchScreen pushed by MessageSearchButton, over its chat
           ├ ChatInfoScreen      pushed by tapping the chat's title
           ├ CallLayer           over the routes: IncomingCallView or CallView
@@ -539,7 +543,8 @@ Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); wi
 Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `TinodeChatController`,
 `TinodeCalls`, `TinodeCredentials`
 (`PasswordCredentials`, `TokenCredentials`), `TinodeChatFeatures` (`PasswordResetMode`),
-`TinodeCacheLimits`, `TinodeChatTheme`, `TinodeChatPalette`, `TinodeChatStrings`, and the
+`TinodeCacheLimits`, `TinodeChatTheme`, `TinodeChatPalette`, `TinodeChatStrings`,
+`TinodeBubble` (`TinodeBubbleKind`, `TinodeBubbleStatus`), `TinodeBubbleBuilder`, and the
 client's `TinodeConfig`, `LoginResult`, `DevicePlatform` and `TinodePush` (`MessagePush`,
 `SubscriptionPush`, `ReadPush`). Everything else may change freely. Every exported symbol
 carries dartdoc. Adding an export is an API decision: keep the list short.

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:tinode_flutter_chat/src/calls/presentation/call_button.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_body.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_header.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_wallpaper.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/composer_area.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_indicator.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_info_screen.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
-import 'package:tinode_flutter_chat/src/search/presentation/message_search_button.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/frosted_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/size_reporter.dart';
 
-/// One chat: its messages, who is typing, message search, the call buttons
-/// and, where the user may post, the composer. Tapping the title opens the
-/// chat's info. Watches nothing itself.
-class ChatScreen extends StatelessWidget {
+/// One chat: its messages over the wallpaper, scrolling under the frosted
+/// header (who is typing, message search, the call buttons) and, where the
+/// user may post, the frosted composer. Tapping the title opens the chat's
+/// info. Watches nothing itself.
+class ChatScreen extends StatefulWidget {
   const ChatScreen({required this.topic, super.key});
 
   /// The name of every chat's route; its arguments are the topic.
@@ -50,33 +50,44 @@ class ChatScreen extends StatelessWidget {
   final String topic;
 
   @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  /// The composer's height, so the messages can scroll out from under it.
+  final _composerHeight = ValueNotifier<double>(0);
+
+  @override
+  void dispose() {
+    _composerHeight.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final topic = widget.topic;
     return Scaffold(
-      appBar: AppBar(
-        title: InkWell(
-          onTap: () => ChatInfoScreen.open(context, topic),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ChatTitle(topic: topic),
-              TypingIndicator(topic: topic),
-            ],
+      extendBodyBehindAppBar: true,
+      appBar: ChatHeader(topic: topic),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: ChatWallpaper()),
+          Positioned.fill(
+            child: ChatBody(topic: topic, bottomInset: _composerHeight),
           ),
-        ),
-        actions: [
-          MessageSearchButton(topic: topic),
-          CallButton(topic: topic, video: false),
-          CallButton(topic: topic, video: true),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SizeReporter(
+              height: _composerHeight,
+              child: FrostedBar(
+                edge: AxisDirection.up,
+                child: SafeArea(top: false, child: ComposerArea(topic: topic)),
+              ),
+            ),
+          ),
         ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(child: ChatBody(topic: topic)),
-            ComposerArea(topic: topic),
-          ],
-        ),
       ),
     );
   }

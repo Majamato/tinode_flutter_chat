@@ -33,9 +33,12 @@ Future<void> pumpTinodeChat(
   TinodeChatFeatures features = const TinodeChatFeatures(),
   TinodeConfig? config,
   String? pushToken,
+  ThemeData? theme,
+  TinodeBubbleBuilder? bubbleBuilder,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      theme: theme,
       home: TinodeChat.withConnector(
         config: config ?? testConfig,
         connector: connectTo(session),
@@ -53,6 +56,7 @@ Future<void> pumpTinodeChat(
         controller: controller,
         features: features,
         pushToken: pushToken,
+        bubbleBuilder: bubbleBuilder,
       ),
     ),
   );

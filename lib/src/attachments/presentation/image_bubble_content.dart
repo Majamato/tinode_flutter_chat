@@ -17,7 +17,7 @@ class ImageBubbleContent extends ConsumerWidget {
   const ImageBubbleContent({required this.image, super.key});
 
   /// How wide images are shown in a bubble.
-  static const width = 220.0;
+  static const width = 248.0;
 
   final ImageAttachment image;
 

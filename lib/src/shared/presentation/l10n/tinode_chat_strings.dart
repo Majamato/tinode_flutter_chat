@@ -31,6 +31,9 @@ class TinodeChatStrings {
     this.reconnecting = 'Reconnecting…',
     this.messageHint = 'Message',
     this.send = 'Send',
+    this.today = 'Today',
+    this.yesterday = 'Yesterday',
+    this.backToChats = 'Back to chats',
     this.readOnly = 'Only admins can post here.',
     this.unreachable = 'Cannot reach the chat server.',
     this.connectionLost = 'The connection to the chat server was lost.',
@@ -215,6 +218,15 @@ class TinodeChatStrings {
 
   /// Tooltip of the send button.
   final String send;
+
+  /// The date above today's first message.
+  final String today;
+
+  /// The date above yesterday's first message.
+  final String yesterday;
+
+  /// Read out for the chat's back button.
+  final String backToChats;
 
   /// Shown instead of the message field where the user cannot post, e.g.
   /// to channel followers.

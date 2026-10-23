@@ -83,7 +83,7 @@ final class CallControllerProvider
   }
 }
 
-String _$callControllerHash() => r'0db9d8979c69c4958d4360ee4312bfff64f4fc2e';
+String _$callControllerHash() => r'6ed28146d9d866991fd27be11a4aac55232b1ea5';
 
 /// The call of this device: places calls, rings for incoming ones, and
 /// drives the WebRTC link through [CallMedia] as the peer's call events

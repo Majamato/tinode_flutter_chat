@@ -241,19 +241,88 @@ final class ChatState {
   }
 
   /// Message [seq] is the last of a run. Its bubble shows the sender's
-  /// avatar.
+  /// avatar, and its tail. The user's newest numbered message continues
+  /// into the outbox.
   bool endsRun(int seq) {
     final index = binarySearch(seqs, seq);
     if (index < 0) {
       return false;
     }
-    return index == seqs.length - 1 ||
-        !_sameRun(bySeq[seq]!, bySeq[seqs[index + 1]]!);
+    if (index < seqs.length - 1) {
+      return !_sameRun(bySeq[seq]!, bySeq[seqs[index + 1]]!);
+    }
+    final message = bySeq[seq]!;
+    return outgoingIds.isEmpty ||
+        !message.isOwn ||
+        !_closeEnough(message.time, outgoingById[outgoingIds.first]!.createdAt);
+  }
+
+  /// Message [seq] is the first of its day, or the oldest loaded: a date
+  /// shows above it.
+  bool startsDay(int seq) {
+    final index = binarySearch(seqs, seq);
+    if (index < 0) {
+      return false;
+    }
+    return index == 0 ||
+        !_sameDay(bySeq[seqs[index - 1]]!.time, bySeq[seq]!.time);
+  }
+
+  /// The outbox message [clientId] starts a run of the user's messages.
+  bool outgoingStartsRun(String clientId) {
+    final index = outgoingIds.indexOf(clientId);
+    if (index < 0) {
+      return false;
+    }
+    final time = outgoingById[clientId]!.createdAt;
+    if (index > 0) {
+      return !_closeEnough(
+        outgoingById[outgoingIds[index - 1]]!.createdAt,
+        time,
+      );
+    }
+    final newest = seqs.isEmpty ? null : bySeq[seqs.last];
+    return newest == null || !newest.isOwn || !_closeEnough(newest.time, time);
+  }
+
+  /// The outbox message [clientId] ends a run of the user's messages.
+  bool outgoingEndsRun(String clientId) {
+    final index = outgoingIds.indexOf(clientId);
+    if (index < 0) {
+      return false;
+    }
+    return index == outgoingIds.length - 1 ||
+        !_closeEnough(
+          outgoingById[clientId]!.createdAt,
+          outgoingById[outgoingIds[index + 1]]!.createdAt,
+        );
+  }
+
+  /// The outbox message [clientId] is the first of its day.
+  bool outgoingStartsDay(String clientId) {
+    final index = outgoingIds.indexOf(clientId);
+    if (index < 0) {
+      return false;
+    }
+    final time = outgoingById[clientId]!.createdAt;
+    final before = index > 0
+        ? outgoingById[outgoingIds[index - 1]]!.createdAt
+        : seqs.isEmpty
+        ? null
+        : bySeq[seqs.last]!.time;
+    return before == null || !_sameDay(before, time);
   }
 
   static bool _sameRun(ChatMessage earlier, ChatMessage later) =>
-      earlier.from == later.from &&
-      later.time.difference(earlier.time) <= runGap;
+      earlier.from == later.from && _closeEnough(earlier.time, later.time);
+
+  static bool _closeEnough(DateTime earlier, DateTime later) =>
+      later.difference(earlier) <= runGap;
+
+  static bool _sameDay(DateTime a, DateTime b) {
+    final (x, y) = (a.toLocal(), b.toLocal());
+    return x.year == y.year && x.month == y.month && x.day == y.day;
+  }
 
   ChatState ready({required bool hasOlder}) =>
       _copy(status: LoadStatus.ready, hasOlder: hasOlder);

@@ -298,5 +298,62 @@ void main() {
       expect(state.endsRun(9), isFalse);
       expect(empty.endsRun(1), isFalse);
     });
+
+    OutgoingMessage queued(String id, {required int minute}) => OutgoingMessage(
+      clientId: id,
+      topic: friends,
+      content: const PlainText('hi'),
+      createdAt: at(minute),
+    );
+
+    test("the user's run continues into the outbox", () {
+      final state = empty
+          .withMessages([from(bob, 1), from(alice, 2)])
+          .withOutgoing(queued('a', minute: 3))
+          .withOutgoing(queued('b', minute: 4));
+      expect(state.endsRun(2), isFalse);
+      expect(state.outgoingStartsRun('a'), isFalse);
+      expect(state.outgoingEndsRun('a'), isFalse);
+      expect(state.outgoingStartsRun('b'), isFalse);
+      expect(state.outgoingEndsRun('b'), isTrue);
+    });
+
+    test("the outbox starts a run after someone else's message", () {
+      final state = empty
+          .withMessages([from(bob, 1)])
+          .withOutgoing(queued('a', minute: 2));
+      expect(state.endsRun(1), isTrue);
+      expect(state.outgoingStartsRun('a'), isTrue);
+      expect(state.outgoingStartsRun('unknown'), isFalse);
+    });
+
+    test('a new day starts with the oldest message and after midnight', () {
+      final late = epoch.toLocal().copyWith(hour: 23, minute: 50);
+      ChatMessage on(int seq, DateTime time) => ChatMessage(
+        seq: seq,
+        time: time,
+        content: const PlainText('hi'),
+        isOwn: false,
+        from: bob,
+      );
+      final state = empty.withMessages([
+        on(1, late),
+        on(2, late.add(const Duration(minutes: 5))),
+        on(3, late.add(const Duration(minutes: 20))),
+      ]);
+      expect(
+        [for (final s in state.seqs) state.startsDay(s)],
+        [true, false, true],
+      );
+      final withOutbox = state.withOutgoing(
+        OutgoingMessage(
+          clientId: 'a',
+          topic: friends,
+          content: const PlainText('hi'),
+          createdAt: late.add(const Duration(days: 2)),
+        ),
+      );
+      expect(withOutbox.outgoingStartsDay('a'), isTrue);
+    });
   });
 }

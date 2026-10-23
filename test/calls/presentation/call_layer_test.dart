@@ -139,7 +139,7 @@ void main() {
     await pump(tester);
     await openChat(tester, 'Friends');
     expect(find.byTooltip('Voice call'), findsNothing);
-    await tester.pageBack();
+    await tester.tap(find.byTooltip('Back to chats'));
     await tester.pumpAndSettle();
 
     session.serverInfo = const ServerInfo(version: '0.25');

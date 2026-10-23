@@ -17,7 +17,8 @@ class BubbleFooter extends StatelessWidget {
 
   final DateTime time;
 
-  /// The colour of the bubble's text.
+  /// The colour of the time and ticks: the theme's own or peer meta
+  /// colour, or white over a photo.
   final Color color;
 
   /// Shows the status: [status] while in the outbox, else [receipt].
@@ -27,17 +28,16 @@ class BubbleFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final faded = color.withValues(alpha: 0.7);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           MaterialLocalizations.of(context).messageTime(time),
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: faded),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
         ),
         if (own) ...[
           const SizedBox(width: 4),
-          MessageStatusIcon(status: status, receipt: receipt, color: faded),
+          MessageStatusIcon(status: status, receipt: receipt, color: color),
         ],
       ],
     );

@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/typing_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// Who is typing, under the chat's title; nothing while nobody is.
+/// Who is typing, under the chat's title in the link colour; nothing
+/// while nobody is.
 class TypingIndicator extends ConsumerWidget {
   const TypingIndicator({required this.topic, super.key});
 
@@ -20,9 +22,9 @@ class TypingIndicator extends ConsumerWidget {
       typingMessage(TinodeChatStrings.of(context), typing),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: Theme.of(
-        context,
-      ).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: TinodeChatTheme.of(context).linkColor,
+      ),
     );
   }
 }

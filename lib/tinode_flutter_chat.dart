@@ -19,6 +19,10 @@ export 'package:tinode_dart_client/tinode_dart_client.dart'
 export 'src/app/presentation/tinode_calls.dart' show TinodeCalls;
 export 'src/app/presentation/tinode_chat.dart'
     show TinodeChat, TinodeChatController;
+export 'src/chats/domain/tinode_bubble.dart'
+    show TinodeBubble, TinodeBubbleKind, TinodeBubbleStatus;
+export 'src/chats/presentation/chat/bubble_builder_scope.dart'
+    show TinodeBubbleBuilder;
 export 'src/offline/domain/tinode_cache_limits.dart' show TinodeCacheLimits;
 export 'src/session/domain/tinode_chat_features.dart'
     show PasswordResetMode, TinodeChatFeatures;

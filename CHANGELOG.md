@@ -1,5 +1,21 @@
 ## Unreleased
 
+- The chat screen in the chat's design. Bubbles are 20 px round, with a tail on the last of each
+  run, 2 px between the bubbles of a run and 12 px between runs; the user's newest message and
+  the outbox make one run. The time and ticks sit after the last line when they fit. A photo
+  without a caption carries its time on it. A date ("Today", "Yesterday" or the date) shows
+  above each day's first message. The messages scroll over a dotted wallpaper, under a frosted
+  header (back with the other chats' unread count, the avatar, the name, who is typing, search
+  and calls) and a frosted composer with a pill field. The send button fills with the brand
+  color and its arrow spins in once there is text. A sent message pops in from its tail
+  corner, with a light haptic. A bubble with bouncing dots shows while someone types. Reduce
+  motion turns the pop into a fade and stops the dots.
+- `TinodeChat(bubbleBuilder:)` wraps or replaces message bubbles. It gets a `TinodeBubble`:
+  the chat, seq, sender, whether it is the user's own, text, time, kind (`TinodeBubbleKind`),
+  its place in its run and, for the user's own, how far it got (`TinodeBubbleStatus`).
+- New `TinodeChatStrings`: `today`, `yesterday`, `backToChats`.
+- Message text is `bodyLarge` (was `bodyMedium`); photos in bubbles are 248 px wide (were 220).
+
 - The chat's own design (`docs/design.md`). `TinodeChatPalette` holds the brand colors, with a
   neutral slate blue by default. `TinodeChatTheme.materialTheme(palette:, brightness:,
   fontFamily:, displayFontFamily:)` builds a whole app theme from it: colors, the type scale,

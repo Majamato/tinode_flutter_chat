@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
@@ -8,11 +11,12 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/send_button.dart
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// The attach button, the message field and the send button. Typing and
-/// sending never rebuild it: the button watches both on its own. Typing
-/// tells the other members. A failed send, or a refused attachment, shows
-/// a snack bar and keeps the text.
+/// The attach button, the pill-shaped message field and the send button.
+/// Typing and sending never rebuild it: the button watches both on its
+/// own. Typing tells the other members. A failed send, or a refused
+/// attachment, shows a snack bar and keeps the text.
 class Composer extends ConsumerStatefulWidget {
   const Composer({required this.topic, super.key});
 
@@ -37,6 +41,7 @@ class _ComposerState extends ConsumerState<Composer> {
         .send(_text.text);
     if (sent && mounted) {
       _text.clear();
+      unawaited(HapticFeedback.lightImpact());
     }
   }
 
@@ -58,9 +63,16 @@ class _ComposerState extends ConsumerState<Composer> {
   @override
   Widget build(BuildContext context) {
     ref.listen(sendControllerProvider(widget.topic), _onSendState);
+    final pill = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(
+        TinodeChatTheme.of(context).composerRadius,
+      ),
+      borderSide: BorderSide.none,
+    );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+      padding: const EdgeInsets.fromLTRB(4, 6, 6, 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           AttachButton(topic: widget.topic),
           Expanded(
@@ -68,6 +80,18 @@ class _ComposerState extends ConsumerState<Composer> {
               controller: _text,
               decoration: InputDecoration(
                 hintText: TinodeChatStrings.of(context).messageHint,
+                isDense: true,
+                filled: true,
+                fillColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: pill,
+                enabledBorder: pill,
+                focusedBorder: pill,
               ),
               minLines: 1,
               maxLines: 5,

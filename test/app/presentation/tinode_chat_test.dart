@@ -82,7 +82,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'Yes!');
     await tester.pump(); // The send button enables on the next frame.
-    await tester.tap(find.byIcon(Icons.send));
+    await tester.tap(find.byTooltip('Send'));
     await tester.pumpAndSettle();
     expect(find.text('Yes!'), findsOneWidget);
     expect(
@@ -94,7 +94,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Great'), findsOneWidget);
 
-    await tester.pageBack();
+    await tester.tap(find.byTooltip('Back to chats'));
     await tester.pumpAndSettle();
     expect(find.text('Chats'), findsOneWidget);
     expect(find.text('1'), findsNothing);
@@ -115,7 +115,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'Hello?');
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.send));
+    await tester.tap(find.byTooltip('Send'));
     await tester.pumpAndSettle();
 
     expect(
@@ -155,7 +155,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'See you');
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.send));
+    await tester.tap(find.byTooltip('Send'));
     await tester.pumpAndSettle();
 
     expect(find.text('See you'), findsOneWidget);
@@ -278,7 +278,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Hi Alice'), findsOneWidget);
-      await tester.pageBack();
+      await tester.tap(find.byTooltip('Back to chats'));
       await tester.pumpAndSettle();
       expect(find.text('Chats'), findsOneWidget);
     });

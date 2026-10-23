@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
@@ -9,9 +10,12 @@ import 'package:tinode_flutter_chat/src/shared/presentation/error_retry_view.dar
 /// Progress, error or the messages. Rebuilds only when the load status
 /// does. While it is shown the chat stays attached.
 class ChatBody extends ConsumerWidget {
-  const ChatBody({required this.topic, super.key});
+  const ChatBody({required this.topic, required this.bottomInset, super.key});
 
   final String topic;
+
+  /// The composer's height, for the messages to scroll out from under.
+  final ValueListenable<double> bottomInset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +31,7 @@ class ChatBody extends ConsumerWidget {
             ? null
             : ref.read(chatControllerProvider(topic).notifier).reload,
       ),
-      LoadStatus.ready => MessageList(topic: topic),
+      LoadStatus.ready => MessageList(topic: topic, bottomInset: bottomInset),
     };
   }
 }

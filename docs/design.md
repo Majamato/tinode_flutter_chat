@@ -8,8 +8,8 @@ The values live in code, not here: the palette in `TinodeChatPalette`, the neutr
 `ChatNeutrals`, everything the widgets read in `TinodeChatTheme`, and the Material theme around
 them in `chatMaterialTheme` (`TinodeChatTheme.materialTheme`). This page says what each is for.
 
-The screens are moving to this design one by one (see the README's roadmap). Until a screen has
-moved, it reads only the tokens it already used.
+The screens are moving to this design one by one (see the README's roadmap). The chat screen
+has moved; the chat list, login, calls and settings still read only the tokens they used before.
 
 ## Palette
 
@@ -73,14 +73,33 @@ Timers and durations use tabular figures.
 - `sameRunGap` (2 px) between the bubbles of a run, `newRunGap` (12 px) between runs.
 - Own: `ownBubbleColor` with `onOwnBubbleColor` text and `ownMetaColor` time and ticks.
   Others: `peerBubbleColor`, `onPeerBubbleColor`, `peerMetaColor`.
-- The time and ticks sit at the bottom right of the last line.
-- The wallpaper is `wallpaperColor` with a dot grid in `wallpaperDotColor`; dates between
-  messages sit on a `dateChipColor` pill in white.
+- The time and ticks sit at the end of the last line when they fit, else on a line of their
+  own (`BubbleTextLayout`). On a photo without a caption they sit on a dark pill over it.
+- Padding: text 7 × 12, files and calls 10 × 12, photos 4 (caption 2 × 8 × 6 below).
+  A photo's bubble takes the photo's radius plus that 4 px (19), so the rim is even. The tail's
+  base reaches into the bubble, so it stays joined to a photo's thin rim.
+- The wallpaper is `wallpaperColor` with two offset 28 px dot grids in `wallpaperDotColor`;
+  the first message of a day has a `dateChipColor` pill above it, in white.
+- While someone types, a bubble with three bouncing dots (`peerMetaColor`) sits at the bottom.
+- A host wraps or replaces any bubble with `TinodeChat.bubbleBuilder`, which gets a
+  `TinodeBubble` and the default bubble.
+
+## Chat screen
+
+- The messages scroll under two frosted bars (`FrostedBar`: `glassColor`, blur 22, saturation
+  1.6, a `glassEdgeColor` hairline). The header has back (with the other chats' unread count in
+  a badge), the avatar, the name, who is typing in `linkColor`, then search and the call
+  buttons. The composer has attach, a pill field (`composerRadius`) and the send button.
+- The send button rests while the field is blank. With text it fills with `primary` and its
+  arrow turns in from a quarter turn (300 ms on `springCurve`). Phase 6 adds the microphone in
+  its resting place.
 
 ## Motion
 
 `springCurve` (a spring with a little overshoot, `Cubic(.2, .9, .3, 1.25)`) over
 `springDuration` for pops, pills, lenses and sheets; `fadeDuration` for fades and color changes.
+A sent message pops from its tail corner (420 ms: scale .35 → 1.05 → .98 → 1, rising 18 px);
+the typing dots hop 4 px in a 1.2 s loop, 150 ms apart.
 With the OS's Reduce motion (`MediaQuery.disableAnimationsOf`), scale and slide become plain
 fades and looping background animations stop.
 
