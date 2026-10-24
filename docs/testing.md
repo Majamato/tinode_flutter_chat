@@ -112,7 +112,8 @@ and a `MemoryChatStoreOpener` directly (`test/calls/application/call_push_handle
 `pumpTinodeChat` turns on Reduce motion (`reduceMotion: true`): the login screen's bubbles drift
 for as long as it shows, so `pumpAndSettle` would never settle on it. A test about motion passes
 `reduceMotion: false` and pumps frames instead of settling (see "the login screen moves" in
-`account_flows_test.dart`).
+`account_flows_test.dart`). The call screens loop too (the blobs, the avatar rings, the dots of
+"Ringing…"); "the call screen moves" in `call_layer_test.dart` checks them that way.
 
 To seed the cache before the widget opens, open the user's store from a shared
 `MemoryChatStoreOpener` first and put the chats as well as their messages: a new session prunes
@@ -173,7 +174,9 @@ fvm flutter test --tags integration --run-skipped --concurrency=1
 - Use plain `test()`, not `testWidgets()`: widget tests block real network access.
 - `call_test.dart` needs the server's ICE servers (`ICE_SERVERS_FILE` in `../tinode-tests`). It
   places real calls between alice and bob with fake media: the server only relays the WebRTC setup,
-  so the whole call flow runs without audio.
+  so the whole call flow runs without audio. A fake link that drops (`emitLink(disconnected)`)
+  shows the call reconnecting while the server keeps it going; alice's socket, cut through
+  `SeverableConnector`, shows that the server ends a call whose session dropped.
 - `email_test.dart` is tagged `smtp`, not `integration`: it needs the server's mail override, which
   requires an email at sign-up and so breaks the other suites. Start it with
   run `fvm flutter test --tags smtp --run-skipped`, then go back with `docker compose up -d`.

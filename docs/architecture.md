@@ -70,10 +70,10 @@ lib/
       data/                       WebRtcCallMedia (flutter_webrtc), CallKitSystemCalls
                                   (flutter_callkit_incoming), NoSystemCalls, systemCallId, the
                                   background hang-up
-      application/                CallController, CallResources, callsAvailable, callMediaFactory,
-                                  systemCalls, handleCallPush
-      presentation/               call layer, ringing and call screens, call buttons,
-                                  systemCallTextsOf
+      application/                CallController, CallResources, CallMinimized, callsAvailable,
+                                  callMediaFactory, systemCalls, handleCallPush
+      presentation/               call layer, ringing, voice and video call screens, call bar,
+                                  backdrop, avatar rings, round call buttons, systemCallTextsOf
     profile/                      the user's own profile and account
       domain/                     MyProfile
       application/                ProfileController, saving, photo, password, deleting the account

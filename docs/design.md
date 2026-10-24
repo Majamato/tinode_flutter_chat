@@ -131,6 +131,43 @@ Timers and durations use tabular figures.
   arrow turns in from a quarter turn (300 ms on `springCurve`). Phase 6 adds the microphone in
   its resting place.
 
+## Calls
+
+The call screens are always dark, whatever the brightness: text, icons and rings in
+`onCallColor` on `callBackgroundColor` (`deep`).
+
+- **Voice call** (`VoiceCallView`). `CallBackdrop` paints three blurred blobs (`callBlobColors`:
+  `primary`, `bright` @ 70 %, `accent` @ 45 %, blur 70) drifting in 14, 11 and 9 s loops, under
+  `callScrimColor`. On top: the chevron that minimizes the call, and the reconnecting pill
+  while the link drops. In the middle: `CallAvatar` (148 px, a 4 px `callOutlineColor` ring),
+  with three rings pulsing out every 2.2 s, .75 s apart, until the call connects; the name in
+  30/800; the status in 17 px, a timer in tabular figures once connected. At the bottom:
+  Speaker, Mute and End, 64 px `CallRoundButton`s with a word below. A toggle that is on turns
+  `callControlActiveColor` with an `onCallControlActiveColor` icon; End is `colorScheme.error`
+  with a glow. The content fades up 20 px over 500 ms. There is no Video button yet: switching a
+  running call to video needs renegotiation.
+- **Video call** (`VideoCallView`). The peer's video full-bleed; until it arrives,
+  `videoPlaceholderColor` (`scene`) with two still blobs and the avatar. A tap toggles the
+  controls: a 200 px `callShadeColor` gradient with the chevron, the name (18/800) and the status
+  (14/600), and the control pill (84 px, radius 42, `callPillColor` with a `callPillEdgeColor`
+  edge, `glassFilter(26)`): flip camera (its icon turns half a turn), camera, mute, end, 60 px
+  each. Hidden, the pill slides down 40 px and fades. The self-view (`CallLocalPreview`) is
+  108 × 152, radius 22, with a 1.5 px `callOutlineColor` edge and a deep shadow; it moves from
+  66 to 8 px under the status bar while the controls hide (400 ms, `springCurve`). While the
+  cameras swap its video blurs and it turns edge-on (200 ms), and back once WebRTC says which
+  camera is in use (the front camera is mirrored, the back one isn't). The blur stays until the
+  new camera's frames arrive (the renderer reports a new rotation or size), or 1.5 s at most:
+  until then the renderer still shows the old camera's last frame. With Reduce motion it only
+  blurs.
+- **A lost call** (`CallLostActions`): a call that ended because a connection dropped keeps
+  its screen for 12 s with the reason, and round **Close** (glass) and **Call again**
+  (`acceptCallColor`, faded and disabled while the chat server reconnects) in place of the
+  controls; on a video call they show whatever the tap did.
+- **Ringing** (`IncomingCallView`): the voice call's backdrop and avatar with rings, "Incoming
+  voice call", and Decline (`error`, with a glow) and Accept (`acceptCallColor`).
+- **Call bar** (`CallBar`): the minimized call, `colorScheme.primary`, 44 px under the status
+  bar, above the chat routes: the call's icon, the name, the timer. A tap brings the call back.
+
 ## Presence
 
 Only direct chats show presence: an `onlineColor` dot with a 3 px ring in the list's background
@@ -142,9 +179,11 @@ typing (typing wins). Presence is live only, never cached.
 `springCurve` (a spring with a little overshoot, `Cubic(.2, .9, .3, 1.25)`) over
 `springDuration` for pops, pills, lenses and sheets; `fadeDuration` for fades and color changes.
 A sent message pops from its tail corner (420 ms: scale .35 → 1.05 → .98 → 1, rising 18 px);
-the typing dots hop 4 px in a 1.2 s loop, 150 ms apart.
+the typing dots hop 4 px in a 1.2 s loop, 150 ms apart. The call screens' blobs drift in 9 to
+14 s loops and their avatar rings pulse every 2.2 s.
 With the OS's Reduce motion (`MediaQuery.disableAnimationsOf`), scale and slide become plain
-fades and looping background animations stop.
+fades and looping background animations stop: the call blobs hold still, the avatar rings go
+and the dots of "Ringing…" stop pulsing.
 
 ## Accessibility
 

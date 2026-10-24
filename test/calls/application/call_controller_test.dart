@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
+import 'package:tinode_flutter_chat/src/calls/application/call_minimized.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/active_call.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_failure.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
@@ -211,6 +212,138 @@ void main() {
 
       expect(call()!.failure, CallFailure.mediaFailed);
       expect(session.calls, contains('call usrBob 1 hangUp'));
+    });
+
+    test('a dropped link reconnects without ending the call', () async {
+      await controller().start(bob, audioOnly: true);
+      media.last.emitLink(CallLinkState.disconnected);
+      expect(call()!.reconnecting, isFalse, reason: 'not connected yet');
+
+      media.last.emitLink(CallLinkState.connected);
+      final connectedAt = call()!.connectedAt;
+      media.last.emitLink(CallLinkState.disconnected);
+      expect(call()!.stage, CallStage.connected);
+      expect(call()!.reconnecting, isTrue);
+      expect(session.calls, isNot(contains('call usrBob 1 hangUp')));
+
+      media.last.emitLink(CallLinkState.connected);
+      expect(call()!.reconnecting, isFalse);
+      expect(call()!.connectedAt, connectedAt, reason: 'the same call');
+
+      media.last
+        ..emitLink(CallLinkState.disconnected)
+        ..emitLink(CallLinkState.failed);
+      expect(call()!.stage, CallStage.ended);
+      expect(call()!.failure, CallFailure.callLost);
+      expect(session.calls, contains('call usrBob 1 hangUp'));
+    });
+
+    test('a link that stays down ends the call as lost, in time', () {
+      fakeAsync((async) {
+        unawaited(controller().start(bob, audioOnly: true));
+        async.flushMicrotasks();
+        media.last.emitLink(CallLinkState.connected);
+
+        // Back in time: the call goes on.
+        media.last.emitLink(CallLinkState.disconnected);
+        async.elapse(callReconnectTimeout - const Duration(seconds: 1));
+        media.last.emitLink(CallLinkState.connected);
+        async.elapse(const Duration(seconds: 5));
+        expect(call()!.stage, CallStage.connected);
+
+        // Down for good: lost, and the peer is told.
+        media.last.emitLink(CallLinkState.disconnected);
+        async.elapse(callReconnectTimeout);
+        expect(call()!.stage, CallStage.ended);
+        expect(call()!.failure, CallFailure.callLost);
+        expect(session.calls, contains('call usrBob 1 hangUp'));
+
+        // A lost call stays up longer, to call again.
+        async.elapse(callEndedLinger);
+        expect(call(), isNotNull);
+        async.elapse(callLostLinger);
+        expect(call(), isNull);
+      });
+    });
+
+    test('a lost call can be called again, or closed', () async {
+      await controller().start(bob, audioOnly: true);
+      media.last
+        ..emitLink(CallLinkState.connected)
+        ..emitLink(CallLinkState.failed);
+      expect(call()!.failure, CallFailure.callLost);
+
+      await controller().callAgain();
+      expect(call()!.stage, CallStage.calling);
+      expect(call()!.audioOnly, isTrue);
+      expect(
+        session.calls.where((c) => c == 'startCall usrBob audio'),
+        hasLength(2),
+      );
+
+      media.last.emitLink(CallLinkState.failed);
+      controller().closeEnded();
+      expect(call(), isNull);
+    });
+
+    test('each call starts full screen; an ended one stays minimized', () {
+      fakeAsync((async) {
+        container.listen(callMinimizedProvider, (_, _) {});
+        bool minimized() => container.read(callMinimizedProvider);
+
+        unawaited(controller().start(bob, audioOnly: true));
+        async.flushMicrotasks();
+        container.read(callMinimizedProvider.notifier).minimize();
+        expect(minimized(), isTrue);
+
+        controller().hangUp();
+        expect(minimized(), isTrue, reason: 'the bar shows the end');
+
+        // A new call before the old one goes: full screen again.
+        unawaited(controller().start(bob, audioOnly: true));
+        async.flushMicrotasks();
+        expect(minimized(), isFalse);
+
+        container.read(callMinimizedProvider.notifier).minimize();
+        controller().hangUp();
+        async.elapse(callEndedLinger);
+        expect(call(), isNull);
+        expect(minimized(), isFalse);
+      });
+    });
+
+    test('switching cameras runs one swap at a time', () {
+      fakeAsync((async) {
+        unawaited(controller().start(bob, audioOnly: false));
+        async.flushMicrotasks();
+        final hold = media.last.holdSwitch = Completer<void>();
+
+        unawaited(controller().switchCamera());
+        async.flushMicrotasks();
+        expect(call()!.switchingCamera, isTrue);
+        expect(call()!.frontCamera, isTrue, reason: 'not swapped yet');
+
+        // A second tap during the swap doesn't reach the media.
+        unawaited(controller().switchCamera());
+        async.flushMicrotasks();
+        expect(media.last.log.where((l) => l == 'switchCamera'), hasLength(1));
+
+        hold.complete();
+        async.flushMicrotasks();
+        expect(call()!.frontCamera, isFalse, reason: 'what the media says');
+        expect(call()!.switchingCamera, isFalse);
+
+        // A hang-up during a swap ignores its late answer.
+        final late = media.last.holdSwitch = Completer<void>();
+        unawaited(controller().switchCamera());
+        async.flushMicrotasks();
+        controller().hangUp();
+        late.complete();
+        async.flushMicrotasks();
+        expect(call()!.isOver, isTrue);
+        expect(call()!.frontCamera, isFalse);
+        async.elapse(callEndedLinger);
+      });
     });
 
     test('the controls reach the media', () async {

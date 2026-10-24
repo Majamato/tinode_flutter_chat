@@ -21,6 +21,10 @@ class BackgroundPolicy extends _$BackgroundPolicy {
   var _hidden = false;
   var _inCall = false;
 
+  /// Whether a call runs, as the call controller last said with
+  /// [keepOpen].
+  bool get inCall => _inCall;
+
   @override
   void build() => ref.onDispose(() => _suspend?.cancel());
 

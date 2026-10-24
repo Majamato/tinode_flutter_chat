@@ -3,12 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar.dart';
+import 'package:tinode_flutter_chat/src/calls/presentation/call_avatar.dart';
+import 'package:tinode_flutter_chat/src/calls/presentation/call_backdrop.dart';
+import 'package:tinode_flutter_chat/src/calls/presentation/call_entrance.dart';
+import 'package:tinode_flutter_chat/src/calls/presentation/call_round_button.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// A call to the user, ringing: who calls, voice or video, and buttons to
-/// accept or decline. Watches the call's topic and whether it has video.
+/// A call to the user, ringing, on the voice call's moving background:
+/// who calls with rings pulsing round their avatar, voice or video, and
+/// round buttons to decline or accept. Watches the call's topic and
+/// whether it has video.
 class IncomingCallView extends ConsumerWidget {
   const IncomingCallView({super.key});
 
@@ -24,61 +30,90 @@ class IncomingCallView extends ConsumerWidget {
     }
 
     final strings = TinodeChatStrings.of(context);
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = TinodeChatTheme.of(context);
     final controller = ref.read(callControllerProvider.notifier);
+    final onCall = theme.onCallColor;
 
     return Material(
-      color: colors.inverseSurface,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            children: [
-              const Spacer(),
-              SizedBox.square(
-                dimension: 96,
-                child: FittedBox(child: ChatAvatar(topic: call.topic)),
-              ),
-              const SizedBox(height: 16),
-              DefaultTextStyle.merge(
-                style: textTheme.headlineSmall?.copyWith(
-                  color: colors.onInverseSurface,
-                ),
-                child: ChatTitle(topic: call.topic),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                call.audioOnly
-                    ? strings.incomingVoiceCall
-                    : strings.incomingVideoCall,
-                style: textTheme.titleMedium?.copyWith(
-                  color: colors.onInverseSurface.withValues(alpha: 0.8),
-                ),
-              ),
-              const Spacer(flex: 2),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  FilledButton.icon(
-                    onPressed: controller.decline,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: colors.error,
-                      foregroundColor: colors.onError,
+      color: theme.callBackgroundColor,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const CallBackdrop(),
+          SafeArea(
+            minimum: const EdgeInsets.only(bottom: 56),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: const Alignment(0, -0.3),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: CallEntrance(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CallAvatar(topic: call.topic, rings: true),
+                            const SizedBox(height: 22),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 340),
+                              child: DefaultTextStyle.merge(
+                                style: TextStyle(
+                                  color: onCall,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.6,
+                                ),
+                                child: ChatTitle(topic: call.topic),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              call.audioOnly
+                                  ? strings.incomingVoiceCall
+                                  : strings.incomingVideoCall,
+                              style: TextStyle(
+                                color: onCall.withValues(alpha: 0.9),
+                                fontSize: 17,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    icon: const Icon(Icons.call_end),
-                    label: Text(strings.declineCall),
                   ),
-                  FilledButton.icon(
-                    onPressed: () => unawaited(controller.accept()),
-                    icon: Icon(call.audioOnly ? Icons.call : Icons.videocam),
-                    label: Text(strings.acceptCall),
+                ),
+                CallEntrance(
+                  delay: const Duration(milliseconds: 100),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      CallRoundButton(
+                        icon: const Icon(Icons.call_end_rounded),
+                        tooltip: strings.declineCall,
+                        label: strings.declineCall,
+                        style: CallButtonStyle.danger,
+                        onPressed: controller.decline,
+                      ),
+                      CallRoundButton(
+                        icon: Icon(
+                          call.audioOnly
+                              ? Icons.call_rounded
+                              : Icons.videocam_rounded,
+                        ),
+                        tooltip: strings.acceptCall,
+                        label: strings.acceptCall,
+                        style: CallButtonStyle.accept,
+                        onPressed: () => unawaited(controller.accept()),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

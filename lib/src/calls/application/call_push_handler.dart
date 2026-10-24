@@ -5,6 +5,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/active_call.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 
 /// How long after it was sent a call push may still ring: Tinode's default
 /// call timeout. The server sends call pushes to be delivered at once or
@@ -22,7 +23,7 @@ const callerNameTimeout = Duration(seconds: 2);
 /// The caller's name comes from the cache of the user who last logged in to
 /// [config]'s server. With [token], declining on the system's screen
 /// reaches the caller even while the app is closed: [registerHangUp] sets
-/// that up.
+/// that up. A new call of a kind [features] turns off doesn't ring.
 ///
 /// Returns whether [push] was about a call. Call pushes are `silent`, so
 /// none of them is a notification to show.
@@ -33,6 +34,7 @@ Future<bool> handleCallPush(
   required ChatStoreOpener storeOpener,
   String? token,
   Future<void> Function()? registerHangUp,
+  TinodeChatFeatures features = const TinodeChatFeatures(),
 }) async {
   if (push is! MessagePush) {
     return false;
@@ -62,7 +64,10 @@ Future<bool> handleCallPush(
     final sentAt? => clock.now().difference(sentAt),
     null => Duration.zero,
   };
-  if (state != CallState.started || seq == null || age >= callPushLifetime) {
+  if (state != CallState.started ||
+      seq == null ||
+      age >= callPushLifetime ||
+      !features.allowsCall(audioOnly: push.audioOnly)) {
     return true;
   }
   final callerName = await cachedCallerName(storeOpener, config.server, topic);

@@ -15,13 +15,23 @@ import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
+import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/shared/application/build_lifetime.dart';
 
 part 'call_controller.g.dart';
 
 /// How long an ended call stays on screen before it goes away.
 const callEndedLinger = Duration(seconds: 2);
+
+/// How long a call that lost its connection stays on screen, offering to
+/// call again.
+const callLostLinger = Duration(seconds: 12);
+
+/// How long a connected call waits for its dropped link to come back
+/// before it ends as lost.
+const callReconnectTimeout = Duration(seconds: 20);
 
 /// How long this device waits for a call to connect beyond the server's
 /// call timeout before it gives up by itself.
@@ -50,6 +60,7 @@ class CallController extends _$CallController {
   late String _me;
   late CallMediaFactory _mediaFactory;
   late SystemCalls _systemCalls;
+  late TinodeChatFeatures _features;
   late BuildLifetime _lifetime;
 
   /// What the running call holds; null when no call runs.
@@ -70,6 +81,7 @@ class CallController extends _$CallController {
     final me = ref.watch(currentUserIdProvider);
     _mediaFactory = ref.watch(callMediaFactoryProvider);
     _systemCalls = ref.watch(systemCallsProvider);
+    _features = ref.watch(tinodeChatFeaturesProvider);
     listenSelf((_, call) {
       _latest = call;
       ref
@@ -229,6 +241,21 @@ class CallController extends _$CallController {
   /// Refuses the ringing call.
   void decline() => hangUp();
 
+  /// Calls the same peer the same way again, from a call that ended.
+  Future<void> callAgain() async {
+    if (state case final call? when call.isOver) {
+      await start(call.topic, audioOnly: call.audioOnly);
+    }
+  }
+
+  /// Takes an ended call off the screen at once.
+  void closeEnded() {
+    if (state?.isOver ?? false) {
+      _linger?.cancel();
+      state = null;
+    }
+  }
+
   /// Ends the call, or cancels or declines it before it connected.
   void hangUp() => _end(notifyPeer: true);
 
@@ -248,16 +275,35 @@ class CallController extends _$CallController {
     return c.copyWith(cameraOn: !c.cameraOn);
   });
 
+  /// Swaps the cameras, one swap at a time. The call is
+  /// [ActiveCall.switchingCamera] from the request until the media answers
+  /// which camera is in use; the new camera's frames may come later.
   Future<void> switchCamera() async {
     final resources = _resources;
     final media = resources?.media;
-    if (resources == null || media == null || (state?.audioOnly ?? true)) {
+    final call = state;
+    if (resources == null ||
+        media == null ||
+        call == null ||
+        call.isOver ||
+        call.audioOnly ||
+        call.switchingCamera) {
       return;
     }
-    await media.switchCamera();
-    if (!resources.isReleased) {
-      _update((c) => c.copyWith(frontCamera: !c.frontCamera));
+    _update((c) => c.copyWith(switchingCamera: true));
+    final bool front;
+    try {
+      front = await media.switchCamera();
+    } on Object {
+      if (!resources.isReleased) {
+        _update((c) => c.copyWith(switchingCamera: false));
+      }
+      return;
     }
+    if (resources.isReleased) {
+      return;
+    }
+    _update((c) => c.copyWith(frontCamera: front, switchingCamera: false));
   }
 
   Future<void> toggleSpeaker() async {
@@ -652,7 +698,10 @@ class CallController extends _$CallController {
 
   void _onLink(CallLinkState link) {
     switch (link) {
-      case CallLinkState.connected when state?.stage != CallStage.connected:
+      case CallLinkState.connected when state?.stage == CallStage.connected:
+        _resources?.stopReconnectTimer();
+        _update((c) => c.copyWith(reconnecting: false));
+      case CallLinkState.connected:
         _resources?.stopSetupTimer();
         _update(
           (c) =>
@@ -665,11 +714,21 @@ class CallController extends _$CallController {
           unawaited(_setSpeaker(on: true));
         }
       case CallLinkState.failed || CallLinkState.closed:
-        _end(failure: CallFailure.mediaFailed, notifyPeer: true);
-      case CallLinkState.connecting ||
-          CallLinkState.connected ||
-          CallLinkState.disconnected:
-      // A brief disconnect may recover by itself; failed follows if not.
+        _end(
+          failure: state?.stage == CallStage.connected
+              ? CallFailure.callLost
+              : CallFailure.mediaFailed,
+          notifyPeer: true,
+        );
+      case CallLinkState.disconnected when state?.stage == CallStage.connected:
+        // A brief disconnect may recover by itself; WebRTC may take long to
+        // report it failed, so the call gives up by itself in time.
+        _update((c) => c.copyWith(reconnecting: true));
+        _resources?.startReconnectTimer(
+          callReconnectTimeout,
+          () => _end(failure: CallFailure.callLost, notifyPeer: true),
+        );
+      case CallLinkState.connecting || CallLinkState.disconnected:
     }
   }
 
@@ -690,10 +749,14 @@ class CallController extends _$CallController {
 
   // Lifecycle of one call.
 
-  /// Shows the incoming [invite], unless a call is already running.
-  /// [attached] says an invite check attached the topic already. Returns
-  /// whether the call took over that attach.
+  /// Shows the incoming [invite], unless a call is already running or the
+  /// host turned its kind off. [attached] says an invite check attached the
+  /// topic already. Returns whether the call took over that attach.
   bool _ring(CallInvite invite, {required bool attached}) {
+    if (!_features.allowsCall(audioOnly: invite.audioOnly)) {
+      // Left to the user's other devices: not even declined.
+      return false;
+    }
     if (state case final call? when !call.isOver) {
       if (call.topic != invite.topic || call.seq != invite.seq) {
         // Busy: hanging up declines the other call.
@@ -790,7 +853,10 @@ class CallController extends _$CallController {
     }
     _release();
     state = call.copyWith(stage: CallStage.ended, failure: failure);
-    _linger = Timer(callEndedLinger, () {
+    final lost =
+        failure == CallFailure.callLost ||
+        failure == CallFailure.connectionLost;
+    _linger = Timer(lost ? callLostLinger : callEndedLinger, () {
       if (state?.isOver ?? false) {
         state = null;
       }

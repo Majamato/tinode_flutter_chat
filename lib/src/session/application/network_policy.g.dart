@@ -47,7 +47,7 @@ final class NetworkPolicyProvider
   }
 }
 
-String _$networkPolicyHash() => r'b5d169f26847a48a257f516044b6e8d4f9007ed2';
+String _$networkPolicyHash() => r'2d1f2fa5496e0a75d45e9d4fb59b618907829358';
 
 /// Turns the OS's network changes into checks of the link. Only a hint:
 /// the socket's own status decides what the user sees.

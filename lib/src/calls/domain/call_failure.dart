@@ -11,10 +11,16 @@ enum CallFailure {
 
   /// The server has no ICE servers (501) or the chat takes no calls (403).
   unavailable,
+
+  /// This device lost the chat server; the server ends its calls then.
   connectionLost,
 
-  /// The WebRTC link failed, or the media could not be opened.
+  /// The WebRTC link failed before the call connected, or the media
+  /// could not be opened.
   mediaFailed,
+
+  /// The link of a connected call dropped and didn't come back.
+  callLost,
   unexpected;
 
   static CallFailure of(Object error) => switch (error) {

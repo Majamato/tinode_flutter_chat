@@ -19,11 +19,13 @@ enum PasswordResetMode {
 /// them.
 final class TinodeChatFeatures with ValueObject {
   /// Creates the switches; by default users can sign up, reset their
-  /// password where the server sends email, and calls use the phone's own
-  /// call screens.
+  /// password where the server sends email, make voice and video calls,
+  /// and calls use the phone's own call screens.
   const TinodeChatFeatures({
     this.signUp = true,
     this.passwordReset = PasswordResetMode.automatic,
+    this.voiceCalls = true,
+    this.videoCalls = true,
     this.systemCalls = true,
   });
 
@@ -33,12 +35,24 @@ final class TinodeChatFeatures with ValueObject {
   /// When the login screen offers to reset a forgotten password.
   final PasswordResetMode passwordReset;
 
+  /// Whether users can place voice calls, and whether voice calls ring.
+  /// When off, an incoming voice call is left to the user's other devices.
+  final bool voiceCalls;
+
+  /// Whether users can place video calls, and whether video calls ring.
+  /// When off, an incoming video call is left to the user's other devices.
+  final bool videoCalls;
+
   /// Whether calls go through the phone's own call screens: CallKit on
   /// iOS, a self-managed Telecom connection on Android. They ring over the
   /// lock screen and keep the microphone and camera while the app is in
   /// the background. Turn it off where CallKit isn't allowed, such as the
   /// App Store in China: calls then ring only inside the app.
   final bool systemCalls;
+
+  /// Whether calls of this kind, voice when [audioOnly], are on.
+  bool allowsCall({required bool audioOnly}) =>
+      audioOnly ? voiceCalls : videoCalls;
 
   /// Whether to offer the password reset, given the credentials the
   /// server requires at sign-up, e.g. `email`.
@@ -50,5 +64,11 @@ final class TinodeChatFeatures with ValueObject {
       };
 
   @override
-  List<Object?> get props => [signUp, passwordReset, systemCalls];
+  List<Object?> get props => [
+    signUp,
+    passwordReset,
+    voiceCalls,
+    videoCalls,
+    systemCalls,
+  ];
 }

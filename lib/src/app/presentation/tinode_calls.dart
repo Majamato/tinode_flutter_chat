@@ -4,6 +4,7 @@ import 'package:tinode_flutter_chat/src/calls/data/background_hang_up.dart';
 import 'package:tinode_flutter_chat/src/calls/data/callkit_system_calls.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/system_call_texts_of.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Calls that ring while the app is in the background or closed, on the
@@ -38,7 +39,8 @@ abstract final class TinodeCalls {
   /// its server. With [token], the user's saved token, a call declined
   /// while the app is closed is hung up for the caller at once; the token
   /// stays with the ringing call until it ends. Without it, the caller
-  /// hears it ring until the server gives up.
+  /// hears it ring until the server gives up. Pass the [features] given to
+  /// `TinodeChat`: a call of a kind they turn off doesn't ring.
   ///
   /// Returns whether [push] was about a call. Call pushes are all
   /// `silent`, so there is nothing more to show for them.
@@ -47,10 +49,12 @@ abstract final class TinodeCalls {
     required TinodeConfig config,
     String? token,
     TinodeChatStrings strings = const TinodeChatStrings(),
+    TinodeChatFeatures features = const TinodeChatFeatures(),
   }) => handleCallPush(
     push,
     config: config,
     token: token,
+    features: features,
     systemCalls: deviceSystemCalls(systemCallTextsOf(strings)),
     storeOpener: DeviceChatStoreOpener(),
     registerHangUp: registerBackgroundHangUp,

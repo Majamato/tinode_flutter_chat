@@ -66,11 +66,24 @@ class TinodeChatStrings {
     this.switchCamera = 'Switch camera',
     this.speakerOn = 'Turn speaker on',
     this.speakerOff = 'Turn speaker off',
-    this.callBusy = 'This chat is already in a call.',
+    this.callSpeakerLabel = 'Speaker',
+    this.callMuteLabel = 'Mute',
+    this.callEndLabel = 'End',
+    this.minimizeCall = 'Back to chat',
+    this.returnToCall = 'Return to call',
+    this.callReconnecting = 'Reconnecting…',
+    this.cameraOff = 'Camera off',
+    this.yourCamera = 'Your camera',
+    this.toggleCallControls = 'Show or hide call controls',
+    this.callBusy = 'This chat is still in a call. Try again in a moment.',
     this.callUnavailable = 'Calls are not available in this chat.',
     this.callPermissionDenied =
         'Allow access to the microphone and camera to make calls.',
     this.callFailed = 'The call could not be connected.',
+    this.callLost = 'The connection dropped. The call ended.',
+    this.callOffline = "You're offline. The call ended.",
+    this.callAgain = 'Call again',
+    this.closeCall = 'Close',
     this.unknownCaller = 'Unknown caller',
     this.ongoingCall = 'Call in progress',
     this.missedVoiceCall = 'Missed voice call',
@@ -358,7 +371,37 @@ class TinodeChatStrings {
   /// Tooltip of the button that plays the call on the earpiece.
   final String speakerOff;
 
-  /// A call could not start because the chat already has one.
+  /// The word under the voice call's loudspeaker button.
+  final String callSpeakerLabel;
+
+  /// The word under the voice call's mute button.
+  final String callMuteLabel;
+
+  /// The word under the voice call's button that ends it.
+  final String callEndLabel;
+
+  /// Tooltip of the chevron that shrinks the call to a bar over the chats.
+  final String minimizeCall;
+
+  /// What the bar of a minimized call does when tapped.
+  final String returnToCall;
+
+  /// Shown while the link between the two devices drops during a call and
+  /// may come back.
+  final String callReconnecting;
+
+  /// The user's own video tile in a video call, while their camera is off.
+  final String cameraOff;
+
+  /// What screen readers call the user's own video tile.
+  final String yourCamera;
+
+  /// What screen readers call the video, a tap on which hides or shows the
+  /// controls.
+  final String toggleCallControls;
+
+  /// A call could not start because the chat already has one, e.g. one
+  /// the server still holds after a dropped connection.
   final String callBusy;
 
   /// The server or the chat does not take calls.
@@ -369,6 +412,19 @@ class TinodeChatStrings {
 
   /// A call failed to connect or dropped.
   final String callFailed;
+
+  /// A connected call whose link dropped and didn't come back.
+  final String callLost;
+
+  /// A call that ended because this device lost the chat server: the
+  /// server ends a call whose session drops.
+  final String callOffline;
+
+  /// The button that calls the same peer again after a lost call.
+  final String callAgain;
+
+  /// The button that closes the screen of a call that ended.
+  final String closeCall;
 
   /// Label of the menu item that logs out and deletes the chats kept on
   /// the device.

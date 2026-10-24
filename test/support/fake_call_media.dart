@@ -95,8 +95,18 @@ final class FakeCallMedia implements CallMedia {
   void setCameraEnabled({required bool enabled}) =>
       log.add('camera ${enabled ? 'on' : 'off'}');
 
+  /// Whether the front camera is in use; [switchCamera] swaps it.
+  bool front = true;
+
+  /// When set, [switchCamera] waits for it before answering.
+  Completer<void>? holdSwitch;
+
   @override
-  Future<void> switchCamera() async => log.add('switchCamera');
+  Future<bool> switchCamera() async {
+    log.add('switchCamera');
+    await holdSwitch?.future;
+    return front = !front;
+  }
 
   @override
   Future<void> setSpeakerOn({required bool on}) async =>

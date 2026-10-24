@@ -58,8 +58,29 @@ final class ChatNeutrals {
   /// End call, the recording dot, missed calls.
   static const danger = Color(0xFFD93036);
 
-  /// The presence dot.
+  /// The presence dot, and accepting a call.
   static const online = Color(0xFF22B573);
+
+  // The call screens are always dark, whatever the brightness.
+
+  /// Over the call screen's moving background.
+  static const callScrim = Color(0x2E000000);
+
+  /// The top of a video call, behind the name and the timer.
+  static const callShade = Color(0x8C000000);
+
+  /// The glass of a call control.
+  static const callControl = Color(0x29FFFFFF);
+
+  /// A call control that is switched on, e.g. the loudspeaker.
+  static const callControlActive = Color(0xF2FFFFFF);
+
+  /// The ring around the caller's avatar and the self-view's border.
+  static const callOutline = Color(0x40FFFFFF);
+
+  /// The video call's floating control pill.
+  static const callPill = Color(0x7314161B);
+  static const callPillEdge = Color(0x1FFFFFFF);
 
   /// The outermost background, and the chat wallpaper in dark mode.
   final Color page;

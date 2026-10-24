@@ -108,10 +108,11 @@ final class WebRtcCallMedia implements CallMedia {
   }
 
   @override
-  Future<void> switchCamera() async {
+  Future<bool> switchCamera() async {
     if (_local?.getVideoTracks().firstOrNull case final track?) {
-      await webrtc.Helper.switchCamera(track);
+      return webrtc.Helper.switchCamera(track);
     }
+    return true;
   }
 
   @override
@@ -129,7 +130,16 @@ final class WebRtcCallMedia implements CallMedia {
       await track.stop();
     }
     await local?.dispose();
-    await connection?.close();
+    if (connection != null) {
+      // The plugin still reports the closing link, and maybe a last path,
+      // after the streams below are closed: nobody listens any more.
+      connection
+        ..onIceCandidate = null
+        ..onTrack = null
+        ..onConnectionState = null;
+      await connection.close();
+      await connection.dispose();
+    }
     await _candidates.close();
     await _remoteStreams.close();
     await _linkStates.close();
@@ -142,7 +152,8 @@ final class WebRtcCallMedia implements CallMedia {
     );
     connection
       ..onIceCandidate = (candidate) {
-        if (candidate.candidate case final line? when line.isNotEmpty) {
+        if (candidate.candidate case final line?
+            when line.isNotEmpty && !_candidates.isClosed) {
           _candidates.add(
             IceCandidate(
               candidate: line,
@@ -153,11 +164,16 @@ final class WebRtcCallMedia implements CallMedia {
         }
       }
       ..onTrack = (event) {
-        if (event.streams.firstOrNull case final stream?) {
+        if (event.streams.firstOrNull case final stream?
+            when !_remoteStreams.isClosed) {
           _remoteStreams.add(stream);
         }
       }
-      ..onConnectionState = (state) => _linkStates.add(_linkState(state));
+      ..onConnectionState = (state) {
+        if (!_linkStates.isClosed) {
+          _linkStates.add(_linkState(state));
+        }
+      };
     if (_local case final local?) {
       for (final track in local.getTracks()) {
         await connection.addTrack(track, local);

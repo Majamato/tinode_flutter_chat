@@ -38,7 +38,9 @@ final class ActiveCall with ValueObject {
     this.micOn = true,
     this.cameraOn = true,
     this.frontCamera = true,
+    this.switchingCamera = false,
     this.speakerOn = false,
+    this.reconnecting = false,
     this.connectedAt,
     this.failure,
     this.acceptedHere = false,
@@ -58,7 +60,15 @@ final class ActiveCall with ValueObject {
   final bool micOn;
   final bool cameraOn;
   final bool frontCamera;
+
+  /// The cameras are being swapped; [frontCamera] follows once the media
+  /// says which one is in use.
+  final bool switchingCamera;
   final bool speakerOn;
+
+  /// The link between the devices dropped during the call and may come
+  /// back by itself; the call goes on meanwhile.
+  final bool reconnecting;
   final DateTime? connectedAt;
 
   /// Why the call ended, when it did not end normally.
@@ -78,7 +88,9 @@ final class ActiveCall with ValueObject {
     bool? micOn,
     bool? cameraOn,
     bool? frontCamera,
+    bool? switchingCamera,
     bool? speakerOn,
+    bool? reconnecting,
     DateTime? connectedAt,
     CallFailure? failure,
     bool? acceptedHere,
@@ -93,7 +105,9 @@ final class ActiveCall with ValueObject {
     micOn: micOn ?? this.micOn,
     cameraOn: cameraOn ?? this.cameraOn,
     frontCamera: frontCamera ?? this.frontCamera,
+    switchingCamera: switchingCamera ?? this.switchingCamera,
     speakerOn: speakerOn ?? this.speakerOn,
+    reconnecting: reconnecting ?? this.reconnecting,
     connectedAt: connectedAt ?? this.connectedAt,
     failure: failure ?? this.failure,
     acceptedHere: acceptedHere ?? this.acceptedHere,
@@ -111,7 +125,9 @@ final class ActiveCall with ValueObject {
     micOn,
     cameraOn,
     frontCamera,
+    switchingCamera,
     speakerOn,
+    reconnecting,
     connectedAt,
     failure,
     acceptedHere,

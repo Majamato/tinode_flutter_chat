@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 
@@ -14,6 +15,11 @@ const networkSettle = Duration(seconds: 1);
 /// The probe deadline after a network change, which makes a dead socket
 /// likely; the idle probe keeps the client's longer default.
 const networkProbeTimeout = Duration(seconds: 4);
+
+/// The probe deadline after a network change during a call. A dropped
+/// socket ends the call (the server ties calls to the session), so a slow
+/// but alive mobile link gets the client's normal deadline.
+const networkProbeTimeoutInCall = Duration(seconds: 10);
 
 /// Turns the OS's network changes into checks of the link. Only a hint:
 /// the socket's own status decides what the user sees.
@@ -43,7 +49,11 @@ class NetworkPolicy extends _$NetworkPolicy {
     }
     switch (session.status) {
       case Connected():
-        session.resume(probeTimeout: networkProbeTimeout);
+        session.resume(
+          probeTimeout: ref.read(backgroundPolicyProvider.notifier).inCall
+              ? networkProbeTimeoutInCall
+              : networkProbeTimeout,
+        );
       case Reconnecting() when available:
         session.resume();
       case _:

@@ -4,6 +4,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_push_handler.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 
 import '../../support/fake_system_calls.dart';
 import '../../support/fixtures.dart';
@@ -33,17 +34,22 @@ void main() {
   late FakeSystemCalls system;
   late MemoryChatStoreOpener opener;
 
-  Future<bool> handle(TinodePush push, {String? token, DateTime? now}) =>
-      withClock(
-        Clock.fixed(now ?? epoch.add(const Duration(seconds: 2))),
-        () => handleCallPush(
-          push,
-          config: testConfig,
-          token: token,
-          systemCalls: system,
-          storeOpener: opener,
-        ),
-      );
+  Future<bool> handle(
+    TinodePush push, {
+    String? token,
+    DateTime? now,
+    TinodeChatFeatures features = const TinodeChatFeatures(),
+  }) => withClock(
+    Clock.fixed(now ?? epoch.add(const Duration(seconds: 2))),
+    () => handleCallPush(
+      push,
+      config: testConfig,
+      token: token,
+      systemCalls: system,
+      storeOpener: opener,
+      features: features,
+    ),
+  );
 
   setUp(() async {
     system = FakeSystemCalls();
@@ -58,6 +64,16 @@ void main() {
 
     expect(system.log, ['ring usrBob 4 audio Bob 28s']);
     expect(system.reported.single.hangUpWith, isNull);
+  });
+
+  test('a kind of call the host turned off does not ring', () async {
+    const noVideo = TinodeChatFeatures(videoCalls: false);
+
+    expect(await handle(callPush(4), features: noVideo), isTrue);
+    expect(system.log, isEmpty);
+
+    await handle(callPush(5, audioOnly: true), features: noVideo);
+    expect(system.log, ['ring usrBob 5 audio Bob 28s']);
   });
 
   test('without a cache the caller has no name', () async {

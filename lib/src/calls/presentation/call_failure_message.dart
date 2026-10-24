@@ -7,6 +7,7 @@ String callFailureMessage(TinodeChatStrings strings, CallFailure failure) =>
       CallFailure.permissionDenied => strings.callPermissionDenied,
       CallFailure.busy => strings.callBusy,
       CallFailure.unavailable => strings.callUnavailable,
-      CallFailure.connectionLost => strings.connectionLost,
+      CallFailure.connectionLost => strings.callOffline,
+      CallFailure.callLost => strings.callLost,
       CallFailure.mediaFailed || CallFailure.unexpected => strings.callFailed,
     };

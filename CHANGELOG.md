@@ -1,5 +1,50 @@
 ## Unreleased
 
+- The call screens in the chat's design, always dark. The voice call shows the peer's 148 px
+  avatar with rings pulsing out until it connects, the name and the status ("Ringing…" with
+  pulsing dots, then a timer in tabular figures), over blurred blobs drifting in 9 to 14 s
+  loops. Its controls are round glass buttons with a word below: Speaker, Mute and End (red,
+  with a glow). The video call plays the peer full-bleed (a still backdrop with the avatar until
+  the video arrives). A tap hides or shows the name on top and a floating glass pill of controls
+  (flip camera, camera, mute, end), and the self-view (108 × 152) moves up while they are
+  hidden. With the camera off, the self-view shows the user's avatar and "Camera off". The
+  ringing screen shares the voice call's background, with round Decline and Accept buttons.
+  Content fades up into place. Reduce motion stills the blobs, the rings and the dots.
+- Minimized calls: the chevron at the top of a call, or Back, shrinks the call to a call bar
+  above the chats (the name and the timer); a tap on the bar brings the call back. A ringing
+  call still ignores Back.
+- A call whose link drops shows "Reconnecting…" (a pill on the voice call, in place of the timer
+  on the video call and the call bar) until the link comes back. After 20 s down, or when
+  WebRTC reports the link failed, the call ends as lost ("The connection dropped. The call
+  ended.") and the peer is told at once, instead of "The call could not be connected" whenever
+  WebRTC gave up. A call ended by this device losing the chat server says "You're offline. The
+  call ended." Either way the ended screen stays 12 s with **Call again** (disabled until the
+  chat server is back) and **Close**. A call can't continue over a new connection: Tinode ties
+  each call to the session that placed or took it, and ends it when that session goes.
+- During a call, a network change probes the chat connection with a 10 s deadline instead of
+  4 s, so a slow but alive mobile link doesn't end the call.
+- **API:** `TinodeChatFeatures(voiceCalls:, videoCalls:)` turn each kind of call off: no call
+  button, and an incoming call of that kind doesn't ring here (the user's other devices may take
+  it). Pass the same features to `TinodeCalls.handlePush(features:)`.
+- **API:** `TinodeChatTheme` gains the call screens' tokens: `callBackgroundColor`,
+  `onCallColor`, `callBlobColors`, `videoPlaceholderColor`, `videoBlobColors`, `callScrimColor`,
+  `callShadeColor`, `callControlColor`, `callControlActiveColor`, `onCallControlActiveColor`,
+  `callOutlineColor`, `callPillColor`, `callPillEdgeColor` and `acceptCallColor`. `fromPalette`
+  takes them from `deep`, `scene`, `primary`, `bright` and `accent`.
+- Fixed: switching cameras flashed the picture mirrored the wrong way in the self-view, and the
+  old camera's last frame stayed up to a second after the swap. The self-view now blurs and turns
+  away while the cameras swap, stays blurred until the new camera's frames arrive (1.5 s at
+  most), and its mirror follows the camera WebRTC reports. `CallMedia.switchCamera` (internal)
+  returns whether the front camera is in use.
+- Fixed: ending a call could log an uncaught "Cannot add new events after calling close": the
+  WebRTC plugin reported the closing link after the call's media had shut down. The peer
+  connection is now also disposed, not only closed.
+- `TinodeChatStrings.callBusy` now reads "This chat is still in a call. Try again in a moment.":
+  after a drop, the server may hold the old call for up to a minute.
+- New `TinodeChatStrings`: `callLost`, `callOffline`, `callAgain`, `closeCall`,
+  `callSpeakerLabel`, `callMuteLabel`, `callEndLabel`, `minimizeCall`,
+  `returnToCall`, `callReconnecting`, `cameraOff`, `yourCamera`, `toggleCallControls`.
+
 - Login in the chat's design: one screen signs in and up, over a dotted backdrop with drifting
   bubbles. A sheet rises in with a Sign in | Sign up switch, the form (the password with a
   show/hide eye) and a button with an arrow. `TinodeChat(loginHeader:)` puts the host's widget,

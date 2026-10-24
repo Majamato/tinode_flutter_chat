@@ -55,7 +55,10 @@ abstract interface class CallMedia {
   /// Stops or resumes sending video; the peer sees a still frame.
   void setCameraEnabled({required bool enabled});
 
-  Future<void> switchCamera();
+  /// Swaps the front and back cameras; completes with whether the front
+  /// one is in use now. The new camera's first frames may show before it
+  /// completes.
+  Future<bool> switchCamera();
 
   /// Plays the call on the loudspeaker instead of the earpiece.
   Future<void> setSpeakerOn({required bool on});

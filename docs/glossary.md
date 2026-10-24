@@ -364,6 +364,27 @@ rings and keeps the chat attached. *In code:* `CallController`, `CallInvite.find
 The ringing screen or the call screen, drawn over every chat route. *In code:* `CallLayer`,
 `IncomingCallView`, `CallView`.
 
+**Voice call / video call screen**
+The call screen of each kind, always dark. *In code:* `VoiceCallView`, `VideoCallView`, both
+under `CallView`.
+
+**Minimized call / call bar**
+A call the user shrank, with the chevron or Back, to use the chats meanwhile: a bar above the chat
+routes shows it, and a tap brings it back. Each call starts full screen; a ringing call can't be
+minimized. *In code:* `CallMinimized`, `CallBar`, `CallMinimizeButton`.
+
+**Reconnecting (call)**
+The WebRTC link between the two devices dropped during a connected call and may come back by
+itself; the call goes on. Not the session's reconnecting, which the reconnecting banner shows: a
+dropped session ends the call. *In code:* `ActiveCall.reconnecting`, `CallReconnectingPill`.
+
+**Lost call**
+A connected call that ended because a connection dropped: the WebRTC link stayed down for
+`callReconnectTimeout` or failed (`CallFailure.callLost`), or this device lost the chat server
+(`CallFailure.connectionLost`). Its screen offers Call again. A call can never continue over a
+new session: the Tinode server keeps a call's parties by session ID and ends the call when one
+of those sessions goes. *In code:* `CallLostActions`, `CallController.callAgain`.
+
 **Call record / call bubble**
 How a call message shows in the chat: direction, voice or video, and how it went (duration,
 missed, no answer, declined). The server's updates change this bubble instead of adding new ones.
@@ -383,7 +404,8 @@ its ringing notification and ongoing call notification. Every call is reported t
 user does there (accept, decline, hang up, mute) comes back to the call controller. On Android it
 also holds the microphone and camera in a foreground service while the call goes on.
 *In code:* `SystemCalls` (interface), `CallKitSystemCalls`, `NoSystemCalls`, `FakeSystemCalls` in
-tests; the host turns it off with `TinodeChatFeatures.systemCalls`.
+tests; the host turns it off with `TinodeChatFeatures.systemCalls`. The host can also turn off
+each kind of call (`voiceCalls`, `videoCalls`): no button, and no ringing for it here.
 *Avoid:* "native call UI", "CallKit" for both platforms.
 
 **Accepted from the system**

@@ -6,8 +6,8 @@ import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:webrtc_interface/webrtc_interface.dart' show MediaStream;
 
 /// What one call holds while it runs: the attach of its topic, its
-/// [CallMedia] and their events, the peer's early network paths and the
-/// setup timer.
+/// [CallMedia] and their events, the peer's early network paths, the
+/// setup timer and the reconnect timer.
 ///
 /// [release] lets go of all of it at once. Work started for the call
 /// checks [isReleased] after every `await` and stops once it is set.
@@ -29,6 +29,7 @@ final class CallResources {
   var _hasPeerDescription = false;
 
   Timer? _setupTimer;
+  Timer? _reconnectTimer;
 
   /// True once the call is over; nothing here is held any more.
   bool get isReleased => _released;
@@ -114,6 +115,16 @@ final class CallResources {
 
   void stopSetupTimer() => _setupTimer?.cancel();
 
+  /// Calls [onTimeout] after [timeout], unless [stopReconnectTimer] or
+  /// [release] comes first. A timer that already runs keeps its deadline.
+  void startReconnectTimer(Duration timeout, void Function() onTimeout) {
+    if (!(_reconnectTimer?.isActive ?? false)) {
+      _reconnectTimer = Timer(timeout, onTimeout);
+    }
+  }
+
+  void stopReconnectTimer() => _reconnectTimer?.cancel();
+
   /// Ends the call's hold on everything: the timer, the media and their
   /// events, and the topic.
   void release() {
@@ -123,6 +134,7 @@ final class CallResources {
     _released = true;
     _whenReleased.complete();
     _setupTimer?.cancel();
+    _reconnectTimer?.cancel();
     for (final s in _subscriptions) {
       unawaited(s.cancel());
     }

@@ -8,6 +8,7 @@ import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/data/background_hang_up.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/active_call.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/call_failure.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
@@ -15,11 +16,13 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.d
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
+import 'package:tinode_flutter_chat/src/session/application/reconnecting_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/data/client_tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
 import '../support/fake_call_media.dart';
+import 'offline_test.dart' show SeverableConnector;
 
 // Runs against ../tinode-tests, which must have ICE servers configured
 // (ICE_SERVERS_FILE). The media are fakes: the server passes the WebRTC
@@ -34,13 +37,22 @@ final config = TinodeConfig(
 final class User {
   User._(this.container, this.id, this.media);
 
-  static Future<User> login(String name) async {
+  /// Logs [name] in; through [connector], whose socket a test can cut.
+  static Future<User> login(
+    String name, {
+    SeverableConnector? connector,
+  }) async {
     final media = FakeCallMediaFactory();
     final container = createTinodeContainer(
       config: config,
       credentials: TinodeCredentials.password(name, '${name}123'),
       callMedia: media.call,
       storeOpener: MemoryChatStoreOpener(),
+      connector: connector == null
+          ? null
+          : (config) async => ClientTinodeSession(
+              await TinodeClient.connect(config, connector: connector.call),
+            ),
     );
     addTearDown(container.dispose);
     container
@@ -85,12 +97,33 @@ Future<void> eventually(
   }
 }
 
+/// Alice calls bob, he takes it, and the link comes up on both sides.
+Future<int> connectCall(User alice, User bob) async {
+  await alice.calls.start(bob.id, audioOnly: true);
+  final seq = alice.call!.seq!;
+  await eventually('bob rings', () => bob.stage == CallStage.incoming);
+  await bob.calls.accept();
+  await eventually(
+    'offer and answer cross',
+    () =>
+        bob.media.last.log.contains('answer local offer') &&
+        alice.media.last.log.contains('acceptAnswer local answer'),
+  );
+  alice.media.last.emitLink(CallLinkState.connected);
+  bob.media.last.emitLink(CallLinkState.connected);
+  expect(alice.stage, CallStage.connected);
+  expect(bob.stage, CallStage.connected);
+  return seq;
+}
+
 void main() {
+  late SeverableConnector aliceSocket;
   late User alice;
   late User bob;
 
   setUp(() async {
-    alice = await User.login('alice');
+    aliceSocket = SeverableConnector();
+    alice = await User.login('alice', connector: aliceSocket);
     bob = await User.login('bob');
   });
 
@@ -210,5 +243,128 @@ void main() {
           alice.container.read(chatMessageProvider(bob.id, seq))?.call?.state ==
           CallState.declined,
     );
+  });
+
+  test('the link drops and comes back: the call goes on for both', () async {
+    final seq = await connectCall(alice, bob);
+    final connectedAt = alice.call!.connectedAt;
+
+    alice.media.last.emitLink(CallLinkState.disconnected);
+    expect(alice.call!.reconnecting, isTrue);
+    expect(alice.stage, CallStage.connected);
+
+    // Nothing reaches the server: bob's call goes on.
+    await Future<void>.delayed(const Duration(seconds: 1));
+    expect(bob.stage, CallStage.connected);
+    expect(bob.call!.reconnecting, isFalse);
+
+    alice.media.last.emitLink(CallLinkState.connected);
+    expect(alice.call!.reconnecting, isFalse);
+    expect(alice.call!.connectedAt, connectedAt);
+
+    alice.calls.hangUp();
+    await eventually('bob sees the end', () => bob.stage == CallStage.ended);
+    expect(bob.call!.failure, isNull);
+    bob.container.listen(chatControllerProvider(alice.id), (_, _) {});
+    await eventually(
+      'the call is recorded as finished',
+      () =>
+          bob.container.read(chatMessageProvider(alice.id, seq))?.call?.state ==
+          CallState.finished,
+    );
+  });
+
+  test('a link that fails ends the call for both', () async {
+    await connectCall(alice, bob);
+
+    alice.media.last
+      ..emitLink(CallLinkState.disconnected)
+      ..emitLink(CallLinkState.failed);
+
+    expect(alice.stage, CallStage.ended);
+    expect(alice.call!.failure, CallFailure.callLost);
+    await eventually('bob sees the end', () => bob.stage == CallStage.ended);
+  });
+
+  test(
+    "alice's connection to the server drops: the call ends for both",
+    () async {
+      await connectCall(alice, bob);
+
+      await aliceSocket.sever();
+
+      await eventually('alice ends it', () => alice.stage == CallStage.ended);
+      expect(alice.call!.failure, CallFailure.connectionLost);
+      // The server ends a call whose session dropped.
+      await eventually(
+        'bob sees the end',
+        () => bob.stage == CallStage.ended,
+        timeout: const Duration(seconds: 20),
+      );
+    },
+  );
+
+  test(
+    "bob's link stays down: the call ends as lost for both",
+    () async {
+      final seq = await connectCall(alice, bob);
+
+      bob.media.last.emitLink(CallLinkState.disconnected);
+      expect(bob.call!.reconnecting, isTrue);
+      await eventually(
+        'bob gives up',
+        () => bob.stage == CallStage.ended,
+        timeout: callReconnectTimeout + const Duration(seconds: 5),
+      );
+      expect(bob.call!.failure, CallFailure.callLost);
+
+      // Bob's hang-up reached the server, which ended it for alice.
+      await eventually(
+        'alice sees the end',
+        () => alice.stage == CallStage.ended,
+      );
+      expect(alice.call!.failure, isNull);
+      alice.container.listen(chatControllerProvider(bob.id), (_, _) {});
+      await eventually(
+        'the call is recorded as finished',
+        () =>
+            alice.container
+                .read(chatMessageProvider(bob.id, seq))
+                ?.call
+                ?.state ==
+            CallState.finished,
+      );
+    },
+    timeout: const Timeout(Duration(seconds: 60)),
+  );
+
+  test('after a cut socket, alice calls again once she is back', () async {
+    await connectCall(alice, bob);
+
+    await aliceSocket.sever();
+    await eventually('alice ends it', () => alice.stage == CallStage.ended);
+    expect(alice.call!.failure, CallFailure.connectionLost);
+    await eventually(
+      'alice is back',
+      () =>
+          alice.container.read(activeSessionProvider)?.status is Connected &&
+          !alice.container.read(reconnectingControllerProvider),
+    );
+    await eventually('bob saw it end', () => bob.stage != CallStage.connected);
+
+    await alice.calls.callAgain();
+    expect(alice.stage, CallStage.calling);
+    await eventually('bob rings again', () => bob.stage == CallStage.incoming);
+    expect(bob.call!.audioOnly, isTrue);
+
+    await bob.calls.accept();
+    await eventually(
+      'offer and answer cross',
+      () =>
+          bob.media.last.log.contains('answer local offer') &&
+          alice.media.last.log.contains('acceptAnswer local answer'),
+    );
+    alice.calls.hangUp();
+    await eventually('bob sees the end', () => bob.stage == CallStage.ended);
   });
 }

@@ -41,6 +41,20 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.waveOffColor,
     required this.senderNameColors,
     required this.revealedMessageColor,
+    required this.callBackgroundColor,
+    required this.onCallColor,
+    required this.callBlobColors,
+    required this.videoPlaceholderColor,
+    required this.videoBlobColors,
+    required this.callScrimColor,
+    required this.callShadeColor,
+    required this.callControlColor,
+    required this.callControlActiveColor,
+    required this.onCallControlActiveColor,
+    required this.callOutlineColor,
+    required this.callPillColor,
+    required this.callPillEdgeColor,
+    required this.acceptCallColor,
     required this.composerRadius,
     required this.fieldRadius,
     required this.buttonRadius,
@@ -80,6 +94,27 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       waveOffColor: colors.outlineVariant,
       senderNameColors: _senderNameColors(theme.brightness),
       revealedMessageColor: colors.primary.withValues(alpha: 0.16),
+      callBackgroundColor: Color.lerp(colors.primary, Colors.black, 0.75)!,
+      onCallColor: Colors.white,
+      callBlobColors: [
+        colors.primary,
+        colors.secondary.withValues(alpha: 0.7),
+        colors.tertiary.withValues(alpha: 0.45),
+      ],
+      videoPlaceholderColor: Color.lerp(colors.primary, Colors.black, 0.85)!,
+      videoBlobColors: [
+        colors.tertiary.withValues(alpha: 0.35),
+        colors.secondary.withValues(alpha: 0.35),
+      ],
+      callScrimColor: ChatNeutrals.callScrim,
+      callShadeColor: ChatNeutrals.callShade,
+      callControlColor: ChatNeutrals.callControl,
+      callControlActiveColor: ChatNeutrals.callControlActive,
+      onCallControlActiveColor: ChatNeutrals.light.text,
+      callOutlineColor: ChatNeutrals.callOutline,
+      callPillColor: ChatNeutrals.callPill,
+      callPillEdgeColor: ChatNeutrals.callPillEdge,
+      acceptCallColor: ChatNeutrals.online,
       composerRadius: 22,
       fieldRadius: 4,
       buttonRadius: 20,
@@ -129,6 +164,27 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       waveOffColor: neutrals.waveOff,
       senderNameColors: _senderNameColors(brightness),
       revealedMessageColor: primary.withValues(alpha: 0.16),
+      callBackgroundColor: palette.deep,
+      onCallColor: onPrimary,
+      callBlobColors: [
+        palette.primary,
+        palette.bright.withValues(alpha: 0.7),
+        palette.accent.withValues(alpha: 0.45),
+      ],
+      videoPlaceholderColor: palette.scene,
+      videoBlobColors: [
+        palette.accent.withValues(alpha: 0.35),
+        palette.bright.withValues(alpha: 0.35),
+      ],
+      callScrimColor: ChatNeutrals.callScrim,
+      callShadeColor: ChatNeutrals.callShade,
+      callControlColor: ChatNeutrals.callControl,
+      callControlActiveColor: ChatNeutrals.callControlActive,
+      onCallControlActiveColor: ChatNeutrals.light.text,
+      callOutlineColor: ChatNeutrals.callOutline,
+      callPillColor: ChatNeutrals.callPill,
+      callPillEdgeColor: ChatNeutrals.callPillEdge,
+      acceptCallColor: ChatNeutrals.online,
       composerRadius: 22,
       fieldRadius: 14,
       buttonRadius: 16,
@@ -274,6 +330,48 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// moment after it shows.
   final Color revealedMessageColor;
 
+  /// Behind the voice call and the ringing screen, which are always dark.
+  final Color callBackgroundColor;
+
+  /// Text, icons and the pulsing rings on the call screens.
+  final Color onCallColor;
+
+  /// The blurred shapes drifting over [callBackgroundColor].
+  final List<Color> callBlobColors;
+
+  /// Where the peer's video shows, until it arrives.
+  final Color videoPlaceholderColor;
+
+  /// The soft shapes on [videoPlaceholderColor].
+  final List<Color> videoBlobColors;
+
+  /// Over the call background, under the content.
+  final Color callScrimColor;
+
+  /// The top of a video call, fading down behind the name and the timer.
+  final Color callShadeColor;
+
+  /// The glass of a call control, and of the reconnecting pill.
+  final Color callControlColor;
+
+  /// A call control that is switched on, e.g. the loudspeaker or mute.
+  final Color callControlActiveColor;
+
+  /// The icon on [callControlActiveColor].
+  final Color onCallControlActiveColor;
+
+  /// The ring around the peer's avatar and the edge of the self-view.
+  final Color callOutlineColor;
+
+  /// The video call's floating control pill.
+  final Color callPillColor;
+
+  /// The edge of [callPillColor].
+  final Color callPillEdgeColor;
+
+  /// The button that accepts a ringing call.
+  final Color acceptCallColor;
+
   /// Corner radius of the composer's text field.
   final double composerRadius;
 
@@ -327,6 +425,20 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     Color? waveOffColor,
     List<Color>? senderNameColors,
     Color? revealedMessageColor,
+    Color? callBackgroundColor,
+    Color? onCallColor,
+    List<Color>? callBlobColors,
+    Color? videoPlaceholderColor,
+    List<Color>? videoBlobColors,
+    Color? callScrimColor,
+    Color? callShadeColor,
+    Color? callControlColor,
+    Color? callControlActiveColor,
+    Color? onCallControlActiveColor,
+    Color? callOutlineColor,
+    Color? callPillColor,
+    Color? callPillEdgeColor,
+    Color? acceptCallColor,
     double? composerRadius,
     double? fieldRadius,
     double? buttonRadius,
@@ -361,6 +473,22 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     waveOffColor: waveOffColor ?? this.waveOffColor,
     senderNameColors: senderNameColors ?? this.senderNameColors,
     revealedMessageColor: revealedMessageColor ?? this.revealedMessageColor,
+    callBackgroundColor: callBackgroundColor ?? this.callBackgroundColor,
+    onCallColor: onCallColor ?? this.onCallColor,
+    callBlobColors: callBlobColors ?? this.callBlobColors,
+    videoPlaceholderColor: videoPlaceholderColor ?? this.videoPlaceholderColor,
+    videoBlobColors: videoBlobColors ?? this.videoBlobColors,
+    callScrimColor: callScrimColor ?? this.callScrimColor,
+    callShadeColor: callShadeColor ?? this.callShadeColor,
+    callControlColor: callControlColor ?? this.callControlColor,
+    callControlActiveColor:
+        callControlActiveColor ?? this.callControlActiveColor,
+    onCallControlActiveColor:
+        onCallControlActiveColor ?? this.onCallControlActiveColor,
+    callOutlineColor: callOutlineColor ?? this.callOutlineColor,
+    callPillColor: callPillColor ?? this.callPillColor,
+    callPillEdgeColor: callPillEdgeColor ?? this.callPillEdgeColor,
+    acceptCallColor: acceptCallColor ?? this.acceptCallColor,
     composerRadius: composerRadius ?? this.composerRadius,
     fieldRadius: fieldRadius ?? this.fieldRadius,
     buttonRadius: buttonRadius ?? this.buttonRadius,
@@ -379,6 +507,9 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     double number(double a, double b) => lerpDouble(a, b, t)!;
     // What can't be blended switches halfway.
     final near = t < 0.5 ? this : other;
+    List<Color> colorList(List<Color> a, List<Color> b) => a.length == b.length
+        ? [for (var i = 0; i < a.length; i++) color(a[i], b[i])]
+        : (t < 0.5 ? a : b);
     return TinodeChatTheme(
       ownBubbleColor: color(ownBubbleColor, other.ownBubbleColor),
       onOwnBubbleColor: color(onOwnBubbleColor, other.onOwnBubbleColor),
@@ -404,16 +535,37 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       missedCallColor: color(missedCallColor, other.missedCallColor),
       readReceiptColor: color(readReceiptColor, other.readReceiptColor),
       waveOffColor: color(waveOffColor, other.waveOffColor),
-      senderNameColors: senderNameColors.length == other.senderNameColors.length
-          ? [
-              for (var i = 0; i < senderNameColors.length; i++)
-                color(senderNameColors[i], other.senderNameColors[i]),
-            ]
-          : near.senderNameColors,
+      senderNameColors: colorList(senderNameColors, other.senderNameColors),
       revealedMessageColor: color(
         revealedMessageColor,
         other.revealedMessageColor,
       ),
+      callBackgroundColor: color(
+        callBackgroundColor,
+        other.callBackgroundColor,
+      ),
+      onCallColor: color(onCallColor, other.onCallColor),
+      callBlobColors: colorList(callBlobColors, other.callBlobColors),
+      videoPlaceholderColor: color(
+        videoPlaceholderColor,
+        other.videoPlaceholderColor,
+      ),
+      videoBlobColors: colorList(videoBlobColors, other.videoBlobColors),
+      callScrimColor: color(callScrimColor, other.callScrimColor),
+      callShadeColor: color(callShadeColor, other.callShadeColor),
+      callControlColor: color(callControlColor, other.callControlColor),
+      callControlActiveColor: color(
+        callControlActiveColor,
+        other.callControlActiveColor,
+      ),
+      onCallControlActiveColor: color(
+        onCallControlActiveColor,
+        other.onCallControlActiveColor,
+      ),
+      callOutlineColor: color(callOutlineColor, other.callOutlineColor),
+      callPillColor: color(callPillColor, other.callPillColor),
+      callPillEdgeColor: color(callPillEdgeColor, other.callPillEdgeColor),
+      acceptCallColor: color(acceptCallColor, other.acceptCallColor),
       composerRadius: number(composerRadius, other.composerRadius),
       fieldRadius: number(fieldRadius, other.fieldRadius),
       buttonRadius: number(buttonRadius, other.buttonRadius),

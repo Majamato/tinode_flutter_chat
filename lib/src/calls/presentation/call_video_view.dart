@@ -6,12 +6,21 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 /// Plays [stream]'s video, filling the space it gets. Owns the renderer
 /// the plugin draws into.
 class CallVideoView extends StatefulWidget {
-  const CallVideoView({required this.stream, this.mirror = false, super.key});
+  const CallVideoView({
+    required this.stream,
+    this.mirror = false,
+    this.onFramesChanged,
+    super.key,
+  });
 
   final MediaStream stream;
 
   /// Shows the video mirrored, as people expect of their own front camera.
   final bool mirror;
+
+  /// Called when frames of another rotation or size arrive, e.g. from the
+  /// other camera after a swap.
+  final VoidCallback? onFramesChanged;
 
   @override
   State<CallVideoView> createState() => _CallVideoViewState();
@@ -38,7 +47,9 @@ class _CallVideoViewState extends State<CallVideoView> {
     if (!mounted) {
       return;
     }
-    _renderer.srcObject = widget.stream;
+    _renderer
+      ..srcObject = widget.stream
+      ..onResize = () => widget.onFramesChanged?.call();
     setState(() => _ready = true);
   }
 
@@ -52,6 +63,7 @@ class _CallVideoViewState extends State<CallVideoView> {
 
   @override
   void dispose() {
+    _renderer.onResize = null;
     unawaited(_renderer.dispose());
     super.dispose();
   }

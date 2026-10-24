@@ -36,6 +36,19 @@ void main() {
       expect(theme.linkColor, palette.onDark);
       expect(theme.wallpaperColor, isNot(palette.soft));
     });
+
+    test('keeps the call screens dark in either mode', () {
+      for (final brightness in Brightness.values) {
+        final theme = TinodeChatTheme.fromPalette(
+          palette,
+          brightness: brightness,
+        );
+
+        expect(theme.callBackgroundColor, palette.deep);
+        expect(theme.callBlobColors.first, palette.primary);
+        expect(theme.videoPlaceholderColor, palette.scene);
+      }
+    });
   });
 
   test('white text passes 4.5:1 on the neutral primary and night', () {
@@ -112,6 +125,20 @@ final List<(String, Object? Function(TinodeChatTheme))> _fields = [
   ('waveOffColor', (t) => t.waveOffColor),
   ('senderNameColors', (t) => t.senderNameColors),
   ('revealedMessageColor', (t) => t.revealedMessageColor),
+  ('callBackgroundColor', (t) => t.callBackgroundColor),
+  ('onCallColor', (t) => t.onCallColor),
+  ('callBlobColors', (t) => t.callBlobColors),
+  ('videoPlaceholderColor', (t) => t.videoPlaceholderColor),
+  ('videoBlobColors', (t) => t.videoBlobColors),
+  ('callScrimColor', (t) => t.callScrimColor),
+  ('callShadeColor', (t) => t.callShadeColor),
+  ('callControlColor', (t) => t.callControlColor),
+  ('callControlActiveColor', (t) => t.callControlActiveColor),
+  ('onCallControlActiveColor', (t) => t.onCallControlActiveColor),
+  ('callOutlineColor', (t) => t.callOutlineColor),
+  ('callPillColor', (t) => t.callPillColor),
+  ('callPillEdgeColor', (t) => t.callPillEdgeColor),
+  ('acceptCallColor', (t) => t.acceptCallColor),
   ('composerRadius', (t) => t.composerRadius),
   ('fieldRadius', (t) => t.fieldRadius),
   ('buttonRadius', (t) => t.buttonRadius),

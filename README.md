@@ -107,9 +107,14 @@ TinodeChat(
   features: const TinodeChatFeatures(
     signUp: false, // e.g. accounts made by an admin
     passwordReset: PasswordResetMode.always,
+    videoCalls: false, // voice calls only
   ),
 )
 ```
+
+A kind of call that is off has no button and doesn't ring in this app; pass the same features to
+`TinodeCalls.handlePush(push, config: config, features: features)` so it doesn't ring from a
+push either.
 
 Rules such as the shortest login or password, or how long codes last, are the server's
 (`tinode.conf`); the chat shows its refusals.
@@ -429,9 +434,10 @@ where it needs the protocol:
    `TinodeChatTheme.materialTheme` are in, and so are the chat screen (bubble tails, runs, date
    chips, wallpaper, frosted header and composer, the send button's morph and the bubble
    builder), online presence, the chat list (frosted header, previews from the cache, muted
-   chats) and login (one screen for signing in and up, with a `loginHeader` slot). Next: the call
-   screens, an optional tab bar (Chats, Calls, Settings) with an Appearance screen, and voice
-   messages.
+   chats), login (one screen for signing in and up, with a `loginHeader` slot) and the call
+   screens (voice and video, the ringing screen, a call bar for a minimized call, a
+   reconnecting pill). Next: an optional tab bar (Chats, Calls, Settings) with an Appearance
+   screen, and voice messages.
 
 ## Development
 
