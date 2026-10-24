@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/call_button.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_back_button.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_indicator.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_status.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_info_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
@@ -9,9 +9,9 @@ import 'package:tinode_flutter_chat/src/search/presentation/message_search_butto
 import 'package:tinode_flutter_chat/src/shared/presentation/frosted_bar.dart';
 
 /// The frosted bar over a chat: back (with the other chats' unread
-/// count), the chat's avatar, name and who is typing, then message search
-/// and the call buttons. Tapping the name opens the chat's info. Watches
-/// nothing itself.
+/// count), the chat's avatar, name and status (typing, online), then
+/// message search and the call buttons. Tapping the name opens the chat's
+/// info. Watches nothing itself.
 class ChatHeader extends StatelessWidget implements PreferredSizeWidget {
   const ChatHeader({required this.topic, super.key});
 
@@ -53,7 +53,7 @@ class ChatHeader extends StatelessWidget implements PreferredSizeWidget {
                           style: textTheme.titleMedium,
                           child: ChatTitle(topic: topic),
                         ),
-                        TypingIndicator(topic: topic),
+                        ChatStatus(topic: topic),
                       ],
                     ),
                   ),

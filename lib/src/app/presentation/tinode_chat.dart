@@ -25,6 +25,7 @@ import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/login_header_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_theme_scope.dart';
@@ -66,6 +67,7 @@ class TinodeChat extends StatefulWidget {
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
     this.bubbleBuilder,
+    this.loginHeader,
     super.key,
   }) : connector = null,
        restorer = null,
@@ -104,6 +106,7 @@ class TinodeChat extends StatefulWidget {
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
     this.bubbleBuilder,
+    this.loginHeader,
     super.key,
   });
 
@@ -154,6 +157,11 @@ class TinodeChat extends StatefulWidget {
   /// restyle them beyond `TinodeChatTheme`; null for the default bubbles.
   /// Read on every build.
   final TinodeBubbleBuilder? bubbleBuilder;
+
+  /// Shown centred near the top of the login screen, over its dotted
+  /// backdrop and above the sheet that signs in or up: e.g. the app's
+  /// animated logo. Null shows nothing there. Read on every build.
+  final Widget? loginHeader;
 
   /// Opens sessions; null for a real connection.
   @visibleForTesting
@@ -281,7 +289,10 @@ class _TinodeChatState extends State<TinodeChat> {
         strings: widget.strings,
         child: BubbleBuilderScope(
           builder: widget.bubbleBuilder,
-          child: const ChatThemeScope(child: SessionGate()),
+          child: LoginHeaderScope(
+            header: widget.loginHeader,
+            child: const ChatThemeScope(child: SessionGate()),
+          ),
         ),
       ),
     );

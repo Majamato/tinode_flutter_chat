@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/auth_mode_switch.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/confirm_email_screen.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/password_reset_screen.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/sign_up_screen.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/sign_up_form.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -20,9 +21,9 @@ void main() {
 
   group('sign up', () {
     Future<void> openSignUp(WidgetTester tester) async {
-      await tester.tap(find.text(strings.createAccountLink));
+      await tester.tap(find.text(strings.signUpTab));
       await tester.pumpAndSettle();
-      expect(find.byType(SignUpScreen), findsOneWidget);
+      expect(find.byType(SignUpForm), findsOneWidget);
     }
 
     testWidgets('creates the account and opens the chat list', (tester) async {
@@ -41,7 +42,7 @@ void main() {
 
       expect(session.calls, contains('createAccount carol Carol'));
       expect(find.text(strings.chatListTitle), findsOneWidget);
-      expect(find.byType(SignUpScreen), findsNothing);
+      expect(find.byType(LoginScreen), findsNothing);
       expect(loggedIn?.token, session.token);
     });
 
@@ -57,17 +58,21 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(strings.loginTaken), findsOneWidget);
-      expect(find.byType(SignUpScreen), findsOneWidget);
+      expect(find.byType(SignUpForm), findsOneWidget);
     });
 
-    testWidgets('back returns to the login screen', (tester) async {
+    testWidgets('the sign-in side of the switch goes back to signing in', (
+      tester,
+    ) async {
       await pumpTinodeChat(tester, session);
       await openSignUp(tester);
 
-      await tester.pageBack();
+      await tester.tap(find.text(strings.loginTitle));
       await tester.pumpAndSettle();
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(SignUpForm), findsNothing);
+      expect(find.text(strings.loginHeadline), findsOneWidget);
+      expect(field(strings.displayNameField), findsNothing);
     });
   });
 
@@ -78,7 +83,7 @@ void main() {
       tester,
     ) async {
       await pumpTinodeChat(tester, session);
-      await tester.tap(find.text(strings.createAccountLink));
+      await tester.tap(find.text(strings.signUpTab));
       await tester.pumpAndSettle();
       expect(field(strings.emailOptionalField), findsNothing);
 
@@ -94,7 +99,6 @@ void main() {
       await tester.tap(button);
       await tester.pumpAndSettle();
       expect(find.byType(ConfirmEmailScreen), findsOneWidget);
-      expect(find.byType(SignUpScreen), findsNothing);
 
       await tester.enterText(field(strings.resetCodeField), '000000');
       await tester.pump();
@@ -131,7 +135,7 @@ void main() {
   });
 
   group('the links the login screen offers', () {
-    Finder signUp() => find.text(strings.createAccountLink);
+    Finder signUp() => find.byType(AuthModeSwitch);
     Finder reset() => find.text(strings.forgotPassword);
 
     testWidgets('by default sign-up, but no reset without email', (
@@ -204,5 +208,78 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.text(strings.passwordResetDone), findsOneWidget);
     expect(session.passwords['alice'], 'new-pw');
+  });
+
+  group('the login screen', () {
+    testWidgets("shows the host's header", (tester) async {
+      await pumpTinodeChat(
+        tester,
+        session,
+        loginHeader: const Text('Our logo'),
+      );
+      expect(find.text('Our logo'), findsOneWidget);
+    });
+
+    testWidgets('moves: the sheet rises, the forms swap, the bubbles drift', (
+      tester,
+    ) async {
+      await pumpTinodeChat(tester, session, reduceMotion: false);
+      // The floating bubbles never stop, so frames are pumped, not settled.
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text(strings.loginBubbleHello), findsOneWidget);
+
+      await tester.tap(find.text(strings.signUpTab));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.byType(SignUpForm), findsOneWidget);
+      expect(find.text(strings.signUpHeadline), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('with the keyboard open, the button stays above it, and the '
+        'forms swap', (tester) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpTinodeChat(
+        tester,
+        session,
+        reduceMotion: false,
+        loginHeader: const SizedBox.square(dimension: 150),
+      );
+      Future<void> frames() async {
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+      }
+
+      await tester.tap(field(strings.loginField));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 336);
+      await frames();
+      const keyboardTop = 844 - 336;
+      expect(
+        tester
+            .getRect(find.widgetWithText(FilledButton, strings.signIn))
+            .bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+
+      await tester.tap(find.text(strings.signUpTab));
+      await frames();
+      expect(
+        tester
+            .getRect(find.widgetWithText(FilledButton, strings.signUp))
+            .bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+
+      // The sign-up form shrinking back must not overflow.
+      await tester.tap(find.text(strings.loginTitle));
+      await frames();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SignUpForm), findsNothing);
+    });
   });
 }

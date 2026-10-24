@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -50,7 +51,7 @@ String dayLabel(
 }) {
   final day = DateUtils.dateOnly(time.toLocal());
   final today = DateUtils.dateOnly(now ?? DateTime.now());
-  return switch (today.difference(day).inDays) {
+  return switch (calendarDaysBetween(day, today)) {
     0 => strings.today,
     1 => strings.yesterday,
     _ when day.year == today.year => localizations.formatMediumDate(day),

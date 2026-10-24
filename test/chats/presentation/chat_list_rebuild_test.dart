@@ -23,25 +23,30 @@ void main() {
       credentials: TinodeCredentials.token(session.token),
     );
 
+    PresMessage news(int seq) => PresMessage(
+      topic: 'me',
+      event: PresenceEvent.message,
+      source: bob,
+      seq: seq,
+    );
+    // The first unread message turns the preview line to "New message",
+    // since this device doesn't have it.
+    session.emitPresence(news(3));
+    await tester.pump();
+    expect(find.text(const TinodeChatStrings().newMessageArrived), findsOne);
+
     final rebuilt = <String>[];
     debugOnRebuildDirtyWidget = (element, _) =>
         rebuilt.add(element.widget.runtimeType.toString());
     addTearDown(() => debugOnRebuildDirtyWidget = null);
 
-    session.emitPresence(
-      const PresMessage(
-        topic: 'me',
-        event: PresenceEvent.message,
-        source: bob,
-        seq: 3,
-      ),
-    );
+    session.emitPresence(news(4));
     await tester.pump();
 
     expect(
       rebuilt.where((w) => w.startsWith('Chat')),
       unorderedEquals(['ChatLastMessageTime', 'ChatUnreadBadge']),
     );
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
   });
 }

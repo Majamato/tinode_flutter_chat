@@ -34,16 +34,20 @@ business logic in UI files. Flutter's own guidance is in
 
   | Widget | Watches | Rebuilds when |
   |--------|---------|---------------|
-  | `ChatListScreen` | nothing | never by state |
+  | `ChatListScreen` / `ChatListHeader` | nothing | never by state |
   | `ChatListBody` | `(status, failure)` | the load status changes |
   | `ChatListView` | `order` | chats are added or reordered |
   | `ChatListTile` | nothing | the list rebuilds it |
   | `ChatTitle` / `ChatAvatar` | `title` / `initials` | the chat is renamed |
-  | `ChatLastMessageTime` | `lastMessageAt` | a message arrives |
-  | `ChatUnreadBadge` | `unread` | a message arrives or is read |
+  | `ChatOnlineDot` / `ChatMutedIcon` | `online` / `muted` | presence or the mute changes |
+  | `ChatLastMessageTime` | `(lastMessageAt, unread and not muted)` | a message arrives |
+  | `ChatUnreadBadge` | `(unread, muted)` | a message arrives or is read |
+  | `ChatPreviewLine` | typing, `chatPreviewBehind`, the preview | someone types, the cached newest message changes, or the chat falls behind |
+  | `ChatLastSentTicks` | the preview's receipt, `chatPreviewBehind` | the user's last message gets further |
 
   A test (`chat_list_rebuild_test.dart`) checks that a new message in the top chat rebuilds only
-  `ChatLastMessageTime` and `ChatUnreadBadge`.
+  `ChatLastMessageTime` and `ChatUnreadBadge`. The first unread `pres msg` also rebuilds
+  `ChatPreviewLine`, which turns to "New message"; later ones don't.
 - **Attachments** follow the same rule. In the chat, `AttachmentMessageBody` lays out what the
   message carries; `ImageBubbleContent` watches only its file (`attachmentFile(ref)`),
   `FileBubbleContent` only its download, and `RefPhotoAvatar` only its photo. An outgoing

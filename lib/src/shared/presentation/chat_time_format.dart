@@ -6,15 +6,27 @@ extension ChatTimeFormat on MaterialLocalizations {
   String messageTime(DateTime time) =>
       formatTimeOfDay(TimeOfDay.fromDateTime(time.toLocal()));
 
-  /// The time for today's messages, else the date, e.g. `Mar 3`.
-  String chatListTime(DateTime time, {DateTime? now}) {
+  /// The time for today's messages, [yesterday] for yesterday's when
+  /// given, else the date, e.g. `Mar 3`.
+  String chatListTime(DateTime time, {String? yesterday, DateTime? now}) {
     final local = time.toLocal();
     final today = DateUtils.dateOnly(now ?? DateTime.now());
-    return DateUtils.isSameDay(local, today)
-        ? messageTime(local)
-        : formatShortMonthDay(local);
+    return switch (calendarDaysBetween(local, today)) {
+      0 => messageTime(local),
+      1 when yesterday != null => yesterday,
+      _ => formatShortMonthDay(local),
+    };
   }
 }
+
+/// How many calendar days [to] is after [from], ignoring the time of day.
+/// Counted on UTC dates, so a day that a clock change makes 23 or 25 hours
+/// long still counts as one.
+int calendarDaysBetween(DateTime from, DateTime to) => DateTime.utc(
+  to.year,
+  to.month,
+  to.day,
+).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
 
 /// The length of a call, e.g. `0:42`, `12:05` or `1:02:09`.
 String formatCallDuration(Duration duration) {

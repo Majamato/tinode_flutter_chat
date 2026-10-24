@@ -17,6 +17,8 @@ final class ChatSummary with ValueObject {
     this.canDeleteForEveryone = false,
     this.isOwner = false,
     this.canManageMembers = false,
+    this.online = false,
+    this.muted = false,
   });
 
   factory ChatSummary.fromSubscription(Subscription subscription) {
@@ -36,6 +38,8 @@ final class ChatSummary with ValueObject {
       isOwner: subscription.access?.mode.has(Permission.owner) ?? false,
       canManageMembers:
           subscription.access?.mode.has(Permission.approve) ?? false,
+      online: subscription.online,
+      muted: !(subscription.access?.want.has(Permission.presence) ?? true),
     );
   }
 
@@ -66,6 +70,15 @@ final class ChatSummary with ValueObject {
   /// The user may remove members (`A`), e.g. a group's owner.
   final bool canManageMembers;
 
+  /// The other user of a direct chat is online. Live only: the cache keeps
+  /// no presence. For a group it means someone is attached, which the chat
+  /// doesn't show.
+  final bool online;
+
+  /// The user turned off notifications for the chat: its `want` lacks
+  /// presence (`P`), so the server sends no push for it.
+  final bool muted;
+
   int get unread => lastSeq > read ? lastSeq - read : 0;
 
   /// Up to two letters for the avatar; see [initialsOf].
@@ -84,20 +97,30 @@ final class ChatSummary with ValueObject {
   /// The user read up to [seq]. A read marker never moves back.
   ChatSummary withRead(int seq) => seq <= read ? this : _copy(read: seq);
 
-  ChatSummary _copy({int? lastSeq, DateTime? lastMessageAt, int? read}) =>
-      ChatSummary(
-        topic: topic,
-        kind: kind,
-        title: title,
-        photo: photo,
-        lastMessageAt: lastMessageAt ?? this.lastMessageAt,
-        lastSeq: lastSeq ?? this.lastSeq,
-        read: read ?? this.read,
-        canWrite: canWrite,
-        canDeleteForEveryone: canDeleteForEveryone,
-        isOwner: isOwner,
-        canManageMembers: canManageMembers,
-      );
+  /// The chat came online or went offline (`pres on` / `off`).
+  ChatSummary withOnline({required bool online}) =>
+      online == this.online ? this : _copy(online: online);
+
+  ChatSummary _copy({
+    int? lastSeq,
+    DateTime? lastMessageAt,
+    int? read,
+    bool? online,
+  }) => ChatSummary(
+    topic: topic,
+    kind: kind,
+    title: title,
+    photo: photo,
+    lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+    lastSeq: lastSeq ?? this.lastSeq,
+    read: read ?? this.read,
+    canWrite: canWrite,
+    canDeleteForEveryone: canDeleteForEveryone,
+    isOwner: isOwner,
+    canManageMembers: canManageMembers,
+    online: online ?? this.online,
+    muted: muted,
+  );
 
   @override
   List<Object?> get props => [
@@ -112,5 +135,7 @@ final class ChatSummary with ValueObject {
     canDeleteForEveryone,
     isOwner,
     canManageMembers,
+    online,
+    muted,
   ];
 }

@@ -23,10 +23,25 @@ The list of the user's chats, and one open chat.
 
 **Chat summary**
 What the list knows about one chat: title, last message time, `lastSeq`, `read`, whether the user
-may write. *In code:* `ChatSummary`.
+may write, whether it is online and muted. *In code:* `ChatSummary`.
+
+**Online**
+The other user of a direct chat has a session open. Live only (`pres on` / `off`), never cached.
+Shown as the online dot on the tile's avatar and "online" under the chat's title. Groups have no
+presence in the UI. *In code:* `ChatSummary.online`, `ChatOnlineDot`, `ChatStatus`.
+
+**Muted**
+The user turned off notifications for a chat: their `want` lacks presence (`P`), so the server
+sends no push. Not "silenced". *In code:* `ChatSummary.muted`.
 
 **Tile**
 One row of the chat list. *In code:* `ChatListTile`.
+
+**Preview**
+The tile's second line: the chat's newest cached message (its text, or an icon and label for a
+photo, file, voice message or call; the sender first in a group), or who is typing. Read from the
+cache only. When the chat has messages past it (**behind**), the line says "New message" if
+unread, else nothing. *In code:* `ChatPreview`, `ChatPreviewController`, `ChatPreviewLine`.
 
 **Bubble**
 One message on the chat screen. *In code:* `MessageBubble`, `OutgoingBubble`, `BubbleFrame`.
@@ -49,8 +64,8 @@ The date above the first message of a day ("Today", "Yesterday", or the date).
 Behind a chat's messages: a color with a faint dot grid. *In code:* `ChatWallpaper`.
 
 **Frosted bar**
-A translucent, blurring bar that content scrolls under: the chat header and the composer, later
-the chat list header and the tab bar. *In code:* `FrostedBar`.
+A translucent, blurring bar that content scrolls under: the chat header, the composer and the
+chat list header; later the tab bar. *In code:* `FrostedBar`.
 
 **Composer**
 The attach button, the pill-shaped message field and the send button, which fills with the
@@ -162,8 +177,9 @@ credentials. *In code:* `SessionController.logout`, `TinodeChatController.logOut
 ## Account and profile
 
 **Sign up**
-Creating an account from the login screens with a name, a login and a password; it logs in as the
-new user. *In code:* `SessionController.signUp`, `SignUpController`, `SignUpScreen`.
+Creating an account from the login screen's Sign up side with a name, a login and a password; it
+logs in as the new user. *In code:* `SessionController.signUp`, `SignUpController`, `SignUpForm`,
+`AuthModeSwitch`.
 *Avoid:* "register".
 
 **Account features**

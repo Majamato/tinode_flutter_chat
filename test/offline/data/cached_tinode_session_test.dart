@@ -49,6 +49,44 @@ void main() {
       expect(await session.storedChatList(), chats);
     });
 
+    test('keeps no presence: online is what the last sync fetched', () async {
+      remote.chats
+        ..clear()
+        ..add(
+          chat(
+            bob,
+            name: 'Bob',
+            lastSeq: 100,
+            lastMessageAt: at(100),
+            online: true,
+          ),
+        );
+      expect((await session.chatList()).single.online, isTrue);
+      expect((await session.storedChatList()).single.online, isFalse);
+
+      // Unchanged and online: the server sends a stub, its `acs` empty.
+      remote.chats
+        ..clear()
+        ..add(const Subscription(topic: bob, online: true));
+      final stub = (await session.chatList()).single;
+      expect(stub.online, isTrue);
+      expect(stub.public?.name, 'Bob');
+      expect(stub.access?.mode.has(Permission.write), isTrue);
+
+      // Unchanged and offline: left out.
+      remote.chats.clear();
+      expect((await session.chatList()).single.online, isFalse);
+    });
+
+    test('an online stub of a chat not cached is ignored', () async {
+      await session.chatList();
+      remote.chats
+        ..clear()
+        ..add(const Subscription(topic: carol, online: true));
+
+      expect((await session.chatList()).map((c) => c.topic), [bob]);
+    });
+
     test('a chat removed since is dropped', () async {
       await session.chatList();
       remote.chats

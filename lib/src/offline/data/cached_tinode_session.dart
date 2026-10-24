@@ -18,6 +18,7 @@ import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/chat_merge.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_retry.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
@@ -74,6 +75,7 @@ final class CachedTinodeSession implements ChatSession {
 
   final _outbox = StreamController<OutboxEvent>.broadcast(sync: true);
   final _deletions = StreamController<TopicDeletion>.broadcast(sync: true);
+  final _storedChanges = StreamController<String>.broadcast(sync: true);
 
   /// The tail of the writes queued by arriving events.
   Future<void> _writes = Future.value();
@@ -175,6 +177,7 @@ final class CachedTinodeSession implements ChatSession {
   Future<void> removeMember(String topic, String userId) async {
     await _remote.removeMember(topic, userId);
     await _write(() => _store.removeMember(topic, userId));
+    _changed(topic);
   }
 
   @override
@@ -316,6 +319,9 @@ final class CachedTinodeSession implements ChatSession {
   @override
   Stream<TopicDeletion> get deletions => _deletions.stream;
 
+  @override
+  Stream<String> get storedChanges => _storedChanges.stream;
+
   // Chat list.
 
   @override
@@ -326,6 +332,11 @@ final class CachedTinodeSession implements ChatSession {
 
   /// Syncs the cached list with the server ("if modified since" the newest
   /// change it holds) and returns it. Overlapping calls share one sync.
+  ///
+  /// The cache keeps no presence. The server sends `online` in each chat of
+  /// a full list, and with "if modified since" a stub (`{topic, online,
+  /// acs: {}}`) for each unchanged chat that is online, so the chats it
+  /// fetched online are exactly the ones that are.
   @override
   Future<List<Subscription>> chatList({DateTime? ifModifiedSince}) =>
       _chatListSync ??= _syncChatList().whenComplete(
@@ -341,7 +352,14 @@ final class CachedTinodeSession implements ChatSession {
     } else {
       await _store.mergeChats(fetched);
     }
-    return _store.chats();
+    final online = {
+      for (final chat in fetched)
+        if (chat.online) chat.topic,
+    };
+    return [
+      for (final chat in await _store.chats())
+        withPresence(chat, online: online.contains(chat.topic)),
+    ];
   }
 
   // Members.
@@ -367,6 +385,7 @@ final class CachedTinodeSession implements ChatSession {
         await _store.putMember(topic, fetched.single);
       }
     });
+    _changed(topic);
     if (userId == null) {
       return _store.members(topic);
     }
@@ -397,7 +416,16 @@ final class CachedTinodeSession implements ChatSession {
         covering: _covered(page, since: since, before: before, limit: limit),
       ),
     );
+    _changed(topic);
     return page;
+  }
+
+  @override
+  Future<Map<String, LatestMessage>> storedLatestMessages({
+    String? topic,
+  }) async {
+    await _writes;
+    return _store.latestMessages(topic: topic);
   }
 
   @override
@@ -516,6 +544,7 @@ final class CachedTinodeSession implements ChatSession {
     if (!_closed) {
       _deletions.add(TopicDeletion(topic, ranges));
     }
+    _changed(topic);
   }
 
   // Outbox.
@@ -648,6 +677,7 @@ final class CachedTinodeSession implements ChatSession {
     if (!_closed) {
       _deletions.add(TopicDeletion(topic, ranges));
     }
+    _changed(topic);
     _kick();
   }
 
@@ -905,6 +935,7 @@ final class CachedTinodeSession implements ChatSession {
     if (first) {
       _emit(OutgoingSent(entry.clientId!, message));
     }
+    _changed(message.topic);
   }
 
   Future<void> _giveUp(OutboxEntry entry, ChatFailure failure) async {
@@ -1095,6 +1126,7 @@ final class CachedTinodeSession implements ChatSession {
           await _complete(entry, message);
         }
       }
+      _changed(message.topic);
     }),
   );
 
@@ -1142,14 +1174,15 @@ final class CachedTinodeSession implements ChatSession {
           when topic != 'me':
         final read = info.event == InfoEvent.read;
         unawaited(
-          _write(
-            () => _store.advanceMember(
+          _write(() async {
+            await _store.advanceMember(
               topic,
               from,
               read: read ? seq : null,
               received: read ? null : seq,
-            ),
-          ),
+            );
+            _changed(topic);
+          }),
         );
       case _:
         break;
@@ -1239,6 +1272,12 @@ final class CachedTinodeSession implements ChatSession {
             _log('A cache write failed', e, stackTrace),
       );
 
+  void _changed(String topic) {
+    if (!_closed) {
+      _storedChanges.add(topic);
+    }
+  }
+
   void _emit(OutboxEvent event) {
     if (!_closed) {
       _outbox.add(event);
@@ -1262,6 +1301,7 @@ final class CachedTinodeSession implements ChatSession {
     await _store.close();
     unawaited(_outbox.close());
     unawaited(_deletions.close());
+    unawaited(_storedChanges.close());
   }
 
   /// The seqs a history request answered for: `since <= seq < before`, cut

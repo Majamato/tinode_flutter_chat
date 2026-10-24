@@ -17,6 +17,9 @@ part 'chat_list_controller.g.dart';
 /// synced with the server, kept current from `me` presence and from the
 /// messages of attached chats, and synced again after a reconnect.
 ///
+/// Who is online comes from the sync and then from `pres on` / `off`; the
+/// cached list shows everyone offline until the sync.
+///
 /// It also tells the senders their messages reached this device (`note
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
 /// what came while the link was down.
@@ -149,6 +152,16 @@ class ChatListController extends _$ChatListController {
       case (PresenceEvent.gone, _):
         // Deleted, or the user left or was removed, maybe elsewhere.
         remove(topic);
+      case (PresenceEvent.online || PresenceEvent.offline, _):
+        state = state.update(
+          topic,
+          (chat) =>
+              chat.withOnline(online: presence.event == PresenceEvent.online),
+        );
+      case (PresenceEvent.access, _):
+        // The user's access changed, maybe muted on another device: `acs`
+        // doesn't say how, so the list is synced.
+        unawaited(_sync(session, _lifetime));
       case _:
         break;
     }

@@ -2,6 +2,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/search/domain/found_message.dart';
@@ -26,6 +27,10 @@ abstract interface class ChatSession implements TinodeSession {
 
   /// The newest cached messages of [topic], without asking the server.
   Future<HistoryPage> storedPage(String topic, {required int limit});
+
+  /// The newest message of each cached chat, or only of [topic], for the
+  /// chat list's preview. Never asks the server.
+  Future<Map<String, LatestMessage>> storedLatestMessages({String? topic});
 
   /// Up to [limit] messages before [before]: from the cache where it has
   /// them, from the server for the gaps. Offline, only what is cached.
@@ -102,4 +107,9 @@ abstract interface class ChatSession implements TinodeSession {
 
   /// Messages deleted here, on another device or by others.
   Stream<TopicDeletion> get deletions;
+
+  /// The topics whose cached messages or members just changed: a message
+  /// arrived, a page or the members were fetched, a message was deleted or
+  /// a member read further. What changed is in the cache once it fires.
+  Stream<String> get storedChanges;
 }

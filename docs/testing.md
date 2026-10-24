@@ -107,6 +107,17 @@ system.emit(const SystemCallAccepted(topic: bob, seq: 4, audioOnly: false));
 `acceptedCalls` are the calls accepted before the app started. `handleCallPush` takes the fake
 and a `MemoryChatStoreOpener` directly (`test/calls/application/call_push_handler_test.dart`).
 
+## Motion in tests
+
+`pumpTinodeChat` turns on Reduce motion (`reduceMotion: true`): the login screen's bubbles drift
+for as long as it shows, so `pumpAndSettle` would never settle on it. A test about motion passes
+`reduceMotion: false` and pumps frames instead of settling (see "the login screen moves" in
+`account_flows_test.dart`).
+
+To seed the cache before the widget opens, open the user's store from a shared
+`MemoryChatStoreOpener` first and put the chats as well as their messages: a new session prunes
+messages of chats the store doesn't list.
+
 ## The cache in tests
 
 Every container gets its own `MemoryChatStoreOpener` (`createTestContainer`, `pumpTinodeChat`),

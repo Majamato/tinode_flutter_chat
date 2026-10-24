@@ -44,6 +44,19 @@ void main() {
     expect(summary.kind, TopicKind.channel);
   });
 
+  test('online and muted come from the subscription', () {
+    final plain = ChatSummary.fromSubscription(chat(bob));
+    expect((plain.online, plain.muted), (false, false));
+
+    // Muted: the user's want lacks presence, though the mode may have it.
+    final muted = ChatSummary.fromSubscription(
+      chat(bob, online: true, want: 'JRWS'),
+    );
+    expect((muted.online, muted.muted), (true, true));
+    expect(muted.withOnline(online: false).online, isFalse);
+    expect(identical(muted.withOnline(online: true), muted), isTrue);
+  });
+
   test('a new message moves the chat up and counts as unread', () {
     final updated = list.update(bob, (c) => c.withMessage(5, at(30)));
 

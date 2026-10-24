@@ -8,8 +8,9 @@ The values live in code, not here: the palette in `TinodeChatPalette`, the neutr
 `ChatNeutrals`, everything the widgets read in `TinodeChatTheme`, and the Material theme around
 them in `chatMaterialTheme` (`TinodeChatTheme.materialTheme`). This page says what each is for.
 
-The screens are moving to this design one by one (see the README's roadmap). The chat screen
-has moved; the chat list, login, calls and settings still read only the tokens they used before.
+The screens are moving to this design one by one (see the README's roadmap). The chat screen,
+the chat list and login have moved; calls and settings still read only the tokens they used
+before.
 
 ## Palette
 
@@ -84,6 +85,42 @@ Timers and durations use tabular figures.
 - A host wraps or replaces any bubble with `TinodeChat.bubbleBuilder`, which gets a
   `TinodeBubble` and the default bubble.
 
+## Login
+
+- One screen signs in and up. Behind it: `wallpaperColor` with a 20 px dot grid in
+  `wallpaperDotColor`, and decorative bubbles (an incoming hello, an outgoing reply, a tiny voice
+  note, an `accent` dot) drifting 12 px over 5–7 s, hidden from screen readers and still with
+  Reduce motion.
+- The host's `TinodeChat.loginHeader` (e.g. an animated logo) sits centred near the top; by
+  default there is none.
+- A sheet (`colorScheme.surface`, top radius `sheetRadius`) rises 60 px into place as it fades
+  in (550 ms on `springCurve`): the title (`headlineSmall`) and subtitle, a 44 px Sign in |
+  Sign up switch whose pill slides on `springCurve` (only where sign-up is offered), and the
+  form. Switching cross-fades the forms in 320 ms.
+- Fields are the theme's (radius `fieldRadius`, `surface`, a `line` border) with Material's
+  floating label rather than a label above; the password has a show/hide eye. The primary button
+  is 54 px, `buttonRadius`, with a trailing arrow. Under it: "Forgot password?" when offered, or
+  `TinodeChatStrings.signUpTerms` when the host sets it.
+- The screen scrolls from the bottom: with the keyboard open, the sheet and its button stay just
+  above the keyboard, and the header scrolls off the top.
+
+## Chat list
+
+- The chats scroll under a frosted header: the account menu, "Chats" (`titleLarge`) and the
+  compose button in `linkColor`, then a 38 px search pill (`surfaceContainer`, radius 12) that
+  opens the people search. No folder chips.
+- Rows are 76 px: a 56 px avatar with the presence dot; the name (`titleMedium` at 16), a muted
+  icon, the ticks of the user's own last message (read in `linkColor`) and the time (`bodySmall`,
+  in `linkColor` while unread, else `outline`); then the preview (`bodyMedium` in `outline`) and
+  the unread badge (a 22 px stadium in `unreadBadgeColor`, `mutedBadgeColor` when muted). The
+  divider (`outlineVariant`) runs under the text only.
+- Preview icons, 15 px in `linkColor`: a mic for voice, a doc for files, a phone or camera for
+  calls (`missedCallColor` when missed); a photo shows its inline thumbnail (18 px, radius 4).
+  In groups the sender comes first, in `onSurface` 600.
+- The first rows fade up 14 px over 420 ms, 40 ms apart, once per screen; the floating button
+  (`primary`, a new-message icon) pops in after 350 ms. Reduce motion shows both at once.
+- Times: today the time of day, then "Yesterday", else the short date.
+
 ## Chat screen
 
 - The messages scroll under two frosted bars (`FrostedBar`: `glassColor`, blur 22, saturation
@@ -93,6 +130,12 @@ Timers and durations use tabular figures.
 - The send button rests while the field is blank. With text it fills with `primary` and its
   arrow turns in from a quarter turn (300 ms on `springCurve`). Phase 6 adds the microphone in
   its resting place.
+
+## Presence
+
+Only direct chats show presence: an `onlineColor` dot with a 3 px ring in the list's background
+on the avatar, and "online" in `linkColor` under the title in the chat header when the peer isn't
+typing (typing wins). Presence is live only, never cached.
 
 ## Motion
 

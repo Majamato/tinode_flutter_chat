@@ -146,6 +146,37 @@ void main() {
     expect(rebuilt, isNot(contains('$MessageBubble')));
   });
 
+  testWidgets('the header says online, and typing over it', (tester) async {
+    const strings = TinodeChatStrings();
+    session.chats.add(
+      chat(bob, name: 'Bob', lastSeq: 1, read: 1, online: true),
+    );
+    session.histories[bob] = [message(bob, 1, text: 'hi')];
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+    );
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+    expect(find.text(strings.online), findsOneWidget);
+
+    session.emitInfo(
+      const InfoMessage(topic: bob, event: InfoEvent.typing, from: bob),
+    );
+    await tester.pump();
+    expect(find.text(strings.typingDirect), findsOneWidget);
+    expect(find.text(strings.online), findsNothing);
+
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.offline, source: bob),
+    );
+    await tester.pump(typingTimeout);
+    await tester.pump();
+    expect(find.text(strings.typingDirect), findsNothing);
+    expect(find.text(strings.online), findsNothing);
+  });
+
   group('dayLabel', () {
     const strings = TinodeChatStrings();
     const localizations = DefaultMaterialLocalizations();

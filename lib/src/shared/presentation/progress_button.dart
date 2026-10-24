@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
 /// A filled button that shows a spinner in place of its [label] while
-/// [busy], and can't be pressed then.
+/// [busy], and can't be pressed then. A [trailingIcon] follows the label.
 class ProgressButton extends StatelessWidget {
   const ProgressButton({
     required this.label,
     required this.onPressed,
     this.busy = false,
+    this.trailingIcon,
     super.key,
   });
 
   final String label;
+  final IconData? trailingIcon;
 
   /// Null disables the button.
   final VoidCallback? onPressed;
@@ -25,7 +27,13 @@ class ProgressButton extends StatelessWidget {
               dimension: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : Text(label),
+          : switch (trailingIcon) {
+              null => Text(label),
+              final icon => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [Text(label), const SizedBox(width: 8), Icon(icon)],
+              ),
+            },
     );
   }
 }

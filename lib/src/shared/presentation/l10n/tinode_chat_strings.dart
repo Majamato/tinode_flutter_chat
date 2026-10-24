@@ -83,6 +83,13 @@ class TinodeChatStrings {
     this.deleteForMe = 'Delete for me',
     this.deleteForEveryone = 'Delete for everyone',
     this.newChat = 'New chat',
+    this.newMessage = 'New message',
+    this.accountMenu = 'Account',
+    this.searchChats = 'Search',
+    this.chatMuted = 'Muted',
+    this.newMessageArrived = 'New message',
+    this.photoMessage = 'Photo',
+    this.voiceMessage = 'Voice message',
     this.findHint = 'Search by login, email or phone',
     this.nobodyFound = 'Nobody found',
     this.groupLabel = 'Group',
@@ -99,6 +106,7 @@ class TinodeChatStrings {
     this.notReadYet = 'Nobody has read it yet',
     this.unknownMember = 'Unknown',
     this.typingDirect = 'typing…',
+    this.online = 'online',
     this.typingOne = _typingOne,
     this.typingTwo = _typingTwo,
     this.typingMany = _typingMany,
@@ -116,8 +124,16 @@ class TinodeChatStrings {
     this.openFile = 'Open',
     this.imageLabel = 'Image',
     this.fileLabel = 'File',
-    this.createAccountLink = 'Create an account',
-    this.signUpTitle = 'Create account',
+    this.signUpTab = 'Sign up',
+    this.loginHeadline = 'Welcome back',
+    this.loginSubtitle = 'Sign in to pick up where you left off.',
+    this.signUpHeadline = 'Create your account',
+    this.signUpSubtitle = 'It takes less than a minute.',
+    this.signUpTerms = '',
+    this.showPassword = 'Show password',
+    this.hidePassword = 'Hide password',
+    this.loginBubbleHello = '¡Hola!',
+    this.loginBubbleLater = 'Call me later?',
     this.displayNameField = 'Your name',
     this.signUp = 'Create account',
     this.forgotPassword = 'Forgot password?',
@@ -192,7 +208,7 @@ class TinodeChatStrings {
   /// Shown while connecting to the server.
   final String connecting;
 
-  /// Title of the login screen.
+  /// The login screen's switch to signing in.
   final String loginTitle;
 
   /// Label of the login name field.
@@ -313,10 +329,12 @@ class TinodeChatStrings {
   /// The phone's notification while a call goes on.
   final String ongoingCall;
 
-  /// The phone's notification for a voice call the user didn't answer.
+  /// The phone's notification, and the chat list's preview, for a voice
+  /// call the user didn't answer.
   final String missedVoiceCall;
 
-  /// The phone's notification for a video call the user didn't answer.
+  /// The phone's notification, and the chat list's preview, for a video
+  /// call the user didn't answer.
   final String missedVideoCall;
 
   /// Tooltip of the button that mutes the microphone.
@@ -374,8 +392,30 @@ class TinodeChatStrings {
   /// Label of the action that deletes a message for everyone in the chat.
   final String deleteForEveryone;
 
-  /// Tooltip of the chat list's button that finds people to chat with.
+  /// Tooltip of the chat list header's compose button, which finds people
+  /// to chat with.
   final String newChat;
+
+  /// Tooltip of the chat list's floating button, which does the same.
+  final String newMessage;
+
+  /// Tooltip of the chat list's account menu (profile, log out).
+  final String accountMenu;
+
+  /// The hint of the chat list's search field.
+  final String searchChats;
+
+  /// The label of a muted chat's icon in the chat list.
+  final String chatMuted;
+
+  /// A chat list preview when the newest message isn't on this device yet.
+  final String newMessageArrived;
+
+  /// A chat list preview of a photo without a caption.
+  final String photoMessage;
+
+  /// A chat list preview of a voice message without a caption.
+  final String voiceMessage;
 
   /// Hint of the search field, saying what a search can match.
   final String findHint;
@@ -426,6 +466,9 @@ class TinodeChatStrings {
 
   /// Under a direct chat's title while the peer types.
   final String typingDirect;
+
+  /// Under a direct chat's title while the peer is online and not typing.
+  final String online;
 
   /// Under a group's title while one member types.
   final String Function(String name) typingOne;
@@ -479,11 +522,37 @@ class TinodeChatStrings {
   /// Names a file without a file name.
   final String fileLabel;
 
-  /// Opens sign-up from the sign-in screen.
-  final String createAccountLink;
+  /// The login screen's switch to signing up, where sign-up is offered.
+  final String signUpTab;
 
-  /// Title of the sign-up screen.
-  final String signUpTitle;
+  /// The login sheet's title while signing in.
+  final String loginHeadline;
+
+  /// Under [loginHeadline].
+  final String loginSubtitle;
+
+  /// The login sheet's title while signing up.
+  final String signUpHeadline;
+
+  /// Under [signUpHeadline].
+  final String signUpSubtitle;
+
+  /// Under the sign-up button, e.g. what signing up agrees to. Nothing
+  /// when empty, the default.
+  final String signUpTerms;
+
+  /// Tooltip of a password field's eye while the password is hidden.
+  final String showPassword;
+
+  /// Tooltip of a password field's eye while the password shows.
+  final String hidePassword;
+
+  /// The incoming bubble floating over the login screen. Decoration only:
+  /// screen readers skip it.
+  final String loginBubbleHello;
+
+  /// The outgoing bubble floating over the login screen. Decoration only.
+  final String loginBubbleLater;
 
   /// Label of the name field on sign-up, shown to others.
   final String displayNameField;

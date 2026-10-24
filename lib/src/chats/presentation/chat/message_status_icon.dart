@@ -13,6 +13,7 @@ class MessageStatusIcon extends StatelessWidget {
     required this.color,
     this.status,
     this.receipt,
+    this.readColor,
     super.key,
   });
 
@@ -26,6 +27,9 @@ class MessageStatusIcon extends StatelessWidget {
   /// The colour of the bubble's text, for the clock and the ticks.
   final Color color;
 
+  /// The ticks of a read message; the theme's `readReceiptColor` when null.
+  final Color? readColor;
+
   @override
   Widget build(BuildContext context) {
     final strings = TinodeChatStrings.of(context);
@@ -33,7 +37,7 @@ class MessageStatusIcon extends StatelessWidget {
       (null, MessageReceipt.read) => (
         Icons.done_all,
         strings.messageRead,
-        TinodeChatTheme.of(context).readReceiptColor,
+        readColor ?? TinodeChatTheme.of(context).readReceiptColor,
       ),
       (null, MessageReceipt.delivered) => (
         Icons.done_all,

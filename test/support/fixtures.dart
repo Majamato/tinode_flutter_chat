@@ -17,14 +17,17 @@ Subscription chat(
   int read = 0,
   DateTime? lastMessageAt,
   String mode = 'JRWPS',
+  String? want,
+  bool online = false,
 }) => Subscription(
   topic: topic,
   lastSeq: lastSeq,
   read: read,
   lastMessageAt: lastMessageAt,
+  online: online,
   public: Profile(name: name ?? topic),
   access: Access(
-    want: AccessMode.parse(mode),
+    want: AccessMode.parse(want ?? mode),
     given: AccessMode.parse(mode),
     mode: AccessMode.parse(mode),
   ),

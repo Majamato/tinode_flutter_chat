@@ -45,6 +45,26 @@ Subscription advanceChat(
   seen: chat.seen,
 );
 
+/// [chat] with its presence set to [online].
+Subscription withPresence(Subscription chat, {required bool online}) =>
+    chat.online == online
+    ? chat
+    : Subscription(
+        topic: chat.topic,
+        userId: chat.userId,
+        updated: chat.updated,
+        lastMessageAt: chat.lastMessageAt,
+        access: chat.access,
+        online: online,
+        lastSeq: chat.lastSeq,
+        read: chat.read,
+        received: chat.received,
+        lastDeleteId: chat.lastDeleteId,
+        public: chat.public,
+        private: chat.private,
+        seen: chat.seen,
+      );
+
 /// The "if modified since" for the next chat list sync: the newest change
 /// the stored list has seen, less a millisecond, since the server only
 /// returns what changed strictly after it.

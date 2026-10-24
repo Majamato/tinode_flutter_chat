@@ -35,10 +35,18 @@ Future<void> pumpTinodeChat(
   String? pushToken,
   ThemeData? theme,
   TinodeBubbleBuilder? bubbleBuilder,
+  Widget? loginHeader,
+  bool reduceMotion = true,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: theme,
+      // The login screen's bubbles drift for as long as it shows, so
+      // `pumpAndSettle` would never settle on it; Reduce motion stills them.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
+        child: child!,
+      ),
       home: TinodeChat.withConnector(
         config: config ?? testConfig,
         connector: connectTo(session),
@@ -57,8 +65,16 @@ Future<void> pumpTinodeChat(
         features: features,
         pushToken: pushToken,
         bubbleBuilder: bubbleBuilder,
+        loginHeader: loginHeader,
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (reduceMotion) {
+    await tester.pumpAndSettle();
+  } else {
+    // Looping animations never settle: a second of frames instead.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
 }

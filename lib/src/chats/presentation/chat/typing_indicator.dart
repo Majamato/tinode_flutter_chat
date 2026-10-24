@@ -8,9 +8,12 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_th
 /// Who is typing, under the chat's title in the link colour; nothing
 /// while nobody is.
 class TypingIndicator extends ConsumerWidget {
-  const TypingIndicator({required this.topic, super.key});
+  const TypingIndicator({required this.topic, this.style, super.key});
 
   final String topic;
+
+  /// The text style, in the link colour; the theme's `bodySmall` when null.
+  final TextStyle? style;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,7 +25,7 @@ class TypingIndicator extends ConsumerWidget {
       typingMessage(TinodeChatStrings.of(context), typing),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+      style: (style ?? Theme.of(context).textTheme.bodySmall)?.copyWith(
         color: TinodeChatTheme.of(context).linkColor,
       ),
     );

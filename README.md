@@ -426,10 +426,12 @@ where it needs the protocol:
    result; prune each chat to its newest messages and the file cache to a size, both set with
    `TinodeCacheLimits`).
 8. **Design** ([`docs/design.md`](docs/design.md)): the palette, the theme's tokens and
-   `TinodeChatTheme.materialTheme` are in, and so is the chat screen (bubble tails, runs, date
+   `TinodeChatTheme.materialTheme` are in, and so are the chat screen (bubble tails, runs, date
    chips, wallpaper, frosted header and composer, the send button's morph and the bubble
-   builder). Next: online presence, the chat list and login, the call screens, an optional tab
-   bar (Chats, Calls, Settings) with an Appearance screen, and voice messages.
+   builder), online presence, the chat list (frosted header, previews from the cache, muted
+   chats) and login (one screen for signing in and up, with a `loginHeader` slot). Next: the call
+   screens, an optional tab bar (Chats, Calls, Settings) with an Appearance screen, and voice
+   messages.
 
 ## Development
 

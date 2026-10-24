@@ -17,6 +17,46 @@ void main() {
     addTearDown(store.close);
   });
 
+  group('latest messages', () {
+    DataMessage update(String topic, int seq, int target) => DataMessage(
+      topic: topic,
+      seq: seq,
+      from: bob,
+      time: at(seq),
+      head: MessageHead(replaces: ':$target', callState: CallState.missed),
+      content: const PlainText(' '),
+    );
+
+    test('the newest bubble of each chat, with its updates', () async {
+      await store.putMessages(bob, [
+        message(bob, 1),
+        message(bob, 2),
+        update(bob, 3, 2),
+        // An update of an older message: counted, not shown.
+        update(bob, 4, 1),
+      ]);
+      await store.putMessages(friends, [message(friends, 7, text: 'hi')]);
+
+      final latest = await store.latestMessages();
+      expect(latest.keys, unorderedEquals([bob, friends]));
+      expect(latest[bob]!.message?.seq, 2);
+      expect(latest[bob]!.updates.map((m) => m.seq), [3]);
+      expect(latest[bob]!.newestSeq, 4);
+      expect(latest[friends]!.message?.content.text, 'hi');
+
+      final onlyFriends = await store.latestMessages(topic: friends);
+      expect(onlyFriends.keys, [friends]);
+    });
+
+    test('a chat holding only updates has no message', () async {
+      await store.putMessages(bob, [update(bob, 9, 5)]);
+
+      final latest = (await store.latestMessages())[bob]!;
+      expect(latest.message, isNull);
+      expect(latest.newestSeq, 9);
+    });
+  });
+
   group('members', () {
     test('a full list replaces the members, merged', () async {
       await store.replaceMembers(friends, [

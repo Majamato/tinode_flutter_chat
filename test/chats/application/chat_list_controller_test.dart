@@ -120,15 +120,41 @@ void main() {
     expect(container.read(chatListControllerProvider).order.first, carol);
   });
 
-  test('pres acs for a known chat changes nothing', () async {
-    final list = await loadList();
-    session.calls.clear();
-    session.emitPresence(
-      const PresMessage(topic: 'me', event: PresenceEvent.access, source: bob),
-    );
+  test('pres acs for a known chat syncs it, e.g. muted elsewhere', () async {
+    await loadList();
+    expect(container.read(chatSummaryProvider(bob))?.muted, isFalse);
+    session
+      ..calls.clear()
+      ..chats[0] = chat(bob, name: 'Bob', lastSeq: 3, read: 1, want: 'JRWS')
+      ..emitPresence(
+        const PresMessage(
+          topic: 'me',
+          event: PresenceEvent.access,
+          source: bob,
+        ),
+      );
     await settle();
-    expect(session.calls, isEmpty);
-    expect(identical(container.read(chatListControllerProvider), list), isTrue);
+
+    expect(session.calls, ['chatList']);
+    expect(container.read(chatSummaryProvider(bob))?.muted, isTrue);
+  });
+
+  test('pres on and off on me set who is online', () async {
+    final list = await loadList();
+    expect(list.byTopic[bob]!.online, isFalse);
+
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.online, source: bob),
+    );
+    final online = container.read(chatListControllerProvider);
+    expect(online.byTopic[bob]!.online, isTrue);
+    // Presence doesn't move the chat: the order stays the same instance.
+    expect(identical(online.order, list.order), isTrue);
+
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.offline, source: bob),
+    );
+    expect(container.read(chatSummaryProvider(bob))?.online, isFalse);
   });
 
   test('messages from others are marked received as they arrive', () async {

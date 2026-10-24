@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/chat_merge.dart'
     as merge;
 import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/seq_ranges.dart';
 import 'package:tinode_flutter_chat/src/search/domain/found_message.dart';
@@ -67,6 +68,11 @@ final class ChatStore {
             continue;
           }
           final stored = await chat(topic);
+          if (stored == null && change.access == null) {
+            // Only the online stub of a chat this cache doesn't hold: a new
+            // chat always comes with its `acs`.
+            continue;
+          }
           await _db
               .into(_db.chats)
               .insertOnConflictUpdate(
@@ -247,6 +253,49 @@ final class ChatStore {
               ..limit(limit))
             .get();
     return [for (final row in rows.reversed) _message(row)];
+  }
+
+  /// The newest message of each cached chat, or only of [topic], with its
+  /// updates (see [LatestMessage]). Chats without cached messages are left
+  /// out.
+  Future<Map<String, LatestMessage>> latestMessages({String? topic}) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT l.topic AS topic, l.newest AS newest, m.json AS json '
+          'FROM (SELECT topic, max(seq) AS newest, max(CASE WHEN '
+          r"json_extract(json, '$.head.replace') IS NULL THEN seq END) AS base "
+          'FROM messages ${topic == null ? '' : 'WHERE topic = ? '}'
+          'GROUP BY topic) l '
+          'LEFT JOIN messages m ON m.topic = l.topic AND (m.seq = l.base '
+          r"OR json_extract(m.json, '$.head.replace') = ':' || l.base) "
+          'ORDER BY l.topic, m.seq',
+          variables: [if (topic != null) Variable.withString(topic)],
+          readsFrom: {_db.messages},
+        )
+        .get();
+    final found = <String, ({int newest, List<DataMessage> messages})>{};
+    for (final row in rows) {
+      final entry = found.putIfAbsent(
+        row.read<String>('topic'),
+        () => (newest: row.read<int>('newest'), messages: []),
+      );
+      if (row.readNullable<String>('json') case final json?) {
+        entry.messages.add(DataMessage.fromJson(jsonDecode(json) as Json));
+      }
+    }
+    return {
+      for (final MapEntry(:key, :value) in found.entries)
+        key: switch (value.messages) {
+          [final message, ...final updates]
+              when message.head?.replacesSeq == null =>
+            LatestMessage(
+              newestSeq: value.newest,
+              message: message,
+              updates: updates,
+            ),
+          _ => LatestMessage(newestSeq: value.newest),
+        },
+    };
   }
 
   Future<DataMessage?> messageWithClientId(
@@ -600,9 +649,11 @@ final class ChatStore {
   static Subscription _chat(ChatRow row) =>
       Subscription.fromJson(jsonDecode(row.json) as Json, 'chat');
 
+  /// Presence is live only: a stored `online` would be stale by the next
+  /// start, so it is never kept.
   static ChatsCompanion _chatRow(Subscription chat) => ChatsCompanion.insert(
     topic: chat.topic!,
-    json: jsonEncode(chat.toJson()),
+    json: jsonEncode(chat.toJson()..remove('online')),
   );
 
   static Subscription _member(MemberRow row) =>

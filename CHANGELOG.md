@@ -1,5 +1,34 @@
 ## Unreleased
 
+- Login in the chat's design: one screen signs in and up, over a dotted backdrop with drifting
+  bubbles. A sheet rises in with a Sign in | Sign up switch, the form (the password with a
+  show/hide eye) and a button with an arrow. `TinodeChat(loginHeader:)` puts the host's widget,
+  e.g. an animated logo, near the top. Signing up no longer opens its own screen: `SignUpScreen`
+  and its "Create an account" link are gone, and confirming the email pushes over the login
+  screen. `TinodeChatStrings`: `loginTitle` now labels the switch's sign-in side; `signUpTitle`
+  and `createAccountLink` are removed; new `signUpTab`, `loginHeadline`, `loginSubtitle`,
+  `signUpHeadline`, `signUpSubtitle`, `signUpTerms` (empty by default), `showPassword`,
+  `hidePassword`, `loginBubbleHello`, `loginBubbleLater`.
+
+- The chat list in the chat's design: a frosted header (account menu, "Chats", compose) with a
+  search pill that opens the people search; 76 px rows with a 56 px avatar, the online dot, a
+  muted icon, the ticks of the user's own last message, the time ("Yesterday" too), a preview
+  of the newest message (text, photo, file, voice, call; the sender in groups; "typing…") and
+  the unread badge, grey for muted chats. Rows fade up one after the other on first show, and
+  the floating button pops in. The preview comes from the cache: a chat whose newest message
+  isn't on the device says "New message". `FindPeopleButton` is gone (the search pill replaces
+  it). New `TinodeChatStrings`: `newMessage`, `accountMenu`, `searchChats`, `chatMuted`,
+  `newMessageArrived`, `photoMessage`, `voiceMessage`; `missedVoiceCall` / `missedVideoCall`
+  also serve the preview.
+- Fixed: "Today" and "Yesterday" over a clock change (a 23-hour day counted as none).
+
+- Online presence: a direct chat whose peer is online shows a dot on its avatar in the chat list
+  and "online" under its name in the chat header (typing wins). Live only: the cache no longer
+  keeps `online`, so a cached list shows everyone offline until it syncs. `pres acs` for a known
+  chat syncs the list. New `TinodeChatStrings.online`.
+- Fixed: after a sync "if modified since", a chat whose peer was online lost its access in the
+  cache (the server's stub has an empty `acs`) and turned read-only.
+
 - The chat screen in the chat's design. Bubbles are 20 px round, with a tail on the last of each
   run, 2 px between the bubbles of a run and 12 px between runs; the user's newest message and
   the outbox make one run. The time and ticks sit after the last line when they fit. A photo

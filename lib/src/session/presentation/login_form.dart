@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/session/application/login_controller.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/confirm_email_screen.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/create_account_link.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/forgot_password_link.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_error_text.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_submit_button.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/password_field.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// Login name and password fields, and links to sign up or reset a
-/// forgotten password. Watches nothing: the button and the
-/// error text below it watch the submission on their own.
+/// Login name and password fields, the button, and the link to reset a
+/// forgotten password. Watches nothing: the button and the error text
+/// below it watch the submission on their own.
 class LoginForm extends ConsumerStatefulWidget {
   const LoginForm({super.key});
 
@@ -61,12 +61,10 @@ class _LoginFormState extends ConsumerState<LoginForm> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 12),
-          TextField(
+          PasswordField(
             controller: _password,
-            decoration: InputDecoration(labelText: strings.passwordField),
+            label: strings.passwordField,
             autofillHints: const [AutofillHints.password],
-            obscureText: true,
-            textInputAction: TextInputAction.done,
             onSubmitted: (_) => unawaited(_onSubmit()),
           ),
           const SizedBox(height: 8),
@@ -75,7 +73,6 @@ class _LoginFormState extends ConsumerState<LoginForm> {
           LoginSubmitButton(onSubmit: () => unawaited(_onSubmit())),
           const SizedBox(height: 8),
           const ForgotPasswordLink(),
-          const CreateAccountLink(),
         ],
       ),
     );

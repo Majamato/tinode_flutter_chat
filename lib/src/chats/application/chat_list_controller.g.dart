@@ -12,6 +12,9 @@ part of 'chat_list_controller.dart';
 /// synced with the server, kept current from `me` presence and from the
 /// messages of attached chats, and synced again after a reconnect.
 ///
+/// Who is online comes from the sync and then from `pres on` / `off`; the
+/// cached list shows everyone offline until the sync.
+///
 /// It also tells the senders their messages reached this device (`note
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
 /// what came while the link was down.
@@ -26,6 +29,9 @@ final chatListControllerProvider = ChatListControllerProvider._();
 /// synced with the server, kept current from `me` presence and from the
 /// messages of attached chats, and synced again after a reconnect.
 ///
+/// Who is online comes from the sync and then from `pres on` / `off`; the
+/// cached list shows everyone offline until the sync.
+///
 /// It also tells the senders their messages reached this device (`note
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
 /// what came while the link was down.
@@ -37,6 +43,9 @@ final class ChatListControllerProvider
   /// The chat list of the logged-in user: shown from the cache first, then
   /// synced with the server, kept current from `me` presence and from the
   /// messages of attached chats, and synced again after a reconnect.
+  ///
+  /// Who is online comes from the sync and then from `pres on` / `off`; the
+  /// cached list shows everyone offline until the sync.
   ///
   /// It also tells the senders their messages reached this device (`note
   /// recv`): as they arrive, live or as `pres msg`, and after each sync for
@@ -72,11 +81,14 @@ final class ChatListControllerProvider
 }
 
 String _$chatListControllerHash() =>
-    r'c861b5ece9a711a09adc6ab3c2f9cf5a66781bc6';
+    r'e37ec61efc7ec2396077590bbd12216af651ed00';
 
 /// The chat list of the logged-in user: shown from the cache first, then
 /// synced with the server, kept current from `me` presence and from the
 /// messages of attached chats, and synced again after a reconnect.
+///
+/// Who is online comes from the sync and then from `pres on` / `off`; the
+/// cached list shows everyone offline until the sync.
 ///
 /// It also tells the senders their messages reached this device (`note
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for

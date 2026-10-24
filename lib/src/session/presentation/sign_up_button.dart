@@ -17,6 +17,7 @@ class SignUpButton extends ConsumerWidget {
       label: TinodeChatStrings.of(context).signUp,
       busy: ref.watch(signUpControllerProvider.select((s) => s.isLoading)),
       onPressed: onSubmit,
+      trailingIcon: Icons.arrow_forward,
     );
   }
 }

@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/session/application/sign_up_controller.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/confirm_email_screen.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/password_field.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/sign_up_button.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/sign_up_error_text.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Name, login, email and password fields; the button sends them once all
 /// are filled, the email only where the server needs one. When the server
-/// mails a code to confirm the email, it opens the screen that takes it.
+/// mails a code to confirm the email, it opens the screen that takes it,
+/// over the login screen. Under the button, the host's terms, if any.
 /// Watches whether the server needs an email; the button and error text
 /// below watch the submission.
 class SignUpForm extends ConsumerStatefulWidget {
@@ -58,7 +60,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
         );
     if (confirm) {
       unawaited(
-        navigator.pushReplacement(
+        navigator.push(
           ConfirmEmailScreen.route(login: login, password: password),
         ),
       );
@@ -102,12 +104,10 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 12),
-          TextField(
+          PasswordField(
             controller: _password,
-            decoration: InputDecoration(labelText: strings.passwordField),
+            label: strings.passwordField,
             autofillHints: const [AutofillHints.newPassword],
-            obscureText: true,
-            textInputAction: TextInputAction.done,
             onSubmitted: (_) => unawaited(_onSubmit()),
           ),
           const SizedBox(height: 8),
@@ -121,6 +121,16 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
                   : null,
             ),
           ),
+          if (strings.signUpTerms.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              strings.signUpTerms,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ],
         ],
       ),
     );

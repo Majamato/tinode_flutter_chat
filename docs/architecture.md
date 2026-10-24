@@ -129,10 +129,11 @@ provider.
 - `config`, `credentials`, `features` and `cacheLimits` are read once. To switch server or user, give `TinodeChat` a new `Key`.
   `pushToken` is read on every build and handed to `PushTokenController`.
 
-Host-provided builders (`TinodeChat.bubbleBuilder`) run inside the chat's own container, so they
-can't watch the host's providers. They get plain data instead (`TinodeBubble`) through an
-inherited widget (`BubbleBuilderScope`), never a provider. A builder that needs host state reads
-it from the widget tree above `TinodeChat`.
+Host-provided builders and widgets (`TinodeChat.bubbleBuilder`, `TinodeChat.loginHeader`) run
+inside the chat's own container, so they can't watch the host's providers. They get plain data
+instead (`TinodeBubble`) through inherited widgets (`BubbleBuilderScope`, `LoginHeaderScope`),
+never a provider. A builder that needs host state reads it from the widget tree above
+`TinodeChat`.
 
 ## Widget tree
 
@@ -140,35 +141,39 @@ it from the widget tree above `TinodeChat`.
 TinodeChat                      owns the container
 └ UncontrolledProviderScope
   └ TinodeChatStringsScope      host strings
-    └ ChatThemeScope            adds TinodeChatTheme.fallback when the host has none
-      └ SessionGate             watches the session phase only
-        ├ ConnectingView
-        ├ AuthNavigator         nested Navigator, only while awaiting login
-        │ ├ LoginScreen         first route; links to sign up and reset the password
-        │ ├ SignUpScreen
-        │ ├ ConfirmEmailScreen  replaces SignUpScreen, or pushed by the login form
-        │ └ PasswordResetScreen
-        ├ SessionErrorView      "Reconnect"
-        └ ChatNavigator         nested Navigator, only while logged in
-          ├ ChatListScreen      first route; NewChatButton, FindPeopleButton, AccountMenuButton
-          ├ ProfileScreen       pushed from the account menu; ChangePasswordScreen over it
-          ├ FindPeopleScreen    pushed by NewChatButton or FindPeopleButton
-          ├ NewGroupScreen      pushed from the search
-          ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`): ChatWallpaper,
-          │                     MessageList scrolling under the frosted ChatHeader (back with
-          │                     the other chats' unread count, MessageSearchButton, CallButtons)
-          │                     and the frosted composer, whose height it reports
-          ├ MessageSearchScreen pushed by MessageSearchButton, over its chat
-          ├ ChatInfoScreen      pushed by tapping the chat's title
-          ├ CallLayer           over the routes: IncomingCallView or CallView
-          └ ReconnectingBanner  below the routes, while the link is restored
+    └ BubbleBuilderScope        host bubble builder
+      └ LoginHeaderScope        host login header
+        └ ChatThemeScope        adds TinodeChatTheme.fallback when the host has none
+          └ SessionGate             watches the session phase only
+            ├ ConnectingView
+            ├ AuthNavigator         nested Navigator, only while awaiting login
+            │ ├ LoginScreen         first route: LoginBackdrop (dots, LoginBubbles), the host's
+            │ │                     header, LoginSheet (AuthModeSwitch, LoginForm or SignUpForm,
+            │ │                     ForgotPasswordLink)
+            │ ├ ConfirmEmailScreen  pushed by either form
+            │ └ PasswordResetScreen
+            ├ SessionErrorView      "Reconnect"
+            └ ChatNavigator         nested Navigator, only while logged in
+              ├ ChatListScreen      first route; ChatListHeader (AccountMenuButton, compose,
+              │                     ChatSearchField), ChatListTile rows, NewChatButton
+              ├ ProfileScreen       pushed from the account menu; ChangePasswordScreen over it
+              ├ FindPeopleScreen    pushed by NewChatButton, the header's compose or ChatSearchField
+              ├ NewGroupScreen      pushed from the search
+              ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`): ChatWallpaper,
+              │                     MessageList scrolling under the frosted ChatHeader (back with
+              │                     the other chats' unread count, MessageSearchButton, CallButtons)
+              │                     and the frosted composer, whose height it reports
+              ├ MessageSearchScreen pushed by MessageSearchButton, over its chat
+              ├ ChatInfoScreen      pushed by tapping the chat's title
+              ├ CallLayer           over the routes: IncomingCallView or CallView
+              └ ReconnectingBanner  below the routes, while the link is restored
 ```
 
 `SessionGate` sits **above** the nested navigator on purpose. Riverpod 3 pauses consumers on routes
 covered by another route (via `TickerMode`), so a gate inside the navigator would not notice a lost
 connection while a chat is open. Placed above, losing the session removes the navigator and every
 chat route with it. `AuthNavigator` gets the same treatment: signing up logs in, which swaps it
-for the chat's navigator with the sign-up screen inside it. `CallLayer` sits beside the routes in a `Stack` for the same reason: an
+for the chat's navigator with the login screen inside it. `CallLayer` sits beside the routes in a `Stack` for the same reason: an
 incoming call must show whichever chat is open, and system back does nothing during a call.
 
 ## Session lifecycle
@@ -322,6 +327,29 @@ cache. `CachedTinodeSession` decorates the server session:
 3. After a reconnect the list syncs again: presence sent while the link was down is never
    replayed.
 4. `unread = lastSeq − read`. Order is by `lastMessageAt`, newest first.
+5. Presence is live only: the cache keeps no `online`, so the cached list shows everyone offline.
+   A full `get sub` carries `online` per chat; with "if modified since" the server sends a stub
+   (`{topic, online: true, acs: {}}`) for each unchanged chat that is online (observed), so after
+   a sync the chats fetched online are exactly the ones that are. Then `pres on` / `off` keep it
+   current (`off` comes a few seconds after the peer leaves). The client reads an empty `acs` as
+   no `access`, so a stub changes nothing else.
+6. `pres acs` for a known chat syncs the list: the user's access changed, maybe muted on another
+   device, and `acs` doesn't say how. A chat is **muted** when the user's `want` lacks `P`.
+
+**Chat list previews** (`ChatPreviewController`, keepAlive, sync `Notifier<Map<String,
+ChatPreview>>`):
+
+1. Tinode sends no message content in the chat list, and `pres msg` only a seq. So the preview is
+   the cache's: `ChatStore.latestMessages` gives, per chat, the newest message that is no update
+   (`head.replace`), the updates of it (a call's later state), and the newest seq cached.
+2. It reads them all on build, then reads a chat again when `ChatSession.storedChanges` names it:
+   the cached session fires it after it stores a live message, a fetched page or the members,
+   deletes messages, or a member reads further. Changes in one turn are read once.
+3. A group's cached members name the sender; any chat's members give the receipt of the user's
+   own message (`ChatMembers.receiptOf`).
+4. `chatPreviewBehind(topic)` is true while the chat's `lastSeq` is past the newest seq cached: the
+   tile then says "New message" if unread, else nothing. Opening the chat catches up, which fills
+   the cache and the preview.
 
 **Chat** (`ChatController(topic)`, autoDispose, sync `Notifier<ChatState>`):
 
