@@ -5,6 +5,8 @@ import 'package:tinode_flutter_chat/src/app/presentation/home/home_tab_bar.dart'
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_screen.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_screen.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/screen_header.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/settings_section.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -85,5 +87,38 @@ void main() {
 
     expect(find.byType(AppearanceScreen), findsOneWidget);
     expect(find.text(strings.settingsTitle), findsWidgets);
+  });
+
+  testWidgets('the cards start under the header from the first frame', (
+    tester,
+  ) async {
+    // A 24 px status bar.
+    tester.view.padding = FakeViewPadding(
+      top: 24 * tester.view.devicePixelRatio,
+    );
+    addTearDown(tester.view.resetPadding);
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+      tabBar: true,
+    );
+    await tester.tap(
+      find.descendant(
+        of: find.byType(HomeTabBar),
+        matching: find.text(strings.settingsTitle),
+      ),
+    );
+    await tester.pump();
+
+    final header = find.byType(ScreenHeader);
+    expect(
+      tester.getSize(header).height,
+      24 + tester.widget<ScreenHeader>(header).preferredSize.height,
+    );
+    expect(
+      tester.getTopLeft(find.byType(SettingsSection).first).dy,
+      tester.getBottomLeft(header).dy + 16,
+    );
   });
 }

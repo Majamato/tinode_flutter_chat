@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_preview.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_screen.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/palette_swatch.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/palette_swatch_grid.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/screen_header.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -124,5 +126,14 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 400));
     expect(transition.scale.value, 1);
+  });
+
+  testWidgets('the preview starts under the header', (tester) async {
+    await open(tester);
+
+    expect(
+      tester.getTopLeft(find.byType(AppearancePreview)).dy,
+      tester.getBottomLeft(find.byType(ScreenHeader)).dy + 8,
+    );
   });
 }

@@ -18,8 +18,8 @@ import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_str
 /// The messages, newest at the bottom, below them those still in the
 /// outbox, and the typing bubble while someone types. Rebuilds only when a
 /// message is added or leaves the outbox, or typing starts or stops; each
-/// bubble watches its own message. It scrolls under the header and the
-/// composer: [bottomInset] is the composer's height. Scrolling near the
+/// bubble watches its own message. It scrolls under the composer:
+/// [bottomInset] is the composer's height. Scrolling near the
 /// top loads older messages. A message the user asked to see is scrolled
 /// to, or a snack bar says it can't be shown.
 class MessageList extends ConsumerStatefulWidget {
@@ -129,7 +129,6 @@ class _MessageListState extends ConsumerState<MessageList> {
       chatControllerProvider(widget.topic).select((s) => s.outgoingIds),
     );
     final typing = ref.watch(anyoneTypingProvider(widget.topic)) ? 1 : 0;
-    final top = MediaQuery.paddingOf(context).top;
     // Reversed, so index 0 is the newest message and the list starts at
     // the bottom: the typing bubble, the outbox, then the numbered
     // messages, and last the indicator for older messages.
@@ -137,13 +136,12 @@ class _MessageListState extends ConsumerState<MessageList> {
       valueListenable: widget.bottomInset,
       builder: (context, bottom, _) => MediaQuery.removePadding(
         context: context,
-        removeTop: true,
         removeBottom: true,
         child: SuperListView.builder(
           controller: _scroll,
           listController: _list,
           reverse: true,
-          padding: EdgeInsets.fromLTRB(10, top + 4, 10, bottom + 12),
+          padding: EdgeInsets.fromLTRB(10, 4, 10, bottom + 12),
           itemCount: typing + outgoing.length + seqs.length + 1,
           // By key, so a bubble keeps its element as the typing bubble or a
           // new message shifts the others.

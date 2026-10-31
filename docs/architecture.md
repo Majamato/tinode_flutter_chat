@@ -104,7 +104,7 @@ lib/
       domain/                     ValueObject, ChatFailure
       application/                BuildLifetime
       presentation/               theme, strings, time format, error view, confirm dialog,
-                                  progress button, frosted bar and header, sliding segments,
+                                  progress button, frosted bar, header bar, sliding segments,
                                   settings sections and tiles
 ```
 
@@ -196,9 +196,9 @@ TinodeChat                      owns the container
               ├ FindPeopleScreen    pushed by NewChatButton, the header's compose or ChatSearchField
               ├ NewGroupScreen      pushed from the search
               ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`): ChatWallpaper,
-              │                     MessageList scrolling under the frosted ChatHeader (back with
-              │                     the other chats' unread count, MessageSearchButton, CallButtons)
-              │                     and the frosted composer, whose height it reports
+              │                     MessageList below the ChatHeader (back with the other
+              │                     chats' unread count, MessageSearchButton, CallButtons), scrolling
+              │                     under the frosted composer, whose height it reports
               ├ MessageSearchScreen pushed by MessageSearchButton, over its chat
               ├ ChatInfoScreen      pushed by tapping the chat's title
               ├ CallLayer           over the routes: IncomingCallView or CallView

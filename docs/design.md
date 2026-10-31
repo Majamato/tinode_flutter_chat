@@ -37,7 +37,7 @@ Dark mode swaps `primary` for `night` and `ink` for `onDark`, and uses the dark 
 settings), `background` (lists, sheets), `surface` (inputs, chips), `card` (settings groups:
 `cardColor`, radius `cardRadius` 20), `peerBubble`, `text`,
 `muted` (times, previews, labels), `line` (dividers, borders), `glass` and `glassEdge` (frosted
-bars), `waveOff`, `dateChip`, `mutedBadge`. Fixed in both modes: `danger` (end call, recording,
+bars, and the solid headers), `waveOff`, `dateChip`, `mutedBadge`. Fixed in both modes: `danger` (end call, recording,
 missed calls) and `online` (the presence dot, with a 2–3 px ring in `background`).
 
 ## Type
@@ -106,7 +106,7 @@ Timers and durations use tabular figures.
 
 ## Chat list
 
-- The chats scroll under a frosted header: the account menu (only without the tab bar: profile,
+- The chats sit under a header: the account menu (only without the tab bar: profile,
   appearance, log out), "Chats" (`titleLarge`) and the compose button in `linkColor`, then a 38 px search pill (`surfaceContainer`, radius 12) that
   opens the people search. No folder chips.
 - Rows are 76 px: a 56 px avatar with the presence dot; the name (`titleMedium` at 16), a muted
@@ -140,7 +140,7 @@ Timers and durations use tabular figures.
 
 ## Calls history
 
-- The calls of direct chats, newest first, under a frosted "Calls" header: 72 px rows with a
+- The calls of direct chats, newest first, under a "Calls" header: 72 px rows with a
   48 px avatar, the chat's name (`missedCallColor` when the user missed the call), then the
   direction arrow (bent when the call didn't happen), the kind and how it went ("Voice call ·
   4:12", "Video call · Missed") in `outline`, the time as in the chat list, and a button to the
@@ -149,7 +149,7 @@ Timers and durations use tabular figures.
 
 ## Settings
 
-- Cards (`cardColor`, `cardRadius`) on `pageColor`, 22 px apart, under a frosted "Settings"
+- Cards (`cardColor`, `cardRadius`) on `pageColor`, 22 px apart, under a "Settings"
   header: the user's photo (56 px) and name over "Name, photo and password", opening the
   profile; Appearance with the palette in use, when the host offers one; Log out in
   `colorScheme.error`. Rows are at least 52 px, with a `linkColor` icon and a chevron.
@@ -157,7 +157,7 @@ Timers and durations use tabular figures.
 
 ## Appearance
 
-- Under a frosted header, "‹ Settings" in `linkColor` and "Appearance": a preview card (radius
+- Under a header, "‹ Settings" in `linkColor` and "Appearance": a preview card (radius
   24) with the wallpaper, a 22 px dot grid and two bubbles with tails, the answer naming the
   palette and popping in again from its tail (.6 → 1.06 → 1, 380 ms) when it changes.
 - **Color** (when the host offers more than one palette): five swatches to a row on a card,
@@ -171,8 +171,9 @@ Timers and durations use tabular figures.
 
 ## Chat screen
 
-- The messages scroll under two frosted bars (`FrostedBar`: `glassColor`, blur 22, saturation
-  1.6, a `glassEdgeColor` hairline). The header has back (with the other chats' unread count in
+- The messages sit below a solid header (`HeaderBar`: `glassColor` over the surface, a
+  `glassEdgeColor` hairline) and scroll under a frosted composer (`FrostedBar`: `glassColor`,
+  blur 22, saturation 1.6, the same hairline). The header has back (with the other chats' unread count in
   a badge), the avatar, the name, who is typing in `linkColor`, then search and the call
   buttons. The composer has attach, a pill field (`composerRadius`) and the send button.
 - While the field is blank the send button rests on the microphone (in `onSurfaceVariant`),

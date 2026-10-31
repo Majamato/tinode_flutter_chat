@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_header.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_tile.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_online_dot.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_unread_badge.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen.dart';
@@ -112,5 +114,14 @@ void main() {
     await tester.tap(find.text(strings.searchChats));
     await tester.pumpAndSettle();
     expect(find.byType(FindPeopleScreen), findsOneWidget);
+  });
+
+  testWidgets('the first chat starts under the header', (tester) async {
+    await pumpList(tester);
+
+    expect(
+      tester.getTopLeft(find.byType(ChatListTile).first).dy,
+      tester.getBottomLeft(find.byType(ChatListHeader)).dy,
+    );
   });
 }

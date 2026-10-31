@@ -81,6 +81,13 @@ business logic in UI files. Flutter's own guidance is in
 - No hard-coded colors: use `TinodeChatTheme.of(context)` or `Theme.of(context).colorScheme`. Add a
   field to `TinodeChatTheme` (and to `copyWith`, `lerp`, `fallback`) for new chat-specific colors.
 - Widgets must work at phone width and in dark mode.
+- **Headers and bars.** A screen's header (`ScreenHeader`, `ChatListHeader`, `ChatHeader`) is a
+  solid `PreferredSizeWidget` in `Scaffold.appBar`; the Scaffold puts the body below it, so lists
+  need no top inset. The Scaffold caps the header at the status bar plus `preferredSize`, so a
+  preferred height that is too small squashes it silently: `header_height_test.dart` lays each
+  header out on its own and checks it. Only bottom bars float over content: the composer, whose
+  height depends on its content, is measured with `SizeReporter` into a `ValueNotifier`, and the
+  tab bar's room reaches the lists as `MediaQuery` bottom padding.
 
 ## Public widgets
 

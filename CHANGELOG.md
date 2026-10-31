@@ -1,11 +1,14 @@
 ## Unreleased
 
+- Screen headers (the chat list, calls, settings, appearance and a chat) are solid; lists start
+  below them instead of scrolling under.
 - Voice messages. The send button rests on the microphone while the field is blank: a tap
-  records (the recording bar with a blinking dot, the time and "‹ Cancel" takes the field's
-  place, and rings pulse out of the grown button), a second tap sends, and Cancel or a swipe
-  left drops it. Recordings under two seconds aren't sent; at ten minutes one sends itself.
-  Hiding the app, leaving the chat or a call drops the recording, and there is none during a
-  call. Recordings are AAC (`audio/mp4`, 16 kHz, 24 kbps), sent through the outbox as Tinode's
+  records, and the composer grows into the recording panel: a blinking dot, the recorded time
+  and a live waveform scrolling as the user speaks, then delete, a wide Pause pill (Resume
+  while paused) and send. Paused, the clock, the dot and the waveform stop; the duration sent
+  and the ten-minute limit count recorded time only. Recordings under two seconds aren't sent;
+  at ten minutes one sends itself. Hiding the app (paused or not), leaving the chat or a call
+  drops the recording, and there is none during a call. Recordings are AAC (`audio/mp4`, 16 kHz, 24 kbps), sent through the outbox as Tinode's
   `AU` entity with the duration and a 96-value loudness preview, as TinodeWeb and Tindroid send
   them; theirs play here too.
 - Voice messages show as a bubble with a play button, thin bars from the preview across its
@@ -22,11 +25,10 @@
 - **API:** `TinodeChatFeatures(voiceMessages:)`, true by default; off, the send button rests
   disabled as before, and received voice messages still play. `TinodeBubbleKind.voice` for the
   bubble builder.
-- **API:** `TinodeChatTheme` gains `recordingColor`, `recordingRingColor` and
-  `recordRingDuration`.
-- New `TinodeChatStrings`: `recordVoiceMessage`, `sendVoiceMessage`, `cancelRecording`,
-  `recordingVoiceMessage`, `playVoiceMessage`, `pauseVoiceMessage`, `microphoneDeniedForVoice`,
-  `voiceMessageTooShort`, `cannotRecordDuringCall`, `cannotPlayVoiceMessage`, `recorderFailed`.
+- **API:** `TinodeChatTheme` gains `recordingColor` (the recording dot and the delete button).
+- New `TinodeChatStrings`: `recordVoiceMessage`, `sendVoiceMessage`, `deleteRecording`,
+  `pauseRecording`, `resumeRecording`, `recordingVoiceMessage`, `playVoiceMessage`,
+  `pauseVoiceMessage`, `microphoneDeniedForVoice`, `voiceMessageTooShort`, `cannotRecordDuringCall`, `cannotPlayVoiceMessage`, `recorderFailed`.
 
 - **Behaviour change:** the chat now opens in a floating glass tab bar: **Chats** (with the
   unread count of chats that aren't muted), **Calls** (only when some kind of call is offered)

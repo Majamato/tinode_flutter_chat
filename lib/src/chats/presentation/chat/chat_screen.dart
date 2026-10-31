@@ -6,9 +6,9 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/composer_area.da
 import 'package:tinode_flutter_chat/src/shared/presentation/frosted_bar.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/size_reporter.dart';
 
-/// One chat: its messages over the wallpaper, scrolling under the frosted
-/// header (who is typing, message search, the call buttons) and, where the
-/// user may post, the frosted composer. Tapping the title opens the chat's
+/// One chat: its messages over the wallpaper, below the header (who is
+/// typing, message search, the call buttons) and scrolling under the
+/// frosted composer where the user may post. Tapping the title opens the chat's
 /// info. Watches nothing itself.
 class ChatScreen extends StatefulWidget {
   const ChatScreen({required this.topic, super.key});
@@ -67,7 +67,6 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final topic = widget.topic;
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: ChatHeader(topic: topic),
       body: Stack(
         children: [

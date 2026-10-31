@@ -6,9 +6,9 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_info_s
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
 import 'package:tinode_flutter_chat/src/search/presentation/message_search_button.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/frosted_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/header_bar.dart';
 
-/// The frosted bar over a chat: back (with the other chats' unread
+/// The bar over a chat: back (with the other chats' unread
 /// count), the chat's avatar, name and status (typing, online), then
 /// message search and the call buttons. Tapping the name opens the chat's
 /// info. Watches nothing itself.
@@ -31,7 +31,7 @@ class ChatHeader extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: _height,
       titleSpacing: 4,
       centerTitle: false,
-      flexibleSpace: const FrostedBar(child: SizedBox.expand()),
+      flexibleSpace: const HeaderBar(child: SizedBox.expand()),
       title: Row(
         children: [
           ChatBackButton(topic: topic),

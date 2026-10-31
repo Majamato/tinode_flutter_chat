@@ -64,8 +64,9 @@ The date above the first message of a day ("Today", "Yesterday", or the date).
 Behind a chat's messages: a color with a faint dot grid. *In code:* `ChatWallpaper`.
 
 **Frosted bar**
-A translucent, blurring bar that content scrolls under: the chat header, the composer, the
-screens' headers and the tab bar. *In code:* `FrostedBar`, `FrostedHeader`, `HomeTabBar`.
+A translucent, blurring bar that content scrolls under: the composer and the tab bar. Headers
+are solid and content starts below them. *In code:* `FrostedBar`, `HomeTabBar`; the headers'
+`HeaderBar`.
 
 **Tab bar**
 The floating glass bar with the chats, the calls history and the settings, on by default

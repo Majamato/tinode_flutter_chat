@@ -18,8 +18,8 @@ const _saturate = <double>[
   0, 0, 0, 1, 0, //
 ];
 
-/// A translucent bar that blurs what scrolls under it: headers, the
-/// composer, the tab bar. A hairline marks its [edge] towards the content.
+/// A translucent bar that blurs what scrolls under it: the composer. A
+/// hairline marks its [edge] towards the content.
 class FrostedBar extends StatelessWidget {
   const FrostedBar({
     required this.child,

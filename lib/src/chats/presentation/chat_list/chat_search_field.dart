@@ -7,7 +7,8 @@ import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_str
 class ChatSearchField extends StatelessWidget {
   const ChatSearchField({super.key});
 
-  static const _height = 38.0;
+  /// Its height, which the header's preferred size counts on.
+  static const height = 38.0;
   static const _radius = BorderRadius.all(Radius.circular(12));
 
   @override
@@ -29,7 +30,7 @@ class ChatSearchField extends StatelessWidget {
             borderRadius: _radius,
             onTap: () => FindPeopleScreen.open(context),
             child: SizedBox(
-              height: _height,
+              height: height,
               child: Row(
                 children: [
                   const SizedBox(width: 12),

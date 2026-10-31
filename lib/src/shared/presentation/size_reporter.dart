@@ -3,7 +3,9 @@ import 'package:flutter/widgets.dart';
 
 /// Lays out its [child] as is and puts the child's height in [height]
 /// after each frame it changes, e.g. so a list can pad itself under a bar
-/// that floats over it.
+/// that floats over it. Only for a bar whose height depends on its content
+/// (the composer); a header goes in `Scaffold.appBar`, which puts the body
+/// below it.
 class SizeReporter extends SingleChildRenderObjectWidget {
   const SizeReporter({required this.height, super.child, super.key});
 

@@ -28,7 +28,7 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
   typing, under the chat's name and as a bubble with bouncing dots. The user's own messages get
   delivered and read ticks, and a "Read by" list in groups.
 - Bubbles in the chat's design: a tail on the last of each run, the time inline after the
-  last line, a date above each day, a dotted wallpaper, and frosted bars over the messages. A
+  last line, a date above each day, a dotted wallpaper, a solid header and a frosted composer. A
   sent message pops in. Wrap or replace bubbles with `bubbleBuilder`:
 
   ```dart
@@ -492,7 +492,7 @@ where it needs the protocol:
    `TinodeCacheLimits`).
 8. ~~**Design**~~: done ([`docs/design.md`](docs/design.md): the palette, the theme's tokens
    and `TinodeChatTheme.materialTheme`; the chat screen with bubble tails, runs, date chips,
-   the wallpaper, the frosted header and composer, the send button's morph and the bubble
+   the wallpaper, the header and the frosted composer, the send button's morph and the bubble
    builder; online presence; the chat list; login with a `loginHeader` slot; the call screens
    and the call bar; the app shell with the floating tab bar, the calls history, the settings
    and the Appearance screen; and voice messages).

@@ -308,10 +308,11 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// Behind the date between messages, under white text.
   final Color dateChipColor;
 
-  /// Frosted bars: headers, the composer, the tab bar.
+  /// Frosted bars (the composer, the tab bar), and the headers laid over
+  /// the surface.
   final Color glassColor;
 
-  /// The edge between a frosted bar and what scrolls under it.
+  /// The hairline between a bar and the content.
   final Color glassEdgeColor;
 
   /// Links and text buttons in the brand's hue.
