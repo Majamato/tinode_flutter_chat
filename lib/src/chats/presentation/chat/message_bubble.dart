@@ -20,13 +20,14 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/photo_time_chip.
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/sender_avatar.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/sender_name.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
+import 'package:tinode_flutter_chat/src/voice/presentation/voice_bubble_content.dart';
 
 /// One numbered message. A call message shows the call instead of its
-/// text, and a message with images or files shows them above its
-/// caption. The last of a run has the tail; in a group, others' messages
-/// carry the sender's name and avatar at the edges of a run. A long press
-/// offers to delete it. The host's bubble builder, if any, gets the last
-/// word.
+/// text, a voice message its recording to play, and a message with
+/// images or files shows them above its caption. The last of a run has
+/// the tail; in a group, others' messages carry the sender's name and
+/// avatar at the edges of a run. A long press offers to delete it. The
+/// host's bubble builder, if any, gets the last word.
 class MessageBubble extends ConsumerWidget {
   const MessageBubble({required this.topic, required this.seq, super.key});
 
@@ -72,6 +73,17 @@ class MessageBubble extends ConsumerWidget {
         BubbleFrame.tilePadding,
         CallBubbleContent(call: call, outgoing: own, color: foreground),
         footer,
+      ),
+      ChatMessage(:final voice?) => (
+        TinodeBubbleKind.voice,
+        BubbleFrame.tilePadding,
+        VoiceBubbleContent(
+          note: voice.note,
+          source: voice.sourceIn('$topic:$seq'),
+          own: own,
+          footer: footer,
+        ),
+        null,
       ),
       _ when attachments.isNotEmpty => (
         TinodeBubbleKind.attachment,

@@ -50,7 +50,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photos you pick are sent in your chats.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>The microphone is used for voice and video calls.</string>
+	<string>The microphone is used for calls and voice messages.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Connects to a chat server on your local network.</string>
 	<key>UIBackgroundModes</key>

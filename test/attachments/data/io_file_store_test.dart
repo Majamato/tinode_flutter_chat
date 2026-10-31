@@ -4,11 +4,13 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/io_file_store.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 
 void main() {
   late Directory root;
   late Directory cacheDir;
   late Directory stagingDir;
+  late Directory keptDir;
   late IoFileStore store;
   final now = DateTime(2026, 10, 11, 12);
 
@@ -17,7 +19,8 @@ void main() {
     addTearDown(() => root.deleteSync(recursive: true));
     cacheDir = Directory('${root.path}/cache')..createSync();
     stagingDir = Directory('${root.path}/staging')..createSync();
-    store = IoFileStore(cacheDir, stagingDir);
+    keptDir = Directory('${root.path}/kept')..createSync();
+    store = IoFileStore(cacheDir, stagingDir, keptDir);
   });
 
   Uri url(String name) => Uri.parse('https://chat.example.com/v0/file/s/$name');
@@ -85,5 +88,52 @@ void main() {
     expect(await store.staged(kept), isNotNull);
     expect(await store.staged(orphan), isNull);
     expect(await store.staged(fresh), isNotNull);
+  });
+
+  group('kept files', () {
+    bool isIn(Directory dir, LocalFile? file) =>
+        file?.path != null && File(file!.path!).parent.path == dir.path;
+
+    test('go in their own folder, and pruning leaves them', () async {
+      final kept = await store.cache(
+        url('voice.m4a'),
+        Stream.value(List.filled(400, 0)),
+        keep: true,
+      );
+      expect(isIn(keptDir, kept), isTrue);
+      expect(kept.path, endsWith('.m4a'));
+
+      await withClock(
+        Clock.fixed(now),
+        () => store.prune(maxCacheBytes: 0, keepStaged: {}),
+      );
+      expect(await store.cached(url('voice.m4a')), kept);
+    });
+
+    test('a sent one moves there from staging', () async {
+      final id = await store.stage('voice.m4a', Stream.value([1, 2]));
+      await store.adopt(id, url('sent.m4a'), keep: true);
+
+      expect(await store.staged(id), isNull);
+      final found = await store.cached(url('sent.m4a'));
+      expect(isIn(keptDir, found), isTrue);
+      expect(found!.length, 2);
+    });
+
+    test('a cached one moves there when asked to keep it', () async {
+      await cache('old.m4a', 3, 10);
+
+      final found = await store.cached(url('old.m4a'), keep: true);
+      expect(isIn(keptDir, found), isTrue);
+      expect(cacheDir.listSync(), isEmpty);
+    });
+
+    test('forget deletes one', () async {
+      await store.cache(url('voice.m4a'), Stream.value([1]), keep: true);
+      await store.forget(url('voice.m4a'));
+      await store.forget(url('never.m4a'));
+
+      expect(await store.cached(url('voice.m4a')), isNull);
+    });
   });
 }

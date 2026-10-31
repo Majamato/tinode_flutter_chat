@@ -10,7 +10,7 @@ part of 'attachment_file.dart';
 // ignore_for_file: type=lint, type=warning
 /// The file [fileRef] names, on this device: from the cache, or downloaded
 /// into it once, however many widgets watch it. Images and photos given
-/// by ref watch it.
+/// by ref watch it; voice messages, with [keep] (see `ChatSession.fetchFile`).
 ///
 /// A failed download, e.g. offline, is an error; it loads again on the
 /// next connect.
@@ -20,7 +20,7 @@ final attachmentFileProvider = AttachmentFileFamily._();
 
 /// The file [fileRef] names, on this device: from the cache, or downloaded
 /// into it once, however many widgets watch it. Images and photos given
-/// by ref watch it.
+/// by ref watch it; voice messages, with [keep] (see `ChatSession.fetchFile`).
 ///
 /// A failed download, e.g. offline, is an error; it loads again on the
 /// next connect.
@@ -35,13 +35,13 @@ final class AttachmentFileProvider
     with $FutureModifier<LocalFile>, $FutureProvider<LocalFile> {
   /// The file [fileRef] names, on this device: from the cache, or downloaded
   /// into it once, however many widgets watch it. Images and photos given
-  /// by ref watch it.
+  /// by ref watch it; voice messages, with [keep] (see `ChatSession.fetchFile`).
   ///
   /// A failed download, e.g. offline, is an error; it loads again on the
   /// next connect.
   AttachmentFileProvider._({
     required AttachmentFileFamily super.from,
-    required String super.argument,
+    required (String, {bool keep}) super.argument,
   }) : super(
          retry: null,
          name: r'attachmentFileProvider',
@@ -57,7 +57,7 @@ final class AttachmentFileProvider
   String toString() {
     return r'attachmentFileProvider'
         ''
-        '($argument)';
+        '$argument';
   }
 
   @$internal
@@ -67,8 +67,8 @@ final class AttachmentFileProvider
 
   @override
   FutureOr<LocalFile> create(Ref ref) {
-    final argument = this.argument as String;
-    return attachmentFile(ref, argument);
+    final argument = this.argument as (String, {bool keep});
+    return attachmentFile(ref, argument.$1, keep: argument.keep);
   }
 
   @override
@@ -82,17 +82,17 @@ final class AttachmentFileProvider
   }
 }
 
-String _$attachmentFileHash() => r'069db4f157c6b11128e21985c850a74bb5220a92';
+String _$attachmentFileHash() => r'f5e5cc36c8698e0e326c28bd8db6221ca636fa22';
 
 /// The file [fileRef] names, on this device: from the cache, or downloaded
 /// into it once, however many widgets watch it. Images and photos given
-/// by ref watch it.
+/// by ref watch it; voice messages, with [keep] (see `ChatSession.fetchFile`).
 ///
 /// A failed download, e.g. offline, is an error; it loads again on the
 /// next connect.
 
 final class AttachmentFileFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<LocalFile>, String> {
+    with $FunctionalFamilyOverride<FutureOr<LocalFile>, (String, {bool keep})> {
   AttachmentFileFamily._()
     : super(
         retry: null,
@@ -104,13 +104,13 @@ final class AttachmentFileFamily extends $Family
 
   /// The file [fileRef] names, on this device: from the cache, or downloaded
   /// into it once, however many widgets watch it. Images and photos given
-  /// by ref watch it.
+  /// by ref watch it; voice messages, with [keep] (see `ChatSession.fetchFile`).
   ///
   /// A failed download, e.g. offline, is an error; it loads again on the
   /// next connect.
 
-  AttachmentFileProvider call(String fileRef) =>
-      AttachmentFileProvider._(argument: fileRef, from: this);
+  AttachmentFileProvider call(String fileRef, {bool keep = false}) =>
+      AttachmentFileProvider._(argument: (fileRef, keep: keep), from: this);
 
   @override
   String toString() => r'attachmentFileProvider';

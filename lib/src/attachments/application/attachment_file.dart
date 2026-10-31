@@ -10,18 +10,22 @@ part 'attachment_file.g.dart';
 
 /// The file [fileRef] names, on this device: from the cache, or downloaded
 /// into it once, however many widgets watch it. Images and photos given
-/// by ref watch it.
+/// by ref watch it; voice messages, with [keep] (see `ChatSession.fetchFile`).
 ///
 /// A failed download, e.g. offline, is an error; it loads again on the
 /// next connect.
 @riverpod
-Future<LocalFile> attachmentFile(Ref ref, String fileRef) async {
+Future<LocalFile> attachmentFile(
+  Ref ref,
+  String fileRef, {
+  bool keep = false,
+}) async {
   final session = ref.watch(activeSessionProvider);
   if (session == null) {
     throw const ConnectionLostException();
   }
   try {
-    return await session.fetchFile(fileRef);
+    return await session.fetchFile(fileRef, keep: keep);
   } on Object {
     if (ref.mounted) {
       final retry = session.statusChanges

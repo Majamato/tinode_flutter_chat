@@ -350,6 +350,32 @@ final class ChatStore {
     return row == null ? null : _message(row);
   }
 
+  /// The stored messages of [topic] in [ranges], or all of them without.
+  Future<List<DataMessage>> messagesInRanges(
+    String topic, [
+    List<SeqRange>? ranges,
+  ]) async {
+    if (ranges != null && ranges.isEmpty) {
+      return const [];
+    }
+    final rows =
+        await (_db.select(_db.messages)..where(
+              (m) =>
+                  m.topic.equals(topic) &
+                  (ranges == null
+                      ? const Constant(true)
+                      : ranges
+                            .map(
+                              (range) =>
+                                  m.seq.isBiggerOrEqualValue(range.low) &
+                                  m.seq.isSmallerThanValue(range.high),
+                            )
+                            .reduce((a, b) => a | b)),
+            ))
+            .get();
+    return [for (final row in rows) _message(row)];
+  }
+
   /// Deletes the stored messages in [ranges]. They stay covered: the
   /// server has nothing there either.
   Future<void> deleteMessages(String topic, List<SeqRange> ranges) =>

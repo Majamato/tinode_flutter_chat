@@ -6,6 +6,8 @@ import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart'
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import 'fake_attachment_picker.dart';
@@ -13,6 +15,8 @@ import 'fake_call_media.dart';
 import 'fake_network_monitor.dart';
 import 'fake_system_calls.dart';
 import 'fake_tinode_session.dart';
+import 'fake_voice_player.dart';
+import 'fake_voice_recorder.dart';
 import 'test_container.dart';
 
 /// Pumps a [TinodeChat] in a `MaterialApp`, connected to [session].
@@ -28,6 +32,8 @@ Future<void> pumpTinodeChat(
   MemoryFileStoreOpener? fileStoreOpener,
   FileOpener? fileOpener,
   AttachmentPicker? attachmentPicker,
+  VoiceRecorderFactory? voiceRecorder,
+  VoicePlayerFactory? voicePlayer,
   VoidCallback? onLoggedOut,
   TinodeChatController? controller,
   TinodeChatFeatures features = const TinodeChatFeatures(),
@@ -61,6 +67,8 @@ Future<void> pumpTinodeChat(
         network: network ?? FakeNetworkMonitor(),
         callMedia: callMedia ?? FakeCallMedia.new,
         systemCalls: systemCalls ?? FakeSystemCalls(),
+        voiceRecorder: voiceRecorder ?? FakeVoiceRecorder.new,
+        voicePlayer: voicePlayer ?? FakeVoicePlayer.new,
         credentials: credentials,
         onLoggedIn: onLoggedIn,
         onLoggedOut: onLoggedOut,

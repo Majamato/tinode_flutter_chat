@@ -31,6 +31,20 @@ class TinodeChatStrings {
     this.reconnecting = 'Reconnecting…',
     this.messageHint = 'Message',
     this.send = 'Send',
+    this.recordVoiceMessage = 'Record voice message',
+    this.sendVoiceMessage = 'Send voice message',
+    this.deleteRecording = 'Delete recording',
+    this.pauseRecording = 'Pause',
+    this.resumeRecording = 'Resume',
+    this.recordingVoiceMessage = 'Recording voice message',
+    this.playVoiceMessage = 'Play voice message',
+    this.pauseVoiceMessage = 'Pause voice message',
+    this.microphoneDeniedForVoice =
+        'Allow access to the microphone to record voice messages.',
+    this.voiceMessageTooShort = 'Too short to send. Tap the mic to record.',
+    this.cannotRecordDuringCall = "You can't record during a call.",
+    this.cannotPlayVoiceMessage = "Can't play this voice message.",
+    this.recorderFailed = "Couldn't record a voice message.",
     this.today = 'Today',
     this.yesterday = 'Yesterday',
     this.backToChats = 'Back to chats',
@@ -265,6 +279,46 @@ class TinodeChatStrings {
 
   /// Tooltip of the send button.
   final String send;
+
+  /// Tooltip of the send button while the field is empty: it records.
+  final String recordVoiceMessage;
+
+  /// Tooltip of the send button while a voice message records.
+  final String sendVoiceMessage;
+
+  /// The recording panel's button that drops the voice message being
+  /// recorded.
+  final String deleteRecording;
+
+  /// The recording panel's button that pauses the recording.
+  final String pauseRecording;
+
+  /// The recording panel's button that carries on a paused recording.
+  final String resumeRecording;
+
+  /// Read out when a voice message starts recording.
+  final String recordingVoiceMessage;
+
+  /// The play button of a voice message.
+  final String playVoiceMessage;
+
+  /// The play button of a voice message while it plays.
+  final String pauseVoiceMessage;
+
+  /// The user did not allow the microphone for a voice message.
+  final String microphoneDeniedForVoice;
+
+  /// A voice message shorter than two seconds was not sent.
+  final String voiceMessageTooShort;
+
+  /// The mic was tapped while a call holds the microphone.
+  final String cannotRecordDuringCall;
+
+  /// A voice message's recording could not be fetched or played.
+  final String cannotPlayVoiceMessage;
+
+  /// The recorder failed to start or to save.
+  final String recorderFailed;
 
   /// The date above today's first message.
   final String today;

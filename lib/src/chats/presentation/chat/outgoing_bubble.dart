@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/outgoing_attachment_view.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/upload_progress_ring.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/message_runs.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/bubble_status.dart';
@@ -18,9 +20,12 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/photo_time_chip.
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/send_pop.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
+import 'package:tinode_flutter_chat/src/voice/presentation/voice_bubble_content.dart';
 
-/// A message of the user's still in the outbox, with its status; an image
-/// or file shows from its staged copy while it uploads. One just sent pops
+/// A message of the user's still in the outbox, with its status; an
+/// image, file or recording shows from its staged copy while it uploads
+/// (a recording plays from it). One just sent pops
 /// in. A long press offers to retry or discard it.
 class OutgoingBubble extends ConsumerWidget {
   const OutgoingBubble({
@@ -74,6 +79,20 @@ class OutgoingBubble extends ConsumerWidget {
         ),
       ),
       body: switch (attachment) {
+        OutgoingAttachment(:final voice?, :final stagedId, :final mimeType) =>
+          VoiceBubbleContent(
+            note: voice,
+            source: StagedVoiceSource(stagedId, mimeType: mimeType),
+            own: true,
+            footer: footer,
+            busy: message.status == OutgoingStatus.queued
+                ? UploadProgressRing(
+                    topic: topic,
+                    clientId: clientId,
+                    color: foreground,
+                  )
+                : null,
+          ),
         final attachment? when onPhoto => Stack(
           children: [
             OutgoingAttachmentView(
@@ -132,9 +151,11 @@ class OutgoingBubble extends ConsumerWidget {
           own: true,
           text: text,
           time: message.createdAt,
-          kind: attachment == null
-              ? TinodeBubbleKind.text
-              : TinodeBubbleKind.attachment,
+          kind: switch (attachment) {
+            null => TinodeBubbleKind.text,
+            OutgoingAttachment(voice: _?) => TinodeBubbleKind.voice,
+            _ => TinodeBubbleKind.attachment,
+          },
           startsRun: run.startsRun,
           endsRun: run.endsRun,
           status: bubbleStatusOfOutbox(message.status),

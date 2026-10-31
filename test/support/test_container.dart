@@ -11,12 +11,16 @@ import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
 
 import 'fake_attachment_picker.dart';
 import 'fake_call_media.dart';
 import 'fake_network_monitor.dart';
 import 'fake_system_calls.dart';
 import 'fake_tinode_session.dart';
+import 'fake_voice_player.dart';
+import 'fake_voice_recorder.dart';
 
 final testConfig = TinodeConfig(
   server: Uri.parse('ws://localhost:6060'),
@@ -30,7 +34,9 @@ final testConfig = TinodeConfig(
 /// by default a fresh one in memory, and files in [fileStoreOpener], also
 /// in memory. Opened files go to [fileOpener], by default one that opens
 /// nothing. Calls get fake media unless [callMedia] says otherwise, and
-/// fake system call screens unless [systemCalls] does.
+/// fake system call screens unless [systemCalls] does. Voice messages
+/// record and play with fakes unless [voiceRecorder] and [voicePlayer]
+/// say otherwise.
 ProviderContainer createTestContainer({
   required SessionConnector connector,
   SessionRestorer? restorer,
@@ -41,6 +47,8 @@ ProviderContainer createTestContainer({
   TinodeCredentials? credentials,
   CallMediaFactory? callMedia,
   SystemCalls? systemCalls,
+  VoiceRecorderFactory? voiceRecorder,
+  VoicePlayerFactory? voicePlayer,
 }) {
   final container = createTinodeContainer(
     config: testConfig,
@@ -57,6 +65,8 @@ ProviderContainer createTestContainer({
     network: FakeNetworkMonitor(),
     callMedia: callMedia ?? FakeCallMedia.new,
     systemCalls: systemCalls ?? FakeSystemCalls(),
+    voiceRecorder: voiceRecorder ?? FakeVoiceRecorder.new,
+    voicePlayer: voicePlayer ?? FakeVoicePlayer.new,
   );
   addTearDown(container.dispose);
   return container;
@@ -73,6 +83,8 @@ Future<ProviderContainer> loggedInContainer(
   MemoryFileStoreOpener? fileStoreOpener,
   FileOpener? fileOpener,
   AttachmentPicker? attachmentPicker,
+  VoiceRecorderFactory? voiceRecorder,
+  VoicePlayerFactory? voicePlayer,
 }) async {
   final container = createTestContainer(
     connector: connectTo(session),
@@ -82,6 +94,8 @@ Future<ProviderContainer> loggedInContainer(
     fileStoreOpener: fileStoreOpener,
     fileOpener: fileOpener,
     attachmentPicker: attachmentPicker,
+    voiceRecorder: voiceRecorder,
+    voicePlayer: voicePlayer,
   )..listen(sessionControllerProvider, (_, _) {});
   await container.read(sessionControllerProvider.future);
   return container;

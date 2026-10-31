@@ -20,13 +20,14 @@ enum PasswordResetMode {
 final class TinodeChatFeatures with ValueObject {
   /// Creates the switches; by default users can sign up, reset their
   /// password where the server sends email, make voice and video calls,
-  /// and calls use the phone's own call screens.
+  /// record voice messages, and calls use the phone's own call screens.
   const TinodeChatFeatures({
     this.signUp = true,
     this.passwordReset = PasswordResetMode.automatic,
     this.voiceCalls = true,
     this.videoCalls = true,
     this.systemCalls = true,
+    this.voiceMessages = true,
   });
 
   /// Whether the login screen offers to create an account.
@@ -50,6 +51,11 @@ final class TinodeChatFeatures with ValueObject {
   /// App Store in China: calls then ring only inside the app.
   final bool systemCalls;
 
+  /// Whether the composer records voice messages: the mic sits in the
+  /// send button while the field is empty. Received voice messages play
+  /// either way.
+  final bool voiceMessages;
+
   /// Whether calls of this kind, voice when [audioOnly], are on.
   bool allowsCall({required bool audioOnly}) =>
       audioOnly ? voiceCalls : videoCalls;
@@ -70,5 +76,6 @@ final class TinodeChatFeatures with ValueObject {
     voiceCalls,
     videoCalls,
     systemCalls,
+    voiceMessages,
   ];
 }

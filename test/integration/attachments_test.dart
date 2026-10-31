@@ -2,6 +2,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
@@ -18,6 +19,7 @@ import 'package:tinode_flutter_chat/src/session/application/active_session.dart'
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_state.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
 
 import '../support/fake_attachment_picker.dart';
 
@@ -114,4 +116,56 @@ void main() {
       expect(base64.encode(file.bytes!), base64.encode(pngBytes));
     },
   );
+  test('a voice message alice records reaches bob with its duration and '
+      'waveform, and downloads byte for byte', () async {
+    final (alice, aliceId) = await loginAs('alice');
+    final (bob, bobId) = await loginAs('bob');
+    alice.listen(chatControllerProvider(bobId), (_, _) {});
+    bob.listen(chatControllerProvider(aliceId), (_, _) {});
+    await eventually(
+      'both chats loaded',
+      () =>
+          alice.read(chatControllerProvider(bobId)).lastSeq != null &&
+          bob.read(chatControllerProvider(aliceId)).lastSeq != null,
+    );
+    // A unique length tells this run's message from earlier ones.
+    final duration = Duration(
+      milliseconds: 2000 + DateTime.now().millisecondsSinceEpoch % 100000,
+    );
+    final waveform = [for (var i = 0; i < 96; i++) (i * 7) % 101];
+    // Not real AAC: the server stores whatever it is given.
+    final recording = Uint8List.fromList(
+      List.generate(4096, (i) => (i * 31) % 256),
+    );
+
+    alice.listen(sendControllerProvider(bobId), (_, _) {});
+    final queued = await alice
+        .read(sendControllerProvider(bobId).notifier)
+        .sendAttachment(
+          pickedFile(
+            'voice.m4a',
+            recording,
+            mimeType: 'audio/mp4',
+          ).withVoice(VoiceNote(duration: duration, waveform: waveform)),
+        );
+    expect(queued, isTrue);
+
+    VoiceAttachment? received;
+    await eventually("the voice message on bob's side", () {
+      final chat = bob.read(chatControllerProvider(aliceId));
+      final voice = chat.bySeq[chat.lastSeq]?.voice;
+      if (voice?.duration != duration) {
+        return false;
+      }
+      received = voice;
+      return true;
+    });
+    expect(received!.mimeType, 'audio/mp4');
+    expect(received!.waveform, waveform);
+    expect(received!.ref, startsWith('/v0/file/s/'));
+
+    final session = bob.read(activeSessionProvider)!;
+    final file = await session.fetchFile(received!.ref!);
+    expect(file.bytes, recording);
+  });
 }

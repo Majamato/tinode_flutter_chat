@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
 
 /// Where the user picks what to send.
 enum AttachmentSource {
@@ -22,6 +23,7 @@ final class PickedFile {
     this.mimeType,
     this.path,
     this.isImage = false,
+    this.voice,
   });
 
   final String name;
@@ -38,4 +40,18 @@ final class PickedFile {
 
   /// Sent as an image shown in the message, rather than as a file.
   final bool isImage;
+
+  /// Set for a voice message: sent as a recording to play, rather than as
+  /// a file.
+  final VoiceNote? voice;
+
+  /// This recording as a voice message described by [note].
+  PickedFile withVoice(VoiceNote note) => PickedFile(
+    name: name,
+    length: length,
+    openRead: openRead,
+    mimeType: mimeType,
+    path: path,
+    voice: note,
+  );
 }

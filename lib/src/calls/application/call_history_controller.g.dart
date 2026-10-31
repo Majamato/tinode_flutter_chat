@@ -60,7 +60,7 @@ final class CallHistoryControllerProvider
 }
 
 String _$callHistoryControllerHash() =>
-    r'3aab92498f33901ebe221963cfb98c1216912101';
+    r'e4b659db6040e3119f24d27a1d8d3d4429ef5e98';
 
 /// The calls history, read from the cache like the chat list's previews:
 /// all calls first, then a chat's again when its cached messages change

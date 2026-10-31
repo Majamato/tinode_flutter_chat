@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
+import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// Sends the composer's [text]. While it is blank the button rests,
-/// disabled; with text it fills with the brand colour and its arrow spins
-/// in. A spinner shows while a message is on its way. The only part of the
-/// composer that rebuilds for either.
+/// Sends the composer's [text]. While it is blank the button rests on the
+/// mic, which records a voice message ([onRecord]), or, without voice
+/// messages, rests disabled. With text it fills with the brand colour and
+/// its arrow spins in. (While recording, the recording panel takes the
+/// composer's place, button and all.) A spinner shows while a message is
+/// on its way. The only part of the composer that rebuilds for any of
+/// these.
 class SendButton extends ConsumerWidget {
   const SendButton({
     required this.topic,
     required this.text,
     required this.onSend,
+    required this.onRecord,
     super.key,
   });
 
@@ -21,17 +26,21 @@ class SendButton extends ConsumerWidget {
   final String topic;
   final TextEditingController text;
   final VoidCallback onSend;
+  final VoidCallback onRecord;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sending = ref.watch(
       sendControllerProvider(topic).select((s) => s.isLoading),
     );
-    final tooltip = TinodeChatStrings.of(context).send;
+    final voice = ref.watch(
+      tinodeChatFeaturesProvider.select((f) => f.voiceMessages),
+    );
+    final strings = TinodeChatStrings.of(context);
     if (sending) {
       return IconButton(
         onPressed: null,
-        tooltip: tooltip,
+        tooltip: strings.send,
         icon: const SizedBox.square(
           dimension: 20,
           child: CircularProgressIndicator(strokeWidth: 2),
@@ -42,35 +51,53 @@ class SendButton extends ConsumerWidget {
       valueListenable: text,
       builder: (context, value, _) {
         final ready = value.text.trim().isNotEmpty;
+        final (face, onPressed, tooltip) = switch ((ready, voice)) {
+          (true, _) => (_FaceKind.send, onSend, strings.send),
+          (_, true) => (_FaceKind.mic, onRecord, strings.recordVoiceMessage),
+          _ => (_FaceKind.resting, null, strings.send),
+        };
         return IconButton(
-          onPressed: ready ? onSend : null,
+          onPressed: onPressed,
           tooltip: tooltip,
           padding: EdgeInsets.zero,
-          icon: _Face(ready: ready),
+          icon: _Face(face: face),
         );
       },
     );
   }
 }
 
-/// The button's circle and arrow; the arrow turns in from a quarter turn
-/// as the circle fills.
-class _Face extends StatelessWidget {
-  const _Face({required this.ready});
+enum _FaceKind {
+  /// Blank field, no voice messages: the arrow, greyed.
+  resting,
 
-  final bool ready;
+  /// Blank field: the mic.
+  mic,
+
+  /// Text to send: the arrow on the brand colour.
+  send,
+}
+
+/// The button's circle and glyph. The arrow and the mic turn in from a
+/// quarter turn as they swap; the circle fills.
+class _Face extends StatelessWidget {
+  const _Face({required this.face});
+
+  final _FaceKind face;
 
   @override
   Widget build(BuildContext context) {
     final theme = TinodeChatTheme.of(context);
     final still = MediaQuery.disableAnimationsOf(context);
+    final filled = face == _FaceKind.send;
+    final arrow = face != _FaceKind.mic;
     return AnimatedContainer(
       duration: theme.fadeDuration,
       width: SendButton._size,
       height: SendButton._size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: ready ? theme.ownBubbleColor : Colors.transparent,
+        color: filled ? theme.ownBubbleColor : Colors.transparent,
       ),
       child: AnimatedSwitcher(
         duration: still ? Duration.zero : const Duration(milliseconds: 300),
@@ -89,9 +116,9 @@ class _Face extends StatelessWidget {
           ),
         ),
         child: Icon(
-          Icons.arrow_upward_rounded,
-          key: ValueKey(ready),
-          color: ready
+          arrow ? Icons.arrow_upward_rounded : Icons.mic_none_rounded,
+          key: ValueKey(arrow),
+          color: filled
               ? theme.onOwnBubbleColor
               : Theme.of(context).colorScheme.onSurfaceVariant,
         ),

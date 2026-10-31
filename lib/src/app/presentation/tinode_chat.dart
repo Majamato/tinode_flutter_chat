@@ -32,6 +32,8 @@ import 'package:tinode_flutter_chat/src/session/presentation/login_header_scope.
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_theme_scope.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
 
 /// A complete chat UI for a Tinode server: login, chat list and chats.
 ///
@@ -83,14 +85,17 @@ class TinodeChat extends StatefulWidget {
        attachmentPicker = null,
        network = null,
        callMedia = null,
-       systemCalls = null;
+       systemCalls = null,
+       voiceRecorder = null,
+       voicePlayer = null;
 
   /// Like the default constructor, with sessions opened by [connector]
   /// (or [restorer] for a remembered user) instead of a real connection,
   /// caches from [storeOpener], files from [fileStoreOpener], opened with
   /// [fileOpener] and picked with [attachmentPicker], network reports from
-  /// [network], the media of calls from [callMedia] and the phone's call
-  /// screens from [systemCalls].
+  /// [network], the media of calls from [callMedia], the phone's call
+  /// screens from [systemCalls], and voice messages recorded with
+  /// [voiceRecorder] and played with [voicePlayer].
   @visibleForTesting
   const TinodeChat.withConnector({
     required this.config,
@@ -103,6 +108,8 @@ class TinodeChat extends StatefulWidget {
     this.network,
     this.callMedia,
     this.systemCalls,
+    this.voiceRecorder,
+    this.voicePlayer,
     this.credentials,
     this.onLoggedIn,
     this.onLoggedOut,
@@ -227,6 +234,14 @@ class TinodeChat extends StatefulWidget {
   @visibleForTesting
   final SystemCalls? systemCalls;
 
+  /// Creates the voice message recorder; null for the microphone.
+  @visibleForTesting
+  final VoiceRecorderFactory? voiceRecorder;
+
+  /// Creates the voice message player; null for the device's.
+  @visibleForTesting
+  final VoicePlayerFactory? voicePlayer;
+
   @override
   State<TinodeChat> createState() => _TinodeChatState();
 }
@@ -247,6 +262,8 @@ class _TinodeChatState extends State<TinodeChat> {
     callMedia: widget.callMedia,
     systemCalls: widget.systemCalls,
     systemCallTexts: systemCallTextsOf(widget.strings),
+    voiceRecorder: widget.voiceRecorder,
+    voicePlayer: widget.voicePlayer,
   );
 
   late final AppLifecycleListener _lifecycle;

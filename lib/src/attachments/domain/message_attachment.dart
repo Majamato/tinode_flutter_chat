@@ -2,9 +2,11 @@ import 'dart:typed_data';
 
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
 
-/// An image or file in a received message. It comes either inline
-/// ([bytes]) or as a [ref] to download.
+/// An image, file or recording in a received message. It comes either
+/// inline ([bytes]) or as a [ref] to download.
 sealed class MessageAttachment with ValueObject {
   const MessageAttachment({
     this.ref,
@@ -14,15 +16,19 @@ sealed class MessageAttachment with ValueObject {
     this.mimeType,
   });
 
-  /// The message's images, then its files (audio and video among them), in
-  /// the order their spans give.
+  /// The message's images, then its files and recordings (`AU`), in the
+  /// order their spans give. Audio sent as a file (`EX`) stays a file.
   static List<MessageAttachment> listFrom(MessageContent content) =>
       switch (content) {
         DraftyContent(:final drafty) => [
           for (final image in drafty.images)
             if (_usable(image)) ImageAttachment.from(image),
           for (final file in drafty.files)
-            if (_usable(file)) FileAttachment.from(file),
+            if (_usable(file))
+              switch (file) {
+                final DraftyAudio audio => VoiceAttachment.from(audio),
+                _ => FileAttachment.from(file),
+              },
         ],
         _ => const [],
       };
@@ -104,4 +110,60 @@ final class FileAttachment extends MessageAttachment {
 
   @override
   List<Object?> get props => [ref, bytes, name, size, mimeType];
+}
+
+/// A voice message's recording, played in the bubble.
+final class VoiceAttachment extends MessageAttachment {
+  const VoiceAttachment({
+    super.ref,
+    super.bytes,
+    super.name,
+    super.size,
+    super.mimeType,
+    this.duration,
+    this.waveform = const [],
+  });
+
+  factory VoiceAttachment.from(DraftyAudio audio) => VoiceAttachment(
+    ref: audio.ref,
+    bytes: audio.bytes,
+    name: audio.name,
+    size: audio.size,
+    mimeType: audio.mimeType,
+    duration: audio.duration,
+    waveform: [for (final w in audio.preview ?? const <int>[]) w.clamp(0, 100)],
+  );
+
+  /// How long it plays, as the sender gave it.
+  final Duration? duration;
+
+  /// The loudness along it, each 0..100; empty when the sender gave none.
+  final List<int> waveform;
+
+  /// What the bubble draws: the duration (zero when unknown) and waveform.
+  VoiceNote get note =>
+      VoiceNote(duration: duration ?? Duration.zero, waveform: waveform);
+
+  /// Where to play it from: the upload, else the bytes in the message
+  /// [id] (e.g. its topic and seq); null with neither.
+  VoiceSource? sourceIn(String id) => switch ((ref, bytes)) {
+    (final ref?, _) => RefVoiceSource(ref),
+    (_, final bytes?) => InlineVoiceSource(
+      id: id,
+      bytes: bytes,
+      mimeType: mimeType,
+    ),
+    _ => null,
+  };
+
+  @override
+  List<Object?> get props => [
+    ref,
+    bytes,
+    name,
+    size,
+    mimeType,
+    duration,
+    waveform,
+  ];
 }

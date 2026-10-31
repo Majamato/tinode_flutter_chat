@@ -190,6 +190,9 @@ final class FakeTinodeSession implements TinodeSession {
   Exception? failUpload;
   Exception? failDownload;
 
+  /// When set, `download` waits for it before answering.
+  Completer<void>? holdDownload;
+
   /// When set, `upload` reports progress in chunks of this many bytes.
   int? uploadChunk;
 
@@ -812,6 +815,7 @@ final class FakeTinodeSession implements TinodeSession {
   }) async {
     calls.add('download $ref');
     _requireLogin();
+    await holdDownload?.future;
     if (failDownload case final error?) {
       failDownload = null;
       throw error;

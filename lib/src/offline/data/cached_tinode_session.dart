@@ -9,6 +9,7 @@ import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/image_size.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/progress_throttle.dart';
@@ -274,28 +275,30 @@ final class CachedTinodeSession implements ChatSession {
   // Files.
 
   @override
-  Future<LocalFile?> cachedFile(String ref) async =>
+  Future<LocalFile?> cachedFile(String ref, {bool keep = false}) async =>
       switch (_remote.resolveFile(ref)) {
-        final url? => _files.cached(url),
+        final url? => _files.cached(url, keep: keep),
         null => null,
       };
 
   @override
   Future<LocalFile> fetchFile(
     String ref, {
+    bool keep = false,
     void Function(int received, int? total)? onProgress,
   }) async {
     final url =
         _remote.resolveFile(ref) ??
         (throw ArgumentError.value(ref, 'ref', 'is not an http(s) URL'));
-    if (await _files.cached(url) case final file?) {
+    if (await _files.cached(url, keep: keep) case final file?) {
       return file;
     }
-    final fetch = _fetches['$url'] ??= _Fetch(() async {
+    final fetch = _fetches['$url'] ??= _Fetch(keep: keep, () async {
       final download = await _remote.download(ref);
       var received = 0;
       return _files.cache(
         url,
+        keep: keep,
         download.bytes.map((chunk) {
           received += chunk.length;
           _fetches['$url']?.report(received, download.length);
@@ -303,15 +306,22 @@ final class CachedTinodeSession implements ChatSession {
         }),
       );
     }, onDone: () => _fetches.remove('$url'));
-    if (onProgress == null) {
-      return fetch.result;
+    if (onProgress != null) {
+      fetch.listeners.add(onProgress);
     }
-    fetch.listeners.add(onProgress);
+    final LocalFile file;
     try {
-      return await fetch.result;
+      file = await fetch.result;
     } finally {
-      fetch.listeners.remove(onProgress);
+      if (onProgress != null) {
+        fetch.listeners.remove(onProgress);
+      }
     }
+    if (keep && !fetch.keep) {
+      // Joined a download into the cache: keep what it wrote.
+      return await _files.cached(url, keep: true) ?? file;
+    }
+    return file;
   }
 
   @override
@@ -547,7 +557,9 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   Future<void> _applyDeletion(String topic, List<SeqRange> ranges) async {
+    final deleted = await _store.messagesInRanges(topic, ranges);
     await _store.deleteMessages(topic, ranges);
+    await _forgetKeptFiles(deleted);
     if (!_closed) {
       _deletions.add(TopicDeletion(topic, ranges));
     }
@@ -601,6 +613,7 @@ final class CachedTinodeSession implements ChatSession {
       width: size?.width,
       height: size?.height,
       caption: caption.trim(),
+      voice: file.voice,
     );
     final entry = await _store.enqueuePublish(
       topic,
@@ -673,6 +686,7 @@ final class CachedTinodeSession implements ChatSession {
       return;
     }
     await _write(() async {
+      final deleted = await _store.messagesInRanges(topic, ranges);
       await _store.deleteMessages(topic, ranges);
       await _store.enqueueDelete(
         topic,
@@ -680,6 +694,7 @@ final class CachedTinodeSession implements ChatSession {
         hard: forEveryone,
         createdAt: clock.now().toUtc(),
       );
+      await _forgetKeptFiles(deleted);
     });
     if (!_closed) {
       _deletions.add(TopicDeletion(topic, ranges));
@@ -917,18 +932,20 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   /// The server has [entry] as [message]. Its staged file, if any, moves
-  /// into the file cache, so the sender never downloads it.
+  /// into the file cache, or among the kept files for a voice message, so
+  /// the sender never downloads it.
   Future<void> _complete(OutboxEntry entry, DataMessage message) async {
     final first = await _store.completePublish(entry, message);
     if (first) {
       if (entry.attachment case OutgoingAttachment(
         :final stagedId,
         :final ref?,
+        :final voice,
       )) {
         if (_remote.resolveFile(ref) case final url?) {
           await _quietly(
             'Could not keep a sent file',
-            () => _files.adopt(stagedId, url),
+            () => _files.adopt(stagedId, url, keep: voice != null),
           );
         }
       }
@@ -1209,14 +1226,17 @@ final class CachedTinodeSession implements ChatSession {
     }
   }
 
-  /// The chat was deleted, or this user left or was removed: its cache
-  /// and queued messages go.
+  /// The chat was deleted, or this user left or was removed: its cache,
+  /// kept files and queued messages go.
   Future<void> _forgetChat(String topic) async {
     if (_uploading case final uploading?
         when (await _store.outboxByClientId(uploading))?.topic == topic) {
       _abortUpload();
     }
-    for (final entry in await _store.deleteChat(topic)) {
+    final stored = await _store.messagesInRanges(topic);
+    final dropped = await _store.deleteChat(topic);
+    await _forgetKeptFiles(stored);
+    for (final entry in dropped) {
       if (entry.attachment case final attachment?) {
         await _quietly(
           'Could not delete a staged file',
@@ -1225,6 +1245,24 @@ final class CachedTinodeSession implements ChatSession {
       }
       if (entry.clientId case final clientId?) {
         _emit(OutgoingDiscarded(topic, clientId));
+      }
+    }
+  }
+
+  /// Deletes the kept files of [messages]: their voice recordings. Those
+  /// of messages no longer stored when deleted, e.g. pruned by
+  /// `TinodeCacheLimits.messagesPerChat`, stay until logout.
+  Future<void> _forgetKeptFiles(List<DataMessage> messages) async {
+    for (final message in messages) {
+      for (final attachment in MessageAttachment.listFrom(message.content)) {
+        if (attachment case VoiceAttachment(:final ref?)) {
+          if (_remote.resolveFile(ref) case final url?) {
+            await _quietly(
+              'Could not delete a kept file',
+              () => _files.forget(url),
+            );
+          }
+        }
       }
     }
   }
@@ -1344,12 +1382,18 @@ final class CachedTinodeSession implements ChatSession {
   );
 }
 
-/// One download, with whoever follows its progress.
+/// One download, with whoever follows its progress; [keep] when it goes
+/// among the kept files.
 final class _Fetch {
-  _Fetch(Future<LocalFile> Function() run, {required void Function() onDone}) {
+  _Fetch(
+    Future<LocalFile> Function() run, {
+    required this.keep,
+    required void Function() onDone,
+  }) {
     result = run().whenComplete(onDone);
   }
 
+  final bool keep;
   late final Future<LocalFile> result;
   final listeners = <void Function(int received, int? total)>[];
 

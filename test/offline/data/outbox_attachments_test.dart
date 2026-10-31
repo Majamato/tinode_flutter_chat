@@ -12,6 +12,7 @@ import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
 
 import '../../support/fake_attachment_picker.dart';
 import '../../support/fake_tinode_session.dart';
@@ -330,5 +331,68 @@ void main() {
     expect(await session.storedOutgoing(carol), hasLength(1));
     expect(files.stagedIds, hasLength(1));
     expect(events.whereType<OutgoingDiscarded>().map((e) => e.topic), [bob]);
+  });
+
+  group('voice files', () {
+    PickedFile recording() => pickedFile(
+      'voice.m4a',
+      [1, 2, 3, 4],
+      mimeType: 'audio/mp4',
+    ).withVoice(const VoiceNote(duration: Duration(seconds: 2)));
+
+    /// Sends a recording to Bob; returns its seq and URL.
+    Future<(int, Uri)> sendRecording() async {
+      await session.sendAttachment(bob, recording());
+      await idle();
+      final sent = remote.histories[bob]!.last;
+      final drafty = (sent.content as DraftyContent).drafty;
+      return (sent.seq, remote.resolveFile(drafty.files.single.ref!)!);
+    }
+
+    test('a sent one is kept, and never downloaded', () async {
+      final (_, url) = await sendRecording();
+      expect(files.isKept(url), isTrue);
+      expect(files.isCached(url), isFalse);
+
+      final file = await session.fetchFile(url.path, keep: true);
+      expect(file.length, 4);
+      expect(callsStarting('download'), isEmpty);
+    });
+
+    test('a received one downloads among the kept files', () async {
+      const ref = '/v0/file/s/heard.m4a';
+      remote.files[ref] = pngBytes;
+      await session.fetchFile(ref, keep: true);
+      expect(files.isKept(remote.resolveFile(ref)!), isTrue);
+    });
+
+    test('goes when its message is deleted here', () async {
+      final (seq, url) = await sendRecording();
+      await session.delete(bob, [SeqRange.single(seq)], forEveryone: false);
+      expect(files.isKept(url), isFalse);
+    });
+
+    test('goes when its message is deleted elsewhere', () async {
+      final (seq, url) = await sendRecording();
+      remote.emitPresence(
+        PresMessage(
+          topic: bob,
+          event: PresenceEvent.deleted,
+          lastDeleteId: 1,
+          deletedRanges: [SeqRange.single(seq)],
+        ),
+      );
+      await idle();
+      expect(files.isKept(url), isFalse);
+    });
+
+    test('goes with its chat', () async {
+      final (_, url) = await sendRecording();
+      remote.emitPresence(
+        const PresMessage(topic: 'me', event: PresenceEvent.gone, source: bob),
+      );
+      await idle();
+      expect(files.isKept(url), isFalse);
+    });
   });
 }

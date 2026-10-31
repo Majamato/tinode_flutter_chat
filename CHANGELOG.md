@@ -1,5 +1,33 @@
 ## Unreleased
 
+- Voice messages. The send button rests on the microphone while the field is blank: a tap
+  records (the recording bar with a blinking dot, the time and "‹ Cancel" takes the field's
+  place, and rings pulse out of the grown button), a second tap sends, and Cancel or a swipe
+  left drops it. Recordings under two seconds aren't sent; at ten minutes one sends itself.
+  Hiding the app, leaving the chat or a call drops the recording, and there is none during a
+  call. Recordings are AAC (`audio/mp4`, 16 kHz, 24 kbps), sent through the outbox as Tinode's
+  `AU` entity with the duration and a 96-value loudness preview, as TinodeWeb and Tindroid send
+  them; theirs play here too.
+- Voice messages show as a bubble with a play button, thin bars from the preview across its
+  width that fill as it plays, a playhead dot that glides along them, and the duration or
+  position. They play only from a file on the device: a received one downloads when its bubble
+  shows and plays once it is there; the user's own plays once the server has it, from the
+  recording. One plays at a time; a tap on the bars seeks, and a drag moves the dot and seeks
+  where it is let go. Seeks run one at a time and quick taps end at the last; while playing,
+  the dot never steps back. A call or a recording stops it. Voice files are kept apart from the file
+  cache, in the app's support folder: neither the OS nor `fileCacheBytes` clears them, and they
+  go with their message, its chat, or at logout.
+- Needs `tinode_dart_client` 0.10.0 (`DraftyAudio`), and adds the `record` and `just_audio`
+  dependencies. Hosts declare the microphone (see the README's voice messages setup).
+- **API:** `TinodeChatFeatures(voiceMessages:)`, true by default; off, the send button rests
+  disabled as before, and received voice messages still play. `TinodeBubbleKind.voice` for the
+  bubble builder.
+- **API:** `TinodeChatTheme` gains `recordingColor`, `recordingRingColor` and
+  `recordRingDuration`.
+- New `TinodeChatStrings`: `recordVoiceMessage`, `sendVoiceMessage`, `cancelRecording`,
+  `recordingVoiceMessage`, `playVoiceMessage`, `pauseVoiceMessage`, `microphoneDeniedForVoice`,
+  `voiceMessageTooShort`, `cannotRecordDuringCall`, `cannotPlayVoiceMessage`, `recorderFailed`.
+
 - **Behaviour change:** the chat now opens in a floating glass tab bar: **Chats** (with the
   unread count of chats that aren't muted), **Calls** (only when some kind of call is offered)
   and **Settings**. The account menu leaves the chat list header for the settings tab (the

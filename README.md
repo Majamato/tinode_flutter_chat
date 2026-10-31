@@ -42,6 +42,11 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
   ```
 - Finds people and groups by login, email, phone or tag, opens 1:1 chats with them, and creates
   groups with members. This needs the network.
+- Voice messages: the mic in the send button records (`record`), a second tap sends, and Cancel
+  or a swipe drops it. They show as a waveform bubble that plays in place (`just_audio`), one at
+  a time, and go as Tinode's `AU` entity (AAC, with the duration and a loudness preview), so
+  TinodeWeb and Tindroid play them too. Turn recording off with
+  `TinodeChatFeatures(voiceMessages: false)`.
 - 1:1 voice and video calls with `flutter_webrtc`: call buttons in direct chats, a ringing screen
   over any route, mute, camera on/off, front/back camera and speaker. Calls show in the chat with
   how they went. They need a server with ICE (STUN/TURN) servers.
@@ -232,8 +237,23 @@ cache uses `dart:io`).
 - **Desktop:** there is no Camera entry, and photos go up at their original size (the pickers
   can't scale them there). Every file is still capped by the server's `maxFileUploadSize`.
 
+## Voice messages: platform setup
+
+Recording uses the microphone, which calls declare already:
+
+- **Android:** `<uses-permission android:name="android.permission.RECORD_AUDIO"/>`.
+- **iOS:** `NSMicrophoneUsageDescription` in `Info.plist`; say it is for voice messages too
+  (e.g. "… uses the microphone for calls and voice messages.").
+- **macOS:** `NSMicrophoneUsageDescription` and the `com.apple.security.device.audio-input`
+  entitlement.
+
+The OS asks the user for access the first time they record. iOS can't play the WebM recordings
+TinodeWeb makes in Chrome; such a message says it can't be played.
+
 Downloaded files live in the OS's cache folder, which the OS may clear; files waiting to be sent
-are kept in the app's support folder until the server has them. Logging out deletes both.
+are kept in the app's support folder until the server has them. Voice messages, sent and
+received, are kept in the support folder too, until their message or chat is deleted. Logging out
+deletes all of them.
 
 ## Offline
 
@@ -470,15 +490,12 @@ where it needs the protocol:
 7. ~~**Message search and cache upkeep**~~: done (search a chat's cached messages and jump to a
    result; prune each chat to its newest messages and the file cache to a size, both set with
    `TinodeCacheLimits`).
-8. **Design** ([`docs/design.md`](docs/design.md)): the palette, the theme's tokens and
-   `TinodeChatTheme.materialTheme` are in, and so are the chat screen (bubble tails, runs, date
-   chips, wallpaper, frosted header and composer, the send button's morph and the bubble
-   builder), online presence, the chat list (frosted header, previews from the cache, muted
-   chats), login (one screen for signing in and up, with a `loginHeader` slot) and the call
-   screens (voice and video, the ringing screen, a call bar for a minimized call, a
-   reconnecting pill), and the app shell (a floating tab bar with the chats, the calls history
-   and the settings, and the Appearance screen with `TinodeAppearance`). Next: voice
-   messages.
+8. ~~**Design**~~: done ([`docs/design.md`](docs/design.md): the palette, the theme's tokens
+   and `TinodeChatTheme.materialTheme`; the chat screen with bubble tails, runs, date chips,
+   the wallpaper, the frosted header and composer, the send button's morph and the bubble
+   builder; online presence; the chat list; login with a `loginHeader` slot; the call screens
+   and the call bar; the app shell with the floating tab bar, the calls history, the settings
+   and the Appearance screen; and voice messages).
 
 ## Development
 

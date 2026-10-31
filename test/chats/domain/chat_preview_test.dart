@@ -78,6 +78,17 @@ void main() {
       ),
     )!;
     expect(voice.kind, ChatPreviewKind.voice);
+
+    final recording = preview(
+      drafty(
+        bob,
+        5,
+        Drafty.audio(
+          const DraftyAudio(ref: '/f/3', duration: Duration(seconds: 4)),
+        ),
+      ),
+    )!;
+    expect((recording.kind, recording.text), (ChatPreviewKind.voice, ''));
   });
 
   test('a call as its updates leave it: missed only when to the user', () {

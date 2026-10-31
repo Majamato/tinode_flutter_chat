@@ -8,9 +8,8 @@ The values live in code, not here: the palette in `TinodeChatPalette`, the neutr
 `ChatNeutrals`, everything the widgets read in `TinodeChatTheme`, and the Material theme around
 them in `chatMaterialTheme` (`TinodeChatTheme.materialTheme`). This page says what each is for.
 
-The screens are moving to this design one by one (see the README's roadmap). The chat screen,
-the chat list, login, the call screens and the app shell (tab bar, calls history, settings,
-appearance) have moved; voice messages are next.
+Every screen follows it: the chat screen with voice messages, the chat list, login, the call
+screens and the app shell (tab bar, calls history, settings, appearance).
 
 ## Palette
 
@@ -176,9 +175,66 @@ Timers and durations use tabular figures.
   1.6, a `glassEdgeColor` hairline). The header has back (with the other chats' unread count in
   a badge), the avatar, the name, who is typing in `linkColor`, then search and the call
   buttons. The composer has attach, a pill field (`composerRadius`) and the send button.
-- The send button rests while the field is blank. With text it fills with `primary` and its
-  arrow turns in from a quarter turn (300 ms on `springCurve`). Phase 6 adds the microphone in
-  its resting place.
+- While the field is blank the send button rests on the microphone (in `onSurfaceVariant`),
+  or, without `TinodeChatFeatures.voiceMessages`, on a greyed arrow. With text it fills with
+  `primary` and the arrow turns in from a quarter turn as the mic turns out (300 ms on
+  `springCurve`, scale .4 ↔ 1).
+
+## Voice messages
+
+- **Recording.** A tap on the mic records (a medium haptic, and "Recording voice message" read
+  out). The whole composer gives way to the **recording panel**, the field keeping its text: the
+  composer grows to it on `springCurve` over `springDuration` (at once with Reduce motion), and
+  the panel slides in 12 px as it fades in (250 ms). The list above is reversed, so the last
+  message stays in view.
+  - Top row (40 px): a 10 px `recordingColor` dot blinking each second (1 → .2 → 1), the
+    recorded time (`m:ss`, `titleLarge` at regular weight, tabular figures), then the **live
+    waveform** filling the row in `onSurfaceVariant`.
+  - Bottom row: delete (a 48 px circle, `recordingColor` @ 12 % behind a `recordingColor` trash
+    can), a wide 48 px pill on `surfaceContainerHighest` with `composerRadius` corners ("⏸ Pause",
+    or "🎤 Resume" while paused, 600 weight), and send (a 48 px circle in the send button's
+    filled colours with a send arrow).
+- **The live waveform.** One bar per level the recorder reports (every 100 ms), the bubble's bars
+  (2 px wide, 2 px apart, 2 to 22 px tall, so silence shows as dots), the newest on the right,
+  older ones drifting left and sliding out of the left edge. The scale is fixed, from
+  `liveWaveformFloor` (−50 dBFS, a dot) to 0 dB (full height), so one loud sample doesn't resize
+  the others; it won't match the sent bubble bar for bar, which scales its loudest to full. A
+  ticker glides the bars one pitch (4 px) per 100 ms, 40 px/s; paused, or with Reduce motion,
+  they step instead. Hidden from screen readers.
+- **Pause.** The pill pauses the recording (a light haptic): the clock stops, the dot stops
+  blinking and turns `onSurfaceVariant`, the waveform stops, and the pill shows "Resume", which
+  carries on in the same file. The time shown, the duration sent and the ten-minute limit count
+  recorded time only, not the pauses.
+- Send sends, paused or not; delete drops the recording. Under two seconds of recorded time
+  nothing is sent ("Too short to send"); at ten minutes it sends itself. Hiding the app (paused
+  or not), leaving the chat or a call starting drops it; there is no recording during a call.
+- Recordings are AAC in MPEG-4 (`audio/mp4`), mono, 16 kHz at 24 kbps, as Tindroid records,
+  sent as a Drafty `AU` entity with the duration and a 96-value loudness preview, so TinodeWeb
+  and Tindroid play them. They go through the outbox like files.
+- **The bubble** (232 px, padding 10 × 12): a 44 px play button (`primary` with a white icon on
+  others' bubbles, white @ 22 % on the user's own), then bars 2 px wide, 2 px apart, 2 to 22 px
+  tall (the preview's loudness to the power .7, so silence shows as dots and speech rises and
+  falls), as many as fit the width less 6 px at each end (42 in the bubble), all 2 px without a
+  preview. The playhead dot, in the played colour on top, is centred exactly on the position:
+  8 px at rest, growing to 12 px with `springCurve` while playing or dragging. Under them
+  the duration (the position while playing) in 12 px tabular figures, and the time and ticks at
+  the end.
+- **Playing.** Only ever from a file on the device, never streamed. A received message
+  downloads when its bubble shows; the bubble looks complete meanwhile, and its button plays once
+  the file is there (a tap after a failed download tries again). The user's own plays once the
+  server has it, from the recording on the device; until then its button shows the upload's
+  progress. Pressing play shows pause at once, with no spinner. One message plays at a time; a
+  call or a recording stops it, and one that ends rewinds. The dot glides every frame between
+  the player's reports, over the length the player reads from the file. While playing it never
+  steps back: it starts gliding once a report shows the audio moving (as play starts, or after a
+  seek), and when a report is behind it, it slows down for the audio to catch up, the further
+  behind the slower, standing only when 400 ms or more behind (as `just_audio` on Android runs
+  ahead of the audio for a moment as play starts). The bars keep their height, and those before the
+  dot take `primary` (white on the user's own; unplayed: `waveOffColor`, or white @ 45 %). A tap
+  on the bars moves the dot there at once and seeks; a drag moves the dot with the finger and
+  seeks once it lifts. Seeks run one at a time, so quick taps end at the last, and the player's
+  positions from before a seek don't show. Voice files are kept until their message, its chat or
+  the login goes; the OS and the cache limit never clear them.
 
 ## Calls
 
@@ -229,10 +285,13 @@ typing (typing wins). Presence is live only, never cached.
 `springDuration` for pops, pills, lenses and sheets; `fadeDuration` for fades and color changes.
 A sent message pops from its tail corner (420 ms: scale .35 → 1.05 → .98 → 1, rising 18 px);
 the typing dots hop 4 px in a 1.2 s loop, 150 ms apart. The call screens' blobs drift in 9 to
-14 s loops and their avatar rings pulse every 2.2 s.
+14 s loops and their avatar rings pulse every 2.2 s. The recording rings pulse every 1.4 s, the
+recording dot blinks each second, and the bars at a voice message's playhead swell in 0.9 s.
 With the OS's Reduce motion (`MediaQuery.disableAnimationsOf`), scale and slide become plain
 fades and looping background animations stop: the call blobs hold still, the avatar rings go
-and the dots of "Ringing…" stop pulsing.
+and the dots of "Ringing…" stop pulsing; while recording, the button changes colour without
+growing, the rings go, and the dot and the chevron hold still; the playhead's bars stop
+swelling.
 
 ## Accessibility
 

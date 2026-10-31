@@ -352,6 +352,25 @@ Downloaded files, and files the user sent, kept by their URL in the OS's cache f
 OS may clear), one store per user beside the chat cache. *In code:* `FileStore`,
 `ChatSession.fetchFile`, `attachmentFile`.
 
+**Kept file**
+A voice message's recording, sent or received, kept by its URL in the app's own folder rather
+than the file cache: neither the OS nor pruning clears it, and it goes with its message, its chat,
+or at logout. Playback only ever opens it, never the server's copy. *In code:*
+`ChatSession.fetchFile` (`keep`), `FileStore.forget`, `voiceFile`.
+
+**Recording panel**
+What takes the composer's place while a voice message records: the recorded time and the live
+waveform on top, then delete, pause or resume, and send. *In code:* `RecordingPanel`.
+
+**Live waveform**
+The waveform of a voice message as it records, one bar per level on a fixed loudness scale,
+scrolling left as levels come. Not the bubble's waveform, which is drawn from the sent preview.
+*In code:* `LiveVoiceWaveform`, `liveBarOf`.
+
+**Recorded time**
+How long a voice message being recorded has recorded, not counting its pauses: what the panel
+shows, what is sent as its duration, and what counts towards the ten-minute limit.
+
 **Upload progress**
 How much of an attachment's file has gone to the server, reported a few times a second at most and
 never stored. *In code:* `UploadProgress` (outbox event), `UploadProgressController`,

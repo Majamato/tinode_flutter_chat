@@ -58,6 +58,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.pageColor,
     required this.cardColor,
     required this.tabBarLensColor,
+    required this.recordingColor,
     required this.composerRadius,
     required this.fieldRadius,
     required this.buttonRadius,
@@ -122,6 +123,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       pageColor: colors.surface,
       cardColor: colors.surfaceContainerHighest,
       tabBarLensColor: colors.primary.withValues(alpha: 0.12),
+      recordingColor: colors.error,
       composerRadius: 22,
       fieldRadius: 4,
       buttonRadius: 20,
@@ -198,6 +200,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       tabBarLensColor: dark
           ? const Color(0x24FFFFFF)
           : palette.primary.withValues(alpha: 0.1),
+      recordingColor: ChatNeutrals.danger,
       composerRadius: 22,
       fieldRadius: 14,
       buttonRadius: 16,
@@ -395,6 +398,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// The lens that slides under the tab bar's current tab.
   final Color tabBarLensColor;
 
+  /// The blinking dot while a voice message records, and the recording
+  /// panel's delete button.
+  final Color recordingColor;
+
   /// Corner radius of the composer's text field.
   final double composerRadius;
 
@@ -468,6 +475,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     Color? pageColor,
     Color? cardColor,
     Color? tabBarLensColor,
+    Color? recordingColor,
     double? composerRadius,
     double? fieldRadius,
     double? buttonRadius,
@@ -522,6 +530,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     pageColor: pageColor ?? this.pageColor,
     cardColor: cardColor ?? this.cardColor,
     tabBarLensColor: tabBarLensColor ?? this.tabBarLensColor,
+    recordingColor: recordingColor ?? this.recordingColor,
     composerRadius: composerRadius ?? this.composerRadius,
     fieldRadius: fieldRadius ?? this.fieldRadius,
     buttonRadius: buttonRadius ?? this.buttonRadius,
@@ -603,6 +612,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       pageColor: color(pageColor, other.pageColor),
       cardColor: color(cardColor, other.cardColor),
       tabBarLensColor: color(tabBarLensColor, other.tabBarLensColor),
+      recordingColor: color(recordingColor, other.recordingColor),
       composerRadius: number(composerRadius, other.composerRadius),
       fieldRadius: number(fieldRadius, other.fieldRadius),
       buttonRadius: number(buttonRadius, other.buttonRadius),

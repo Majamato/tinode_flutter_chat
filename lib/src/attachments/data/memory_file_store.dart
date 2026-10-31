@@ -9,25 +9,39 @@ import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 final class MemoryFileStore implements FileStore {
   /// Used longest ago first: a map keeps its insertion order.
   final _cache = <String, Uint8List>{};
+  final _kept = <String, Uint8List>{};
   final _staged = <String, Uint8List>{};
   final _stagedAt = <String, DateTime>{};
   var _nextId = 0;
 
   @override
-  Future<LocalFile?> cached(Uri url) async {
+  Future<LocalFile?> cached(Uri url, {bool keep = false}) async {
+    if (_kept['$url'] case final kept?) {
+      return LocalFile.inMemory(kept);
+    }
     final bytes = _cache.remove('$url');
     if (bytes == null) {
       return null;
     }
-    _cache['$url'] = bytes;
+    if (keep) {
+      _kept['$url'] = bytes;
+    } else {
+      _cache['$url'] = bytes;
+    }
     return LocalFile.inMemory(bytes);
   }
 
   @override
-  Future<LocalFile> cache(Uri url, Stream<List<int>> bytes) async {
+  Future<LocalFile> cache(
+    Uri url,
+    Stream<List<int>> bytes, {
+    bool keep = false,
+  }) async {
     final collected = await _collect(bytes);
     _cache.remove('$url');
-    return LocalFile.inMemory(_cache['$url'] = collected);
+    return LocalFile.inMemory(
+      keep ? _kept['$url'] = collected : _cache['$url'] = collected,
+    );
   }
 
   @override
@@ -45,14 +59,20 @@ final class MemoryFileStore implements FileStore {
   };
 
   @override
-  Future<void> adopt(String id, Uri url) async {
+  Future<void> adopt(String id, Uri url, {bool keep = false}) async {
     _stagedAt.remove(id);
     if (_staged.remove(id) case final bytes?) {
-      _cache
-        ..remove('$url')
-        ..['$url'] = bytes;
+      _cache.remove('$url');
+      if (keep) {
+        _kept['$url'] = bytes;
+      } else {
+        _cache['$url'] = bytes;
+      }
     }
   }
+
+  @override
+  Future<void> forget(Uri url) async => _kept.remove('$url');
 
   @override
   Future<void> unstage(String id) async {
@@ -85,6 +105,9 @@ final class MemoryFileStore implements FileStore {
 
   /// Whether [url] is cached, for tests.
   bool isCached(Uri url) => _cache.containsKey('$url');
+
+  /// Whether [url] is kept, for tests.
+  bool isKept(Uri url) => _kept.containsKey('$url');
 
   /// The staged IDs, for tests.
   Iterable<String> get stagedIds => _staged.keys;

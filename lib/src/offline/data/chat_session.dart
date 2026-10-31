@@ -55,7 +55,8 @@ abstract interface class ChatSession implements TinodeSession {
   /// Queues [content] and sends it as soon as the link allows.
   Future<OutgoingMessage> send(String topic, MessageContent content);
 
-  /// Queues an image or file with an optional [caption]. The file is
+  /// Queues an image, file or voice message (`PickedFile.voice`) with an
+  /// optional [caption]. The file is
   /// copied in first, so it survives the picker's temporary copy; the
   /// outbox uploads it once the message is next in its chat, then sends
   /// the message. Throws `FileTooLargeException` for a file over the
@@ -86,14 +87,19 @@ abstract interface class ChatSession implements TinodeSession {
   });
 
   /// The file [ref] names, if this device has it: downloaded before, or
-  /// sent from here. Never asks the server.
-  Future<LocalFile?> cachedFile(String ref);
+  /// sent from here. Never asks the server. With [keep], see [fetchFile].
+  Future<LocalFile?> cachedFile(String ref, {bool keep = false});
 
   /// The file [ref] names: from the cache, or downloaded into it. Callers
   /// asking for the same file share one download; [onProgress] reports
   /// the bytes received and the total, when the server sends it.
+  ///
+  /// With [keep] (voice messages), the file is kept instead: the OS and
+  /// the cache limit never clear it, and it goes when a message holding
+  /// it is deleted, with its chat, or at logout.
   Future<LocalFile> fetchFile(
     String ref, {
+    bool keep = false,
     void Function(int received, int? total)? onProgress,
   });
 

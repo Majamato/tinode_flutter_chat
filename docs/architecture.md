@@ -63,7 +63,7 @@ lib/
       domain/                     findQuery, SearchResult, FindState, NewGroup
       application/                FindController(scope), NewGroupController
       presentation/               search and new group screens, the chat list's new chat button
-    attachments/                  sending and showing images and files
+    attachments/                  sending and showing images, files and recordings
       domain/                     MessageAttachment, OutgoingAttachment, PickedFile, LocalFile,
                                   FileDownloadState, ProgressThrottle, imageSizeOf
       data/                       FileStore (IoFileStore, MemoryFileStore), FileStoreOpener,
@@ -73,6 +73,14 @@ lib/
                                   stagedFile, fileStoreOpener, attachmentPicker, fileOpener
       presentation/               image and file bubbles, image viewer, attach sheet, preview
                                   screen, outgoing attachment view, upload progress ring
+    voice/                        recording and playing voice messages
+      domain/                     VoiceNote, voicePreviewOf, voiceBars, liveBarOf, VoiceRecorderState,
+                                  VoicePlayback, VoiceSource, VoiceFailure, the VoiceRecorder
+                                  and VoicePlayer interfaces
+      data/                       RecordVoiceRecorder (record), JustAudioVoicePlayer (just_audio)
+      application/                VoiceRecorderController(topic), VoicePlaybackController,
+                                  voiceRecorderFactory, voicePlayerFactory
+      presentation/               voice bubble, play button, waveform, recording panel, live waveform
     calls/                        1:1 voice and video calls
       domain/                     ActiveCall, CallInvite, CallFailure, the CallMedia and
                                   SystemCalls interfaces, SystemCall, SystemCallTexts,
@@ -108,7 +116,7 @@ existing feature when it shares its state, otherwise into a new folder with the 
 | Layer | Holds | May import | Must not import |
 |-------|-------|------------|-----------------|
 | `domain` | Immutable models and pure rules (merging, counters) | Dart, `collection`, `meta`, `tinode_dart_client` models, `webrtc_interface` types | Flutter, Riverpod, other layers |
-| `data` | Talking to the outside world: the server, the OS's network reports, WebRTC, the local cache and files | `domain`, `tinode_dart_client`, `web_socket`, `drift`, `crypto`, `mime`, platform plugins behind an interface (`connectivity_plus`, `flutter_webrtc`, `flutter_callkit_incoming`, `drift_flutter`, `path_provider`, `image_picker`, `file_picker`, `open_filex`) | Flutter itself, Riverpod, `application`, `presentation` |
+| `data` | Talking to the outside world: the server, the OS's network reports, WebRTC, the local cache and files | `domain`, `tinode_dart_client`, `web_socket`, `drift`, `crypto`, `mime`, platform plugins behind an interface (`connectivity_plus`, `flutter_webrtc`, `flutter_callkit_incoming`, `drift_flutter`, `path_provider`, `image_picker`, `file_picker`, `open_filex`, `record`, `just_audio`) | Flutter itself, Riverpod, `application`, `presentation` |
 | `application` | Riverpod providers: state, use cases, the glue between data and UI | `domain`, `data`, `riverpod`, `riverpod_annotation` | Flutter, `flutter_riverpod`, `presentation` |
 | `presentation` | Widgets only | `domain`, `application`, Flutter, `flutter_riverpod`, `super_sliver_list` | `data` (except the composition root in `app/`) |
 
@@ -136,7 +144,8 @@ provider.
   `tinodeChatFeaturesProvider`, `tinodeCacheLimitsProvider`, `systemCallTextsProvider` (from the
   host's strings) and, in tests, `sessionConnectorProvider`, `sessionRestorerProvider`,
   `chatStoreOpenerProvider` (`MemoryChatStoreOpener`), `networkMonitorProvider`,
-  `callMediaFactoryProvider` and `systemCallsProvider`.
+  `callMediaFactoryProvider`, `systemCallsProvider`, `voiceRecorderFactoryProvider` and
+  `voicePlayerFactoryProvider`.
 - Automatic retry is off for the whole container. Retrying a rejected login or a failed connect
   would hide errors the user has to act on, so every retry is a button.
 - `config`, `credentials`, `features` and `cacheLimits` are read once. To switch server or user, give `TinodeChat` a new `Key`.
@@ -314,9 +323,14 @@ cache. `CachedTinodeSession` decorates the server session:
 
 - **Files.** Each user has a `FileStore` beside the chat cache, opened and deleted with it by the
   session controller: a cache folder (under the OS's cache directory, which it may clear) for
-  downloads, keyed by a hash of the resolved URL, and a staging folder (under the app's support
+  downloads, keyed by a hash of the resolved URL, a kept folder (under the app's support
+  directory, keyed the same way) for voice messages, and a staging folder (also under the support
   directory) for files waiting to be sent. `fetchFile(ref)` serves the cache, or downloads into it
-  once for everyone asking. A store that can't be opened falls back to memory.
+  once for everyone asking; with `keep`, the kept folder, moving a cached copy there. Pruning
+  never touches kept files: deleting a message (here, or a server deletion) deletes the kept
+  files of its voice recordings, as does forgetting a chat. A message pruned from the chat cache
+  before it is deleted leaves its file until logout. A store that can't be opened falls back to
+  memory.
 - **Uploads.** `sendAttachment` copies the picked file into staging (picker files can vanish),
   reads an image's size from its header, and queues a `publish` whose payload holds the
   attachment. An **uploader** runs beside the drain, one upload at a time: it uploads an entry's
@@ -325,7 +339,8 @@ cache. `CachedTinodeSession` decorates the server session:
   chat at an entry still waiting for its upload and goes on with the other chats: later messages
   of that chat keep their order, other chats don't wait. Leaving `Connected` aborts the upload,
   which starts over on the next connect; a ref about to expire is uploaded again. Once the server
-  has the message, the staged file moves into the cache under its ref. Discarding the entry
+  has the message, the staged file moves into the cache under its ref, or into the kept folder
+  for a voice message. Discarding the entry
   aborts its upload and deletes the staged file. Upload errors follow the outbox rules, plus: a
   413 fails the message as `tooLarge`, a network failure backs off, an abort is no error.
 

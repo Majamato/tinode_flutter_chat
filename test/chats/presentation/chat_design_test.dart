@@ -45,6 +45,7 @@ void main() {
   Future<void> openFriends(
     WidgetTester tester, {
     TinodeBubbleBuilder? bubbleBuilder,
+    TinodeChatFeatures features = const TinodeChatFeatures(),
   }) async {
     await pumpTinodeChat(
       tester,
@@ -52,6 +53,7 @@ void main() {
       credentials: TinodeCredentials.token(session.token),
       theme: TinodeChatTheme.materialTheme(),
       bubbleBuilder: bubbleBuilder,
+      features: features,
     );
     await tester.tap(find.text('Friends'));
     await tester.pumpAndSettle();
@@ -108,8 +110,30 @@ void main() {
     expect((one.startsRun, one.endsRun, one.senderId), (true, false, bob));
   });
 
-  testWidgets('send is disabled while the field is blank', (tester) async {
+  testWidgets('a blank field offers the mic, text the send arrow', (
+    tester,
+  ) async {
     await openFriends(tester);
+    expect(find.byTooltip('Record voice message'), findsOneWidget);
+    expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Send'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Record voice message'), findsOneWidget);
+  });
+
+  testWidgets('without voice messages, send is disabled while the field is '
+      'blank', (tester) async {
+    await openFriends(
+      tester,
+      features: const TinodeChatFeatures(voiceMessages: false),
+    );
+    expect(find.byTooltip('Record voice message'), findsNothing);
     IconButton send() => tester.widget<IconButton>(
       find.ancestor(
         of: find.byTooltip('Send'),

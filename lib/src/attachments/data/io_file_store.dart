@@ -12,19 +12,30 @@ import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart'
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 
-/// Files in two folders: the cache, which the OS may clear, and staged
-/// files, which it keeps until they are sent.
+/// Files in three folders: the cache, which the OS may clear; kept files,
+/// which it keeps; and staged files, which it keeps until they are sent.
 final class IoFileStore implements FileStore {
-  IoFileStore(this._cacheDir, this._stagingDir);
+  IoFileStore(this._cacheDir, this._stagingDir, this._keptDir);
 
   final Directory _cacheDir;
   final Directory _stagingDir;
+  final Directory _keptDir;
   final _random = Random();
 
-  /// A hit counts as a use: pruning deletes the files used longest ago.
+  /// A cache hit counts as a use: pruning deletes the files used longest
+  /// ago.
   @override
-  Future<LocalFile?> cached(Uri url) async {
+  Future<LocalFile?> cached(Uri url, {bool keep = false}) async {
+    if (await _existing(_keptFile(url)) case final kept?) {
+      return kept;
+    }
     final file = _cacheFile(url);
+    if (!file.existsSync()) {
+      return null;
+    }
+    if (keep) {
+      return _existing(await _move(file, _keptFile(url)));
+    }
     final found = await _existing(file);
     if (found != null) {
       try {
@@ -37,8 +48,12 @@ final class IoFileStore implements FileStore {
   }
 
   @override
-  Future<LocalFile> cache(Uri url, Stream<List<int>> bytes) async {
-    final file = _cacheFile(url);
+  Future<LocalFile> cache(
+    Uri url,
+    Stream<List<int>> bytes, {
+    bool keep = false,
+  }) async {
+    final file = keep ? _keptFile(url) : _cacheFile(url);
     await _write(file, bytes);
     return LocalFile.atPath(file.path, length: await file.length());
   }
@@ -57,19 +72,18 @@ final class IoFileStore implements FileStore {
   Future<LocalFile?> staged(String id) => _existing(_stagedFile(id));
 
   @override
-  Future<void> adopt(String id, Uri url) async {
+  Future<void> adopt(String id, Uri url, {bool keep = false}) async {
     final staged = _stagedFile(id);
-    if (!staged.existsSync()) {
-      return;
+    if (staged.existsSync()) {
+      await _move(staged, keep ? _keptFile(url) : _cacheFile(url));
     }
-    final target = _cacheFile(url);
-    await target.parent.create(recursive: true);
-    try {
-      await staged.rename(target.path);
-    } on FileSystemException {
-      // The folders may sit on different volumes.
-      await staged.copy(target.path);
-      await staged.delete();
+  }
+
+  @override
+  Future<void> forget(Uri url) async {
+    final file = _keptFile(url);
+    if (file.existsSync()) {
+      await file.delete();
     }
   }
 
@@ -130,12 +144,27 @@ final class IoFileStore implements FileStore {
     return File('${_stagingDir.path}/$id');
   }
 
-  /// Named by a hash of the URL, keeping its extension so the OS knows
-  /// the type when the file is opened.
-  File _cacheFile(Uri url) => File(
-    '${_cacheDir.path}/${sha1.convert(utf8.encode('$url'))}'
-    '${_extension(url.path)}',
-  );
+  File _cacheFile(Uri url) => File('${_cacheDir.path}/${_nameOf(url)}');
+
+  File _keptFile(Uri url) => File('${_keptDir.path}/${_nameOf(url)}');
+
+  /// A hash of the URL, keeping its extension so the OS knows the type
+  /// when the file is opened.
+  static String _nameOf(Uri url) =>
+      '${sha1.convert(utf8.encode('$url'))}${_extension(url.path)}';
+
+  /// Moves [file] to [target], replacing what is there.
+  static Future<File> _move(File file, File target) async {
+    await target.parent.create(recursive: true);
+    try {
+      return await file.rename(target.path);
+    } on FileSystemException {
+      // The folders may sit on different volumes.
+      final copy = await file.copy(target.path);
+      await file.delete();
+      return copy;
+    }
+  }
 
   static Future<LocalFile?> _existing(File file) async => file.existsSync()
       ? LocalFile.atPath(file.path, length: await file.length())
@@ -188,36 +217,39 @@ final class IoFileStore implements FileStore {
   }
 }
 
-/// One cache and one staging folder per server and user.
+/// One cache, one staging and one kept folder per server and user. The
+/// cache sits where the OS may clear it; the other two, with the app's
+/// own data.
 final class DeviceFileStoreOpener implements FileStoreOpener {
   @override
   Future<FileStore> open(Uri server, String userId) async {
-    final (cache, staging) = await _folders(server, userId);
-    await cache.create(recursive: true);
-    await staging.create(recursive: true);
-    return IoFileStore(cache, staging);
+    final (cache, staging, kept) = await _folders(server, userId);
+    for (final folder in [cache, staging, kept]) {
+      await folder.create(recursive: true);
+    }
+    return IoFileStore(cache, staging, kept);
   }
 
   @override
   Future<void> delete(Uri server, String userId) async {
-    final (cache, staging) = await _folders(server, userId);
-    for (final folder in [cache, staging]) {
+    final (cache, staging, kept) = await _folders(server, userId);
+    for (final folder in [cache, staging, kept]) {
       if (folder.existsSync()) {
         await folder.delete(recursive: true);
       }
     }
   }
 
-  static Future<(Directory, Directory)> _folders(
+  static Future<(Directory, Directory, Directory)> _folders(
     Uri server,
     String userId,
   ) async {
     final name = userStorageName(server, userId);
+    final support = (await getApplicationSupportDirectory()).path;
     return (
       Directory('${(await getApplicationCacheDirectory()).path}/${name}_files'),
-      Directory(
-        '${(await getApplicationSupportDirectory()).path}/${name}_staging',
-      ),
+      Directory('$support/${name}_staging'),
+      Directory('$support/${name}_kept'),
     );
   }
 }

@@ -60,6 +60,13 @@ final class ChatMessage with ValueObject {
 
   static final _attachments = Expando<List<MessageAttachment>>();
 
+  /// The recording, when this is a voice message: one recording and no
+  /// text.
+  VoiceAttachment? get voice => switch (attachments) {
+    [final VoiceAttachment voice] when caption.isEmpty => voice,
+    _ => null,
+  };
+
   /// The text to show: under the [attachments] when there are any, with
   /// Drafty line breaks as newlines.
   String get caption => switch (content) {

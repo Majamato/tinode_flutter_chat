@@ -54,6 +54,7 @@ final class ChatPreview with ValueObject {
         message.caption,
         bytes,
       ),
+      VoiceAttachment() => (ChatPreviewKind.voice, message.caption, null),
       FileAttachment(:final mimeType?) when mimeType.startsWith('audio/') => (
         ChatPreviewKind.voice,
         message.caption,

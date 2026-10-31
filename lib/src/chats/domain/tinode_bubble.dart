@@ -10,6 +10,9 @@ enum TinodeBubbleKind {
 
   /// A call, with how it went.
   call,
+
+  /// A voice message: a recording to play.
+  voice,
 }
 
 /// How far one of the user's own messages got.

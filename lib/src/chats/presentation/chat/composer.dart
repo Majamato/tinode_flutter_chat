@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
@@ -12,11 +13,21 @@ import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
+import 'package:tinode_flutter_chat/src/voice/application/voice_recorder_controller.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_failure.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder_state.dart';
+import 'package:tinode_flutter_chat/src/voice/presentation/recording_panel.dart';
+import 'package:tinode_flutter_chat/src/voice/presentation/voice_failure_message.dart';
 
 /// The attach button, the pill-shaped message field and the send button.
 /// Typing and sending never rebuild it: the button watches both on its
 /// own. Typing tells the other members. A failed send, or a refused
 /// attachment, shows a snack bar and keeps the text.
+///
+/// The send button's mic records a voice message: the recording panel
+/// (delete, pause or resume, send) takes the composer's place, growing on
+/// the spring, until the recording is sent or deleted; the field keeps its
+/// text meanwhile. Hiding the app drops the recording, paused or not.
 class Composer extends ConsumerStatefulWidget {
   const Composer({required this.topic, super.key});
 
@@ -28,11 +39,86 @@ class Composer extends ConsumerStatefulWidget {
 
 class _ComposerState extends ConsumerState<Composer> {
   final _text = TextEditingController();
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onHide: _cancelRecording);
+  }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _text.dispose();
     super.dispose();
+  }
+
+  VoiceRecorderController get _recorder =>
+      ref.read(voiceRecorderControllerProvider(widget.topic).notifier);
+
+  Future<void> _record() async {
+    final failure = await _recorder.start();
+    if (!mounted) {
+      return;
+    }
+    if (failure != null) {
+      _showVoiceFailure(failure);
+      return;
+    }
+    unawaited(HapticFeedback.mediumImpact());
+    unawaited(
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        TinodeChatStrings.of(context).recordingVoiceMessage,
+        Directionality.of(context),
+      ),
+    );
+  }
+
+  Future<void> _sendRecording() async {
+    final failure = await _recorder.send();
+    if (!mounted) {
+      return;
+    }
+    if (failure != null) {
+      _showVoiceFailure(failure);
+    } else {
+      unawaited(HapticFeedback.mediumImpact());
+    }
+  }
+
+  void _cancelRecording() => unawaited(_recorder.cancel());
+
+  Future<void> _pauseRecording() async {
+    final failure = await _recorder.pause();
+    _afterPauseOrResume(failure);
+  }
+
+  Future<void> _resumeRecording() async {
+    final failure = await _recorder.resume();
+    _afterPauseOrResume(failure);
+  }
+
+  void _afterPauseOrResume(VoiceFailure? failure) {
+    if (!mounted) {
+      return;
+    }
+    if (failure != null) {
+      _showVoiceFailure(failure);
+    } else {
+      unawaited(HapticFeedback.lightImpact());
+    }
+  }
+
+  void _showVoiceFailure(VoiceFailure failure) {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text(
+          voiceFailureMessage(TinodeChatStrings.of(context), failure),
+        ),
+      ),
+    );
   }
 
   Future<void> _send() async {
@@ -63,49 +149,79 @@ class _ComposerState extends ConsumerState<Composer> {
   @override
   Widget build(BuildContext context) {
     ref.listen(sendControllerProvider(widget.topic), _onSendState);
+    final recording = ref.watch(
+      voiceRecorderControllerProvider(
+        widget.topic,
+      ).select((s) => s is VoiceRecording),
+    );
     final pill = OutlineInputBorder(
       borderRadius: BorderRadius.circular(
         TinodeChatTheme.of(context).composerRadius,
       ),
       borderSide: BorderSide.none,
     );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 6, 6, 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          AttachButton(topic: widget.topic),
-          Expanded(
-            child: TextField(
-              controller: _text,
-              decoration: InputDecoration(
-                hintText: TinodeChatStrings.of(context).messageHint,
-                isDense: true,
-                filled: true,
-                fillColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+    final theme = TinodeChatTheme.of(context);
+    final still = MediaQuery.disableAnimationsOf(context);
+    final body = recording
+        ? RecordingPanel(
+            topic: widget.topic,
+            onDelete: _cancelRecording,
+            onPause: () => unawaited(_pauseRecording()),
+            onResume: () => unawaited(_resumeRecording()),
+            onSend: () => unawaited(_sendRecording()),
+          )
+        : Padding(
+            padding: const EdgeInsets.fromLTRB(4, 6, 6, 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                AttachButton(topic: widget.topic),
+                Expanded(
+                  child: TextField(
+                    controller: _text,
+                    decoration: InputDecoration(
+                      hintText: TinodeChatStrings.of(context).messageHint,
+                      isDense: true,
+                      filled: true,
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      border: pill,
+                      enabledBorder: pill,
+                      focusedBorder: pill,
+                    ),
+                    minLines: 1,
+                    maxLines: 5,
+                    textCapitalization: TextCapitalization.sentences,
+                    textInputAction: TextInputAction.send,
+                    onChanged: (_) => ref
+                        .read(typingControllerProvider(widget.topic).notifier)
+                        .typed(),
+                    onSubmitted: (_) => _send(),
+                  ),
                 ),
-                border: pill,
-                enabledBorder: pill,
-                focusedBorder: pill,
-              ),
-              minLines: 1,
-              maxLines: 5,
-              textCapitalization: TextCapitalization.sentences,
-              textInputAction: TextInputAction.send,
-              onChanged: (_) => ref
-                  .read(typingControllerProvider(widget.topic).notifier)
-                  .typed(),
-              onSubmitted: (_) => _send(),
+                SendButton(
+                  topic: widget.topic,
+                  text: _text,
+                  onSend: _send,
+                  onRecord: () => unawaited(_record()),
+                ),
+              ],
             ),
-          ),
-          SendButton(topic: widget.topic, text: _text, onSend: _send),
-        ],
-      ),
+          );
+    // AnimatedSize can't run with no duration, so Reduce motion skips it.
+    if (still) {
+      return body;
+    }
+    return AnimatedSize(
+      duration: theme.springDuration,
+      curve: theme.springCurve,
+      alignment: Alignment.bottomCenter,
+      child: body,
     );
   }
 }

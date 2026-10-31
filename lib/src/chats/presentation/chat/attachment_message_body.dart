@@ -69,6 +69,18 @@ class AttachmentMessageBody extends StatelessWidget {
                 file: file,
                 color: color,
               ),
+              // A recording among other attachments, which Tinode's apps
+              // don't send, downloads and opens as a file.
+              final VoiceAttachment voice => FileBubbleContent(
+                file: FileAttachment(
+                  ref: voice.ref,
+                  bytes: voice.bytes,
+                  name: voice.name,
+                  size: voice.size,
+                  mimeType: voice.mimeType,
+                ),
+                color: color,
+              ),
             },
           ),
         if (caption.isNotEmpty)
