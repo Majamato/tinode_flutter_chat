@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tinode_flutter_chat/src/app/domain/home_tab.dart';
@@ -25,15 +26,24 @@ class HomeTabBar extends StatelessWidget {
   static const height = 66.0;
   static const sideInset = 16.0;
   static const _bottomGap = 26.0;
+  static const _homeIndicatorGap = 8.0;
   static const _padding = 6.0;
   static const _radius = 33.0;
 
   static final ImageFilter _filter = glassFilter(24);
 
-  /// How far the bar sits from the bottom of the screen: 26 px, or the
-  /// system's bottom inset when that is more.
-  static double bottomOf(BuildContext context) =>
-      math.max(_bottomGap, MediaQuery.viewPaddingOf(context).bottom);
+  /// How far the bar sits from the bottom of the screen. Over an iOS home
+  /// indicator it sits 8 px from the edge, the indicator across it, as
+  /// the system's own floating tab bars do: the indicator is a gesture
+  /// strip, not a button. Elsewhere 26 px, or the system's bottom inset
+  /// when that is more, so it clears the navigation buttons.
+  static double bottomOf(BuildContext context) {
+    final inset = MediaQuery.viewPaddingOf(context).bottom;
+    if (inset > 0 && defaultTargetPlatform == TargetPlatform.iOS) {
+      return _homeIndicatorGap;
+    }
+    return math.max(_bottomGap, inset);
+  }
 
   /// The space the bar covers at the bottom of the screen.
   static double footprintOf(BuildContext context) => bottomOf(context) + height;

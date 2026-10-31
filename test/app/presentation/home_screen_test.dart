@@ -160,6 +160,36 @@ void main() {
     expect(screen.bottom - bar.bottom, 26);
   });
 
+  testWidgets(
+    'over an iOS home indicator the bar sits 8 px from the edge',
+    (tester) async {
+      tester.view.padding = const FakeViewPadding(bottom: 102);
+      tester.view.viewPadding = const FakeViewPadding(bottom: 102);
+      addTearDown(tester.view.resetPadding);
+      addTearDown(tester.view.resetViewPadding);
+      await pump(tester);
+
+      final screen = tester.getRect(find.byType(ChatListScreen));
+      final bar = tester.getRect(find.byType(HomeTabBar));
+      expect(screen.bottom - bar.bottom, 8);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets('elsewhere the bar clears the system bottom inset', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(bottom: 144);
+    tester.view.viewPadding = const FakeViewPadding(bottom: 144);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+    await pump(tester);
+
+    final screen = tester.getRect(find.byType(ChatListScreen));
+    final bar = tester.getRect(find.byType(HomeTabBar));
+    expect(screen.bottom - bar.bottom, 48);
+  });
+
   testWidgets('screen readers hear the tabs and which one is current', (
     tester,
   ) async {
