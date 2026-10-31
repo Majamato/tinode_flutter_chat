@@ -51,6 +51,19 @@ void main() {
     });
   });
 
+  test('lights the tab bar lens with the brand, or white in the dark', () {
+    final light = TinodeChatTheme.fromPalette(palette);
+    final dark = TinodeChatTheme.fromPalette(
+      palette,
+      brightness: Brightness.dark,
+    );
+
+    expect(light.tabBarLensColor, palette.primary.withValues(alpha: 0.1));
+    expect(dark.tabBarLensColor, const Color(0x24FFFFFF));
+    expect(light.pageColor, isNot(light.cardColor));
+    expect(dark.pageColor, isNot(dark.cardColor));
+  });
+
   test('white text passes 4.5:1 on the neutral primary and night', () {
     expect(_contrast(_white, palette.primary), greaterThanOrEqualTo(4.5));
     expect(_contrast(_white, palette.night), greaterThanOrEqualTo(4.5));
@@ -139,10 +152,14 @@ final List<(String, Object? Function(TinodeChatTheme))> _fields = [
   ('callPillColor', (t) => t.callPillColor),
   ('callPillEdgeColor', (t) => t.callPillEdgeColor),
   ('acceptCallColor', (t) => t.acceptCallColor),
+  ('pageColor', (t) => t.pageColor),
+  ('cardColor', (t) => t.cardColor),
+  ('tabBarLensColor', (t) => t.tabBarLensColor),
   ('composerRadius', (t) => t.composerRadius),
   ('fieldRadius', (t) => t.fieldRadius),
   ('buttonRadius', (t) => t.buttonRadius),
   ('sheetRadius', (t) => t.sheetRadius),
+  ('cardRadius', (t) => t.cardRadius),
   ('springCurve', (t) => t.springCurve),
   ('springDuration', (t) => t.springDuration),
   ('fadeDuration', (t) => t.fadeDuration),

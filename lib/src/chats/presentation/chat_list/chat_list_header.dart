@@ -6,10 +6,17 @@ import 'package:tinode_flutter_chat/src/shared/presentation/frosted_bar.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// The frosted bar over the chat list: the account menu, "Chats" and the
-/// compose button, then the search field. Watches nothing.
+/// The frosted bar over the chat list: the account menu (with
+/// [accountMenu]), "Chats" and the compose button, then the search field.
+/// Watches nothing.
 class ChatListHeader extends StatelessWidget {
-  const ChatListHeader({super.key});
+  const ChatListHeader({this.accountMenu = true, super.key});
+
+  /// Room the menu's button takes, kept without it so the title stays
+  /// centred.
+  static const _sideButton = 48.0;
+
+  final bool accountMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +33,10 @@ class ChatListHeader extends StatelessWidget {
                 height: 48,
                 child: Row(
                   children: [
-                    const AccountMenuButton(),
+                    if (accountMenu)
+                      const AccountMenuButton()
+                    else
+                      const SizedBox(width: _sideButton),
                     Expanded(
                       child: Semantics(
                         header: true,

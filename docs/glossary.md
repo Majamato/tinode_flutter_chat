@@ -64,8 +64,21 @@ The date above the first message of a day ("Today", "Yesterday", or the date).
 Behind a chat's messages: a color with a faint dot grid. *In code:* `ChatWallpaper`.
 
 **Frosted bar**
-A translucent, blurring bar that content scrolls under: the chat header, the composer and the
-chat list header; later the tab bar. *In code:* `FrostedBar`.
+A translucent, blurring bar that content scrolls under: the chat header, the composer, the
+screens' headers and the tab bar. *In code:* `FrostedBar`, `FrostedHeader`, `HomeTabBar`.
+
+**Tab bar**
+The floating glass bar with the chats, the calls history and the settings, on by default
+(`TinodeChat.tabBar`). Its current tab sits on a sliding **lens**. *In code:* `HomeScreen`,
+`HomeTab`, `HomeTabBar`.
+
+**Calls history**
+The calls of direct chats the cache holds, newest first, in its own tab; not "call log". *In
+code:* `CallHistoryController`, `CallHistoryEntry`, `CallsScreen`.
+
+**Appearance**
+The palette and the light, dark or system theme the user picks on this device, from the host's
+palettes. *In code:* `TinodeAppearance`, `AppearanceScreen`.
 
 **Composer**
 The attach button, the pill-shaped message field and the send button, which fills with the

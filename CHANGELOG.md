@@ -1,5 +1,31 @@
 ## Unreleased
 
+- **Behaviour change:** the chat now opens in a floating glass tab bar: **Chats** (with the
+  unread count of chats that aren't muted), **Calls** (only when some kind of call is offered)
+  and **Settings**. The account menu leaves the chat list header for the settings tab (the
+  user's profile, Appearance, Log out). Turn the bar off with `TinodeChat(tabBar: false)`, e.g.
+  when the app has tabs of its own; the header then keeps the menu, which also opens
+  Appearance. The floating button sits above the bar; Back on another tab goes to the chats
+  first; hidden tabs keep their state.
+- The calls history: the calls of direct chats from the cache, newest first, with direction,
+  kind, how they went (missed calls in `missedCallColor`) and the time. A tap calls back, by the
+  same kind or the other when that one is off; a button opens the chat. Each time the tab shows
+  (and on pull), it fetches the newest messages of the direct chats the cache is behind on.
+- The settings tab: the user's photo and name (opening the profile), Appearance, Log out.
+- The Appearance screen: a live preview, the host's palettes as swatches, Light | Dark |
+  System, the host's own widget, and "Reset to <default>".
+- **API:** `TinodeAppearance` (with `TinodeAppearancePalette`) holds the palettes the host
+  offers and what the user picked, saved on the device; `load` it before `runApp`, build the
+  themes from it, and pass it to `TinodeChat(appearance:)`. `TinodeChat(appearanceExtra:)` adds
+  a host widget to the Appearance screen. `TinodeChat(tabBar:)`, true by default.
+- **API:** `TinodeChatTheme` gains `pageColor`, `cardColor`, `cardRadius` and
+  `tabBarLensColor`.
+- New `TinodeChatStrings`: `callsTitle`, `settingsTitle`, `noCalls`, `callBack`, `openChat`,
+  `profileSubtitle`, `appearance`, `appearanceColor`, `appearanceColorHelp`, `appearanceTheme`,
+  `themeLight`, `themeDark`, `themeSystem`, `appearancePreviewQuestion`,
+  `appearancePreviewAnswer`, `resetPalette`, `unreadCount`. `accountMenu` now names the menu
+  shown without the tab bar.
+
 - The call screens in the chat's design, always dark. The voice call shows the peer's 148 px
   avatar with rings pulsing out until it connects, the name and the status ("Ringing…" with
   pulsing dots, then a timer in tabular figures), over blurred blobs drifting in 9 to 14 s

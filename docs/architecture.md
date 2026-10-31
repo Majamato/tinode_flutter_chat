@@ -19,9 +19,18 @@ lib/
   tinode_flutter_chat.dart        public API (barrel), `export … show` only
   src/
     app/                          composition root
+      domain/                     HomeTab
       application/                createTinodeContainer()
-      presentation/               TinodeChat and TinodeCalls (public), SessionGate, AuthNavigator,
-                                  ChatNavigator
+      presentation/               TinodeChat, TinodeCalls and TinodeAppearance (public),
+                                  SessionGate, AuthNavigator, ChatNavigator, ShellScope; home/:
+                                  HomeScreen, the floating HomeTabBar and its unread badge
+    appearance/                   the palette and theme the user picks on this device
+      domain/                     StoredAppearance
+      data/                       AppearanceStorage (a JSON file in the app's support directory)
+      presentation/               AppearanceScope, the appearance screen: preview, swatches,
+                                  theme switch, reset
+    settings/                     the settings tab
+      presentation/               settings screen, profile and log-out tiles
     session/                      connecting and logging in
       data/                       TinodeSession interface + ClientTinodeSession
       domain/                     TinodeCredentials, TinodeChatFeatures (public),
@@ -66,14 +75,17 @@ lib/
                                   screen, outgoing attachment view, upload progress ring
     calls/                        1:1 voice and video calls
       domain/                     ActiveCall, CallInvite, CallFailure, the CallMedia and
-                                  SystemCalls interfaces, SystemCall, SystemCallTexts
+                                  SystemCalls interfaces, SystemCall, SystemCallTexts,
+                                  CallHistory, CallHistoryEntry
       data/                       WebRtcCallMedia (flutter_webrtc), CallKitSystemCalls
                                   (flutter_callkit_incoming), NoSystemCalls, systemCallId, the
                                   background hang-up
       application/                CallController, CallResources, CallMinimized, callsAvailable,
-                                  callMediaFactory, systemCalls, handleCallPush
+                                  callMediaFactory, systemCalls, handleCallPush,
+                                  CallHistoryController
       presentation/               call layer, ringing, voice and video call screens, call bar,
-                                  backdrop, avatar rings, round call buttons, systemCallTextsOf
+                                  backdrop, avatar rings, round call buttons, systemCallTextsOf;
+                                  history/: the calls tab
     profile/                      the user's own profile and account
       domain/                     MyProfile
       application/                ProfileController, saving, photo, password, deleting the account
@@ -84,7 +96,8 @@ lib/
       domain/                     ValueObject, ChatFailure
       application/                BuildLifetime
       presentation/               theme, strings, time format, error view, confirm dialog,
-                                  progress button
+                                  progress button, frosted bar and header, sliding segments,
+                                  settings sections and tiles
 ```
 
 A feature is something the user *does* (connect, chat), not a screen. New work goes into an
@@ -129,11 +142,17 @@ provider.
 - `config`, `credentials`, `features` and `cacheLimits` are read once. To switch server or user, give `TinodeChat` a new `Key`.
   `pushToken` is read on every build and handed to `PushTokenController`.
 
-Host-provided builders and widgets (`TinodeChat.bubbleBuilder`, `TinodeChat.loginHeader`) run
-inside the chat's own container, so they can't watch the host's providers. They get plain data
-instead (`TinodeBubble`) through inherited widgets (`BubbleBuilderScope`, `LoginHeaderScope`),
-never a provider. A builder that needs host state reads it from the widget tree above
+Host-provided builders and widgets (`TinodeChat.bubbleBuilder`, `TinodeChat.loginHeader`,
+`TinodeChat.appearanceExtra`) run inside the chat's own container, so they can't watch the host's
+providers. They get plain data instead (`TinodeBubble`) through inherited widgets
+(`BubbleBuilderScope`, `LoginHeaderScope`, `AppearanceScope`), never a provider. A builder that needs host state reads it from the widget tree above
 `TinodeChat`.
+
+`TinodeChat.appearance` (a `TinodeAppearance`) is host state the other way round: the host
+loads it, builds its `MaterialApp` themes from it, and passes it in; the Appearance screen
+changes it through `AppearanceScope` (an `InheritedNotifier`), and the host rebuilds. It is
+saved per device, for every user, so it lives outside the per-user container and cache.
+`tabBar` is read once, through `ShellScope`.
 
 ## Widget tree
 
@@ -143,7 +162,9 @@ TinodeChat                      owns the container
   └ TinodeChatStringsScope      host strings
     └ BubbleBuilderScope        host bubble builder
       └ LoginHeaderScope        host login header
-        └ ChatThemeScope        adds TinodeChatTheme.fallback when the host has none
+        └ ShellScope            host tabBar
+         └ AppearanceScope      host appearance and appearanceExtra
+          └ ChatThemeScope      adds TinodeChatTheme.fallback when the host has none
           └ SessionGate             watches the session phase only
             ├ ConnectingView
             ├ AuthNavigator         nested Navigator, only while awaiting login
@@ -154,9 +175,15 @@ TinodeChat                      owns the container
             │ └ PasswordResetScreen
             ├ SessionErrorView      "Reconnect"
             └ ChatNavigator         nested Navigator, only while logged in
-              ├ ChatListScreen      first route; ChatListHeader (AccountMenuButton, compose,
-              │                     ChatSearchField), ChatListTile rows, NewChatButton
-              ├ ProfileScreen       pushed from the account menu; ChangePasswordScreen over it
+              ├ HomeScreen          first route with the tab bar: a lazy IndexedStack of
+              │                     ChatListScreen, CallsScreen and SettingsScreen (hidden tabs'
+              │                     tickers and focus off) under the floating HomeTabBar
+              ├ ChatListScreen      first route without it; ChatListHeader (AccountMenuButton
+              │                     without the tab bar, compose, ChatSearchField), ChatListTile
+              │                     rows, NewChatButton
+              ├ ProfileScreen       pushed from settings or the account menu; ChangePasswordScreen
+              │                     over it
+              ├ AppearanceScreen    pushed from settings or the account menu
               ├ FindPeopleScreen    pushed by NewChatButton, the header's compose or ChatSearchField
               ├ NewGroupScreen      pushed from the search
               ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`): ChatWallpaper,
@@ -350,6 +377,19 @@ ChatPreview>>`):
 4. `chatPreviewBehind(topic)` is true while the chat's `lastSeq` is past the newest seq cached: the
    tile then says "New message" if unread, else nothing. Opening the chat catches up, which fills
    the cache and the preview.
+
+**Calls history** (`CallHistoryController`, keepAlive, sync `Notifier<CallHistory>`):
+
+1. The cache's call messages: `ChatStore.calls` finds them by `head.webrtc`, each with its
+   updates (`head.replace`), in one query on schema v3. `CallHistoryEntry.of` applies the updates
+   as a bubble does. Direct chats only.
+2. Like the previews, it reads them all on build, then a chat again when `storedChanges` names it.
+3. The cache holds only what this device fetched, so `refresh()` (each time the calls tab shows,
+   and on pull) fetches the direct chats whose `lastSeq` is past their newest cached seq: attach,
+   `catchUp` 24 messages, detach, three chats at a time, at most 30, newest first. A chat is
+   fetched once per session unless it falls behind again (or the pull forces it). Offline or
+   before the chat list loads, the refresh waits for `Connected` or the list. History pages never
+   ring: only live `data` packets do.
 
 **Chat** (`ChatController(topic)`, autoDispose, sync `Notifier<ChatState>`):
 
@@ -571,7 +611,8 @@ Providers report failures in their state (`LoadStatus.failed`, `AsyncError`); wi
 Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `TinodeChatController`,
 `TinodeCalls`, `TinodeCredentials`
 (`PasswordCredentials`, `TokenCredentials`), `TinodeChatFeatures` (`PasswordResetMode`),
-`TinodeCacheLimits`, `TinodeChatTheme`, `TinodeChatPalette`, `TinodeChatStrings`,
+`TinodeCacheLimits`, `TinodeChatTheme`, `TinodeChatPalette`, `TinodeAppearance`
+(`TinodeAppearancePalette`), `TinodeChatStrings`,
 `TinodeBubble` (`TinodeBubbleKind`, `TinodeBubbleStatus`), `TinodeBubbleBuilder`, and the
 client's `TinodeConfig`, `LoginResult`, `DevicePlatform` and `TinodePush` (`MessagePush`,
 `SubscriptionPush`, `ReadPush`). Everything else may change freely. Every exported symbol

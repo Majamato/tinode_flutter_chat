@@ -6,9 +6,13 @@ import 'package:tinode_flutter_chat/src/shared/presentation/size_reporter.dart';
 
 /// The user's chats, newest first, scrolling under a frosted header with
 /// the search for people and groups, and the button that starts a new
-/// chat. Watches nothing itself.
+/// chat. [inTabs] when it is the chats tab: the settings are then a tab
+/// rather than the header's menu, and the button sits above the tab bar.
+/// Watches nothing itself.
 class ChatListScreen extends StatefulWidget {
-  const ChatListScreen({super.key});
+  const ChatListScreen({this.inTabs = false, super.key});
+
+  final bool inTabs;
 
   @override
   State<ChatListScreen> createState() => _ChatListScreenState();
@@ -36,12 +40,18 @@ class _ChatListScreenState extends State<ChatListScreen> {
             top: 0,
             child: SizeReporter(
               height: _headerHeight,
-              child: const ChatListHeader(),
+              child: ChatListHeader(accountMenu: !widget.inTabs),
             ),
           ),
         ],
       ),
-      floatingActionButton: const NewChatButton(),
+      floatingActionButton: widget.inTabs
+          // 18 px from the side and 20 px above the tab bar.
+          ? const Padding(
+              padding: EdgeInsetsDirectional.only(end: 2, bottom: 4),
+              child: NewChatButton(),
+            )
+          : const NewChatButton(),
     );
   }
 }

@@ -42,6 +42,16 @@ int otherUnread(Ref ref, String topic) => ref.watch(
   ),
 );
 
+/// The unread messages of every chat that isn't muted, for the tab bar.
+@riverpod
+int totalUnread(Ref ref) => ref.watch(
+  chatListControllerProvider.select(
+    (list) => list.byTopic.values
+        .where((chat) => !chat.muted)
+        .fold(0, (sum, chat) => sum + chat.unread),
+  ),
+);
+
 /// Whether anyone in [topic] is typing, for the typing bubble.
 @riverpod
 bool anyoneTyping(Ref ref, String topic) =>

@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinode_flutter_chat/src/app/domain/home_tab.dart';
+import 'package:tinode_flutter_chat/src/app/presentation/home/home_screen.dart';
+import 'package:tinode_flutter_chat/src/app/presentation/shell_scope.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_minimized.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/active_call.dart';
@@ -12,14 +15,15 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_screen.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/reconnecting_banner.dart';
 
-/// The logged-in chat's own navigator, starting at the chat list, so chat
-/// routes stay below the package's provider scope. System back pops it
+/// The logged-in chat's own navigator, starting at the chat list (in the
+/// tab bar's [HomeScreen] when the host wants one), so chat routes stay
+/// below the package's provider scope. System back pops it
 /// first, then the host's routes; during a call it minimizes the call to
 /// the call bar instead, and does nothing while the call rings or ends.
 /// The call layer sits over it, the call bar above it and the
 /// reconnecting banner below it, so they show over every chat route. It
 /// opens the chats the host asks for (`TinodeChatController.openChat`)
-/// over the chat list.
+/// over the chat list, switching to the chats tab.
 class ChatNavigator extends ConsumerStatefulWidget {
   const ChatNavigator({super.key});
 
@@ -29,6 +33,9 @@ class ChatNavigator extends ConsumerStatefulWidget {
 
 class _ChatNavigatorState extends ConsumerState<ChatNavigator> {
   final _navigator = GlobalKey<NavigatorState>();
+
+  /// The tab bar's current tab.
+  final ValueNotifier<HomeTab> _tab = ValueNotifier(HomeTab.chats);
 
   @override
   void initState() {
@@ -48,7 +55,14 @@ class _ChatNavigatorState extends ConsumerState<ChatNavigator> {
       return;
     }
     ref.read(requestedChatControllerProvider.notifier).opened();
+    _tab.value = HomeTab.chats;
     unawaited(ChatScreen.openOn(navigator, topic));
+  }
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
   }
 
   /// System back: minimizes a call on screen, otherwise pops the chats.
@@ -78,7 +92,9 @@ class _ChatNavigatorState extends ConsumerState<ChatNavigator> {
                     key: _navigator,
                     onGenerateInitialRoutes: (_, _) => [
                       MaterialPageRoute<void>(
-                        builder: (_) => const ChatListScreen(),
+                        builder: (_) => ShellScope.tabBarOf(context)
+                            ? HomeScreen(tab: _tab)
+                            : const ChatListScreen(),
                       ),
                     ],
                   ),

@@ -15,6 +15,7 @@ import 'package:tinode_flutter_chat/src/attachments/domain/progress_throttle.dar
 import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/cached_call.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/chat_merge.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
@@ -426,6 +427,12 @@ final class CachedTinodeSession implements ChatSession {
   }) async {
     await _writes;
     return _store.latestMessages(topic: topic);
+  }
+
+  @override
+  Future<List<CachedCall>> storedCalls({String? topic}) async {
+    await _writes;
+    return _store.calls(topic: topic);
   }
 
   @override

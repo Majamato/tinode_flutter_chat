@@ -26,25 +26,68 @@ const apiKey = String.fromEnvironment(
 /// keep it in secure storage instead.
 const _tokenKey = 'tinode_token';
 
+/// The palettes on the settings' Appearance screen; the first is the
+/// default.
+const _palettes = [
+  TinodeAppearancePalette(
+    id: 'slate',
+    label: 'Slate',
+    colors: TinodeChatPalette.neutral,
+  ),
+  TinodeAppearancePalette(
+    id: 'plum',
+    label: 'Plum',
+    colors: TinodeChatPalette(
+      primary: Color(0xFF5B1A8C),
+      night: Color(0xFF6E29A8),
+      bright: Color(0xFF8A3FD1),
+      accent: Color(0xFFFF9A3D),
+      soft: Color(0xFFF1E5FA),
+      ink: Color(0xFF42106A),
+      onDark: Color(0xFFC08BFF),
+      deep: Color(0xFF1A0730),
+      scene: Color(0xFF28133D),
+    ),
+  ),
+];
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final preferences = await SharedPreferences.getInstance();
-  runApp(ExampleApp(preferences: preferences));
+  final appearance = await TinodeAppearance.load(palettes: _palettes);
+  runApp(ExampleApp(preferences: preferences, appearance: appearance));
 }
 
 class ExampleApp extends StatelessWidget {
-  const ExampleApp({required this.preferences, super.key});
+  const ExampleApp({
+    required this.preferences,
+    required this.appearance,
+    super.key,
+  });
 
   final SharedPreferences preferences;
+
+  /// What the user picked on the Appearance screen; the themes follow it.
+  final TinodeAppearance appearance;
 
   @override
   Widget build(BuildContext context) {
     final token = preferences.getString(_tokenKey);
-    return MaterialApp(
-      title: 'Tinode chat',
-      theme: TinodeChatTheme.materialTheme(),
-      darkTheme: TinodeChatTheme.materialTheme(brightness: Brightness.dark),
-      home: TinodeChat(
+    return ListenableBuilder(
+      listenable: appearance,
+      builder: (context, child) => MaterialApp(
+        title: 'Tinode chat',
+        theme: TinodeChatTheme.materialTheme(
+          palette: appearance.palette.colors,
+        ),
+        darkTheme: TinodeChatTheme.materialTheme(
+          palette: appearance.palette.colors,
+          brightness: Brightness.dark,
+        ),
+        themeMode: appearance.themeMode,
+        home: child,
+      ),
+      child: TinodeChat(
         config: TinodeConfig(
           server: Uri.parse(server),
           apiKey: apiKey,
@@ -58,6 +101,7 @@ class ExampleApp extends StatelessWidget {
           unawaited(TinodeCalls.requestPermissions());
         },
         onLoggedOut: () => preferences.remove(_tokenKey),
+        appearance: appearance,
       ),
     );
   }

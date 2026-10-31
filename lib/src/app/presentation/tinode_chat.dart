@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/session_gate.dart';
+import 'package:tinode_flutter_chat/src/app/presentation/shell_scope.dart';
+import 'package:tinode_flutter_chat/src/app/presentation/tinode_appearance.dart';
+import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scope.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
@@ -68,6 +71,9 @@ class TinodeChat extends StatefulWidget {
     this.cacheLimits = const TinodeCacheLimits(),
     this.bubbleBuilder,
     this.loginHeader,
+    this.tabBar = true,
+    this.appearance,
+    this.appearanceExtra,
     super.key,
   }) : connector = null,
        restorer = null,
@@ -107,6 +113,9 @@ class TinodeChat extends StatefulWidget {
     this.cacheLimits = const TinodeCacheLimits(),
     this.bubbleBuilder,
     this.loginHeader,
+    this.tabBar = true,
+    this.appearance,
+    this.appearanceExtra,
     super.key,
   });
 
@@ -162,6 +171,24 @@ class TinodeChat extends StatefulWidget {
   /// backdrop and above the sheet that signs in or up: e.g. the app's
   /// animated logo. Null shows nothing there. Read on every build.
   final Widget? loginHeader;
+
+  /// Whether the chat list sits in a floating tab bar with the calls
+  /// history (when [features] offer calls) and the settings: the user's
+  /// profile, the [appearance] and logging out. Turn it off when the app
+  /// has tabs of its own; the chat list header then offers those settings
+  /// in a menu, and there is no calls history. Read once.
+  final bool tabBar;
+
+  /// The palettes and the theme the user can pick in the settings, and
+  /// what they picked; build the app's themes from it. Null offers no
+  /// Appearance screen. Read on every build.
+  final TinodeAppearance? appearance;
+
+  /// Shown on the Appearance screen under the theme switch, e.g. a look
+  /// setting of the app's own such as its text size. It is built inside the
+  /// chat, so it reads the app's state from the widget tree above
+  /// [TinodeChat] (or an [appearance] it listens to). Read on every build.
+  final Widget? appearanceExtra;
 
   /// Opens sessions; null for a real connection.
   @visibleForTesting
@@ -223,6 +250,7 @@ class _TinodeChatState extends State<TinodeChat> {
   );
 
   late final AppLifecycleListener _lifecycle;
+  late final bool _tabBar = widget.tabBar;
 
   @override
   void initState() {
@@ -291,7 +319,14 @@ class _TinodeChatState extends State<TinodeChat> {
           builder: widget.bubbleBuilder,
           child: LoginHeaderScope(
             header: widget.loginHeader,
-            child: const ChatThemeScope(child: SessionGate()),
+            child: ShellScope(
+              tabBar: _tabBar,
+              child: AppearanceScope(
+                appearance: widget.appearance,
+                extra: widget.appearanceExtra,
+                child: const ChatThemeScope(child: SessionGate()),
+              ),
+            ),
           ),
         ),
       ),

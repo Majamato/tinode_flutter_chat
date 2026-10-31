@@ -16,6 +16,8 @@ export 'package:tinode_dart_client/tinode_dart_client.dart'
         TinodeConfig,
         TinodePush;
 
+export 'src/app/presentation/tinode_appearance.dart'
+    show TinodeAppearance, TinodeAppearancePalette;
 export 'src/app/presentation/tinode_calls.dart' show TinodeCalls;
 export 'src/app/presentation/tinode_chat.dart'
     show TinodeChat, TinodeChatController;

@@ -152,6 +152,10 @@ await tester.tap(find.text('Bob'));
 await tester.pumpAndSettle();
 ```
 
+- `pumpTinodeChat` leaves the tab bar off (`tabBar: false`), so the chat list is the first route
+  and its header has the account menu; pass `tabBar: true` to test the shell, and `appearance:`
+  (`TinodeAppearance.inMemory`, with `slate` and `plum` from `support/test_palettes.dart`) and
+  `appearanceExtra:` for the Appearance screen. Find a tab by its label under `HomeTabBar`.
 - After `enterText`, `pump()` once before tapping a button that enables on input.
 - `pumpAndSettle` times out while a progress indicator spins. Make sure the fake answers (it does by
   default) or use `pump()`.

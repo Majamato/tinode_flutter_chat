@@ -65,3 +65,40 @@ Subscription member(
     mode: AccessMode.parse(mode),
   ),
 );
+
+/// The message that starts a call in [topic], from [from].
+DataMessage callMessage(
+  String topic,
+  int seq, {
+  String? from = bob,
+  bool audioOnly = false,
+  DateTime? time,
+}) => DataMessage(
+  topic: topic,
+  seq: seq,
+  from: from,
+  time: time ?? at(seq),
+  head: MessageHead(callState: CallState.started, audioOnly: audioOnly),
+  content: const PlainText(' '),
+);
+
+/// The server's update of the call message [target] in [topic] to [state].
+DataMessage callUpdate(
+  String topic,
+  int seq,
+  int target,
+  CallState state, {
+  String? from = bob,
+  Duration? duration,
+}) => DataMessage(
+  topic: topic,
+  seq: seq,
+  from: from,
+  time: at(seq),
+  head: MessageHead(
+    replaces: ':$target',
+    callState: state,
+    callDuration: duration,
+  ),
+  content: const PlainText(' '),
+);

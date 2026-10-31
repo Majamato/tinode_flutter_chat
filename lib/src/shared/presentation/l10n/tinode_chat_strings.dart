@@ -206,6 +206,24 @@ class TinodeChatStrings {
     this.noMessagesFound = 'No messages found',
     this.messageUnavailable = 'This message is not available right now.',
     this.removeMemberConfirm = _removeMemberConfirm,
+    this.callsTitle = 'Calls',
+    this.settingsTitle = 'Settings',
+    this.noCalls = 'No calls yet',
+    this.callBack = 'Call back',
+    this.openChat = 'Open chat',
+    this.profileSubtitle = 'Name, photo and password',
+    this.appearance = 'Appearance',
+    this.appearanceColor = 'Color',
+    this.appearanceColorHelp =
+        'Changes your bubbles, buttons and icons. Only you see your color.',
+    this.appearanceTheme = 'Theme',
+    this.themeLight = 'Light',
+    this.themeDark = 'Dark',
+    this.themeSystem = 'System',
+    this.appearancePreviewQuestion = 'Which color are we using?',
+    this.appearancePreviewAnswer = _appearancePreviewAnswer,
+    this.resetPalette = _resetPalette,
+    this.unreadCount = _unreadCount,
   });
 
   /// The texts of the nearest `TinodeChat`, or the defaults outside one.
@@ -455,7 +473,8 @@ class TinodeChatStrings {
   /// Tooltip of the chat list's floating button, which does the same.
   final String newMessage;
 
-  /// Tooltip of the chat list's account menu (profile, log out).
+  /// Tooltip of the chat list's account menu (profile, appearance, log
+  /// out), shown without the tab bar.
   final String accountMenu;
 
   /// The hint of the chat list's search field.
@@ -767,6 +786,57 @@ class TinodeChatStrings {
   /// A message picked from message search can't be shown: deleted, or
   /// not on the device while offline.
   final String messageUnavailable;
+
+  /// Title of the calls history, and its tab.
+  final String callsTitle;
+
+  /// Title of the settings screen, its tab, and the way back to it.
+  final String settingsTitle;
+
+  /// Shown when the calls history is empty.
+  final String noCalls;
+
+  /// What tapping a call in the calls history does, for screen readers.
+  final String callBack;
+
+  /// Opens a call's chat from the calls history.
+  final String openChat;
+
+  /// Under the user's name in settings: what the profile holds.
+  final String profileSubtitle;
+
+  /// Title of the appearance screen, and its entry in settings.
+  final String appearance;
+
+  /// The palette section of the appearance screen.
+  final String appearanceColor;
+
+  /// Under the palettes: what picking one changes.
+  final String appearanceColorHelp;
+
+  /// The light, dark or system section of the appearance screen.
+  final String appearanceTheme;
+
+  /// Always light.
+  final String themeLight;
+
+  /// Always dark.
+  final String themeDark;
+
+  /// Light or dark, as the device is.
+  final String themeSystem;
+
+  /// The other person's message in the appearance screen's preview.
+  final String appearancePreviewQuestion;
+
+  /// The user's answer in the preview, naming the palette `name`.
+  final String Function(String name) appearancePreviewAnswer;
+
+  /// Goes back to the default palette, named `name`.
+  final String Function(String name) resetPalette;
+
+  /// The unread count of the chats tab, for screen readers.
+  final String Function(int count) unreadCount;
 }
 
 String _typingOne(String name) => '$name is typing…';
@@ -780,3 +850,9 @@ String _fileTooLargeLimit(String limit) =>
     'The file is too large to send: the limit is $limit.';
 
 String _removeMemberConfirm(String name) => 'Remove $name from the group?';
+
+String _appearancePreviewAnswer(String name) => '$name, obviously';
+
+String _resetPalette(String name) => 'Reset to $name';
+
+String _unreadCount(int count) => '$count unread';

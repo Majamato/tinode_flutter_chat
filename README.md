@@ -59,6 +59,9 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
   The chat list's search button finds people and groups.
 - Keeps the cache small: each chat keeps its newest 1000 messages and the downloaded files
   stay under 200 MiB, both adjustable with `TinodeCacheLimits`.
+- A floating tab bar with the chats, the calls history and the settings (turn it off with
+  `TinodeChat(tabBar: false)`), and an Appearance screen where the user picks one of your
+  palettes and light, dark or system (`TinodeAppearance`).
 - Restyle it with a `TinodeChatTheme` theme extension, and translate or reword it with
   `TinodeChatStrings`.
 - Needs no `ProviderScope` or other setup in your app.
@@ -84,6 +87,38 @@ void main() => runApp(
   ),
 );
 ```
+
+### Appearance
+
+Offer your palettes and let the user pick one, with light, dark or system, on the settings'
+Appearance screen. Load the choice before `runApp` and build your themes from it; it is saved on
+the device:
+
+```dart
+final appearance = await TinodeAppearance.load(
+  palettes: [
+    TinodeAppearancePalette(id: 'slate', label: 'Slate', colors: TinodeChatPalette.neutral),
+    TinodeAppearancePalette(id: 'plum', label: 'Plum', colors: plumPalette),
+  ],
+);
+runApp(
+  ListenableBuilder(
+    listenable: appearance,
+    builder: (context, _) => MaterialApp(
+      theme: TinodeChatTheme.materialTheme(palette: appearance.palette.colors),
+      darkTheme: TinodeChatTheme.materialTheme(
+        palette: appearance.palette.colors,
+        brightness: Brightness.dark,
+      ),
+      themeMode: appearance.themeMode,
+      home: TinodeChat(config: config, appearance: appearance),
+    ),
+  ),
+);
+```
+
+`TinodeChat.appearanceExtra` adds a widget of your own to that screen, e.g. a look setting of
+your app's own such as its text size.
 
 ## Accounts: what the server decides
 
@@ -248,6 +283,11 @@ TinodeChat(
 
 Message search finds only what the cache keeps, so `messagesPerChat` is also how far back it
 reaches. Files waiting to be sent never count and are never pruned.
+
+The calls history is built from the cache too. Each time the calls tab shows, it fetches the
+newest messages of the direct chats the cache is behind on (at most 30, three at a time), so
+calls made while the app was closed show up; older calls show once their chat has been
+scrolled back to.
 
 ## Push: platform setup
 
@@ -436,8 +476,9 @@ where it needs the protocol:
    builder), online presence, the chat list (frosted header, previews from the cache, muted
    chats), login (one screen for signing in and up, with a `loginHeader` slot) and the call
    screens (voice and video, the ringing screen, a call bar for a minimized call, a
-   reconnecting pill). Next: an optional tab bar (Chats, Calls, Settings) with an Appearance
-   screen, and voice messages.
+   reconnecting pill), and the app shell (a floating tab bar with the chats, the calls history
+   and the settings, and the Appearance screen with `TinodeAppearance`). Next: voice
+   messages.
 
 ## Development
 

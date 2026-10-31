@@ -36,6 +36,9 @@ Future<void> pumpTinodeChat(
   ThemeData? theme,
   TinodeBubbleBuilder? bubbleBuilder,
   Widget? loginHeader,
+  bool tabBar = false,
+  TinodeAppearance? appearance,
+  Widget? appearanceExtra,
   bool reduceMotion = true,
 }) async {
   await tester.pumpWidget(
@@ -66,6 +69,9 @@ Future<void> pumpTinodeChat(
         pushToken: pushToken,
         bubbleBuilder: bubbleBuilder,
         loginHeader: loginHeader,
+        tabBar: tabBar,
+        appearance: appearance,
+        appearanceExtra: appearanceExtra,
       ),
     ),
   );

@@ -9,8 +9,8 @@ The values live in code, not here: the palette in `TinodeChatPalette`, the neutr
 them in `chatMaterialTheme` (`TinodeChatTheme.materialTheme`). This page says what each is for.
 
 The screens are moving to this design one by one (see the README's roadmap). The chat screen,
-the chat list and login have moved; calls and settings still read only the tokens they used
-before.
+the chat list, login, the call screens and the app shell (tab bar, calls history, settings,
+appearance) have moved; voice messages are next.
 
 ## Palette
 
@@ -34,8 +34,9 @@ Dark mode swaps `primary` for `night` and `ink` for `onDark`, and uses the dark 
 
 ## Neutrals and semantic colors
 
-`ChatNeutrals.light` and `.dark`: `page` (outermost, and the dark wallpaper), `background`
-(lists, sheets), `surface` (inputs, chips), `card` (settings groups), `peerBubble`, `text`,
+`ChatNeutrals.light` and `.dark`: `page` (outermost, and the dark wallpaper; `pageColor` behind
+settings), `background` (lists, sheets), `surface` (inputs, chips), `card` (settings groups:
+`cardColor`, radius `cardRadius` 20), `peerBubble`, `text`,
 `muted` (times, previews, labels), `line` (dividers, borders), `glass` and `glassEdge` (frosted
 bars), `waveOff`, `dateChip`, `mutedBadge`. Fixed in both modes: `danger` (end call, recording,
 missed calls) and `online` (the presence dot, with a 2–3 px ring in `background`).
@@ -106,8 +107,8 @@ Timers and durations use tabular figures.
 
 ## Chat list
 
-- The chats scroll under a frosted header: the account menu, "Chats" (`titleLarge`) and the
-  compose button in `linkColor`, then a 38 px search pill (`surfaceContainer`, radius 12) that
+- The chats scroll under a frosted header: the account menu (only without the tab bar: profile,
+  appearance, log out), "Chats" (`titleLarge`) and the compose button in `linkColor`, then a 38 px search pill (`surfaceContainer`, radius 12) that
   opens the people search. No folder chips.
 - Rows are 76 px: a 56 px avatar with the presence dot; the name (`titleMedium` at 16), a muted
   icon, the ticks of the user's own last message (read in `linkColor`) and the time (`bodySmall`,
@@ -120,6 +121,54 @@ Timers and durations use tabular figures.
 - The first rows fade up 14 px over 420 ms, 40 ms apart, once per screen; the floating button
   (`primary`, a new-message icon) pops in after 350 ms. Reduce motion shows both at once.
 - Times: today the time of day, then "Yesterday", else the short date.
+
+## Shell
+
+- `TinodeChat(tabBar: true)`, the default: the chat list, the calls history (when the host
+  offers some kind of call) and the settings are tabs of a floating glass bar. Hosts with tabs of
+  their own turn it off; the chat list's account menu then holds the settings.
+- The bar: 16 px from the sides, 26 px from the bottom (or the system inset, if more), 66 px
+  tall, radius 33, `glassColor` with blur 24 and saturation 1.6, a 1 px `glassEdgeColor` edge and
+  a soft shadow. A lens (`tabBarLensColor`: `primary` at 10 % in light, white at 14 % in dark,
+  radius 27) slides under the current tab on `springCurve`. Each tab is a 24 px icon over an
+  11/700 label, in `linkColor` when current, else `outline`. The chats tab carries the unread
+  count of chats that aren't muted (an 18 px `unreadBadgeColor` stadium, "99+" above 99). A
+  pick ticks the haptics; screen readers hear the tabs as tabs, the current one selected, and the
+  unread count.
+- The tabs see the bar's footprint as their bottom padding: lists scroll under it, the floating
+  button sits 20 px above it (18 px from the side), snack bars over it. A hidden tab keeps its
+  state, its tickers off. Back on another tab goes to the chats first.
+
+## Calls history
+
+- The calls of direct chats, newest first, under a frosted "Calls" header: 72 px rows with a
+  48 px avatar, the chat's name (`missedCallColor` when the user missed the call), then the
+  direction arrow (bent when the call didn't happen), the kind and how it went ("Voice call ·
+  4:12", "Video call · Missed") in `outline`, the time as in the chat list, and a button to the
+  chat in `linkColor`. A tap calls back, by the same kind, or the other when the host leaves that
+  one out. Pull to fetch again.
+
+## Settings
+
+- Cards (`cardColor`, `cardRadius`) on `pageColor`, 22 px apart, under a frosted "Settings"
+  header: the user's photo (56 px) and name over "Name, photo and password", opening the
+  profile; Appearance with the palette in use, when the host offers one; Log out in
+  `colorScheme.error`. Rows are at least 52 px, with a `linkColor` icon and a chevron.
+- Section labels are `labelMedium`, upper case, in `outline` (`SettingsLabel`).
+
+## Appearance
+
+- Under a frosted header, "‹ Settings" in `linkColor` and "Appearance": a preview card (radius
+  24) with the wallpaper, a 22 px dot grid and two bubbles with tails, the answer naming the
+  palette and popping in again from its tail (.6 → 1.06 → 1, 380 ms) when it changes.
+- **Color** (when the host offers more than one palette): five swatches to a row on a card,
+  48 px circles split at 135° into the palette's `accent` (38 %) and light `primary`, the name
+  below (11 px, 800 when picked); the picked one has a 3 px gap and a 2.5 px `primary` ring. A
+  pick ticks the haptics. Then a line on what the color changes.
+- **Theme**: Light | Dark | System (`SlidingSegments`: 46 px, radius 16, `cardColor`, a
+  `primary` pill sliding on `springCurve`, labels 15/700).
+- The host's own `appearanceExtra`, if any, then "Reset to <default>" in
+  `linkColor`, which resets only the palette.
 
 ## Chat screen
 
@@ -188,6 +237,7 @@ and the dots of "Ringing…" stop pulsing.
 ## Accessibility
 
 - Text passes 4.5:1 (3:1 from 24 px). Check new colors before adding them.
-- Every icon-only button has a label. Toggles expose their state; the current tab is announced.
+- Every icon-only button has a label. Toggles, segments, swatches and tabs expose their state; the
+  current tab is announced.
 - Decoration (tails, blobs, rings) is hidden from screen readers.
 - Color is never the only signal: read state also shows in the ticks, muted chats show an icon.

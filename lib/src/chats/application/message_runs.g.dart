@@ -270,6 +270,51 @@ final class OtherUnreadFamily extends $Family
   String toString() => r'otherUnreadProvider';
 }
 
+/// The unread messages of every chat that isn't muted, for the tab bar.
+
+@ProviderFor(totalUnread)
+final totalUnreadProvider = TotalUnreadProvider._();
+
+/// The unread messages of every chat that isn't muted, for the tab bar.
+
+final class TotalUnreadProvider extends $FunctionalProvider<int, int, int>
+    with $Provider<int> {
+  /// The unread messages of every chat that isn't muted, for the tab bar.
+  TotalUnreadProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'totalUnreadProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$totalUnreadHash();
+
+  @$internal
+  @override
+  $ProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  int create(Ref ref) {
+    return totalUnread(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$totalUnreadHash() => r'c7833b54abdac4cda111c45fc4280aa0bd3023ad';
+
 /// Whether anyone in [topic] is typing, for the typing bubble.
 
 @ProviderFor(anyoneTyping)

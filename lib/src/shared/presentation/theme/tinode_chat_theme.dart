@@ -55,10 +55,14 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.callPillColor,
     required this.callPillEdgeColor,
     required this.acceptCallColor,
+    required this.pageColor,
+    required this.cardColor,
+    required this.tabBarLensColor,
     required this.composerRadius,
     required this.fieldRadius,
     required this.buttonRadius,
     required this.sheetRadius,
+    required this.cardRadius,
     required this.springCurve,
     required this.springDuration,
     required this.fadeDuration,
@@ -115,10 +119,14 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       callPillColor: ChatNeutrals.callPill,
       callPillEdgeColor: ChatNeutrals.callPillEdge,
       acceptCallColor: ChatNeutrals.online,
+      pageColor: colors.surface,
+      cardColor: colors.surfaceContainerHighest,
+      tabBarLensColor: colors.primary.withValues(alpha: 0.12),
       composerRadius: 22,
       fieldRadius: 4,
       buttonRadius: 20,
       sheetRadius: 28,
+      cardRadius: 12,
       springCurve: Curves.easeOutCubic,
       springDuration: const Duration(milliseconds: 300),
       fadeDuration: const Duration(milliseconds: 200),
@@ -185,10 +193,16 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       callPillColor: ChatNeutrals.callPill,
       callPillEdgeColor: ChatNeutrals.callPillEdge,
       acceptCallColor: ChatNeutrals.online,
+      pageColor: neutrals.page,
+      cardColor: neutrals.card,
+      tabBarLensColor: dark
+          ? const Color(0x24FFFFFF)
+          : palette.primary.withValues(alpha: 0.1),
       composerRadius: 22,
       fieldRadius: 14,
       buttonRadius: 16,
       sheetRadius: 28,
+      cardRadius: 20,
       springCurve: const Cubic(0.2, 0.9, 0.3, 1.25),
       springDuration: const Duration(milliseconds: 380),
       fadeDuration: const Duration(milliseconds: 200),
@@ -372,6 +386,15 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// The button that accepts a ringing call.
   final Color acceptCallColor;
 
+  /// Behind settings screens, around their [cardColor] groups.
+  final Color pageColor;
+
+  /// Settings groups and cards on [pageColor].
+  final Color cardColor;
+
+  /// The lens that slides under the tab bar's current tab.
+  final Color tabBarLensColor;
+
   /// Corner radius of the composer's text field.
   final double composerRadius;
 
@@ -383,6 +406,9 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
 
   /// Corner radius of the top of bottom sheets.
   final double sheetRadius;
+
+  /// Corner radius of settings groups and cards.
+  final double cardRadius;
 
   /// The curve of what pops, slides or grows: bubbles, pills, sheets.
   final Curve springCurve;
@@ -439,10 +465,14 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     Color? callPillColor,
     Color? callPillEdgeColor,
     Color? acceptCallColor,
+    Color? pageColor,
+    Color? cardColor,
+    Color? tabBarLensColor,
     double? composerRadius,
     double? fieldRadius,
     double? buttonRadius,
     double? sheetRadius,
+    double? cardRadius,
     Curve? springCurve,
     Duration? springDuration,
     Duration? fadeDuration,
@@ -489,10 +519,14 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     callPillColor: callPillColor ?? this.callPillColor,
     callPillEdgeColor: callPillEdgeColor ?? this.callPillEdgeColor,
     acceptCallColor: acceptCallColor ?? this.acceptCallColor,
+    pageColor: pageColor ?? this.pageColor,
+    cardColor: cardColor ?? this.cardColor,
+    tabBarLensColor: tabBarLensColor ?? this.tabBarLensColor,
     composerRadius: composerRadius ?? this.composerRadius,
     fieldRadius: fieldRadius ?? this.fieldRadius,
     buttonRadius: buttonRadius ?? this.buttonRadius,
     sheetRadius: sheetRadius ?? this.sheetRadius,
+    cardRadius: cardRadius ?? this.cardRadius,
     springCurve: springCurve ?? this.springCurve,
     springDuration: springDuration ?? this.springDuration,
     fadeDuration: fadeDuration ?? this.fadeDuration,
@@ -566,10 +600,14 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       callPillColor: color(callPillColor, other.callPillColor),
       callPillEdgeColor: color(callPillEdgeColor, other.callPillEdgeColor),
       acceptCallColor: color(acceptCallColor, other.acceptCallColor),
+      pageColor: color(pageColor, other.pageColor),
+      cardColor: color(cardColor, other.cardColor),
+      tabBarLensColor: color(tabBarLensColor, other.tabBarLensColor),
       composerRadius: number(composerRadius, other.composerRadius),
       fieldRadius: number(fieldRadius, other.fieldRadius),
       buttonRadius: number(buttonRadius, other.buttonRadius),
       sheetRadius: number(sheetRadius, other.sheetRadius),
+      cardRadius: number(cardRadius, other.cardRadius),
       springCurve: near.springCurve,
       springDuration: near.springDuration,
       fadeDuration: near.fadeDuration,

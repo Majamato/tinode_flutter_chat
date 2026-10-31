@@ -1,6 +1,7 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/cached_call.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
@@ -31,6 +32,10 @@ abstract interface class ChatSession implements TinodeSession {
   /// The newest message of each cached chat, or only of [topic], for the
   /// chat list's preview. Never asks the server.
   Future<Map<String, LatestMessage>> storedLatestMessages({String? topic});
+
+  /// The call messages in the cache, or only [topic]'s, each with its
+  /// updates; never asks the server.
+  Future<List<CachedCall>> storedCalls({String? topic});
 
   /// Up to [limit] messages before [before]: from the cache where it has
   /// them, from the server for the gaps. Offline, only what is cached.
