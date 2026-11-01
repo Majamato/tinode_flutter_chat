@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// "‹ [label]" in the link colour: back to the screen named [label].
@@ -25,7 +26,7 @@ class AppearanceBackButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.chevron_left, size: 30, color: color),
+                Icon(TinodeChatIcons.of(context).back, size: 30, color: color),
                 Text(
                   label,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(

@@ -12,6 +12,8 @@ import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
 
+const icons = TinodeChatIcons();
+
 void main() {
   const strings = TinodeChatStrings();
   late FakeTinodeSession session;
@@ -68,7 +70,7 @@ void main() {
   testWidgets('a muted chat has the icon and a grey badge', (tester) async {
     await pumpList(tester);
 
-    expect(find.byIcon(Icons.volume_off_outlined), findsOneWidget);
+    expect(find.byIcon(icons.muted), findsOneWidget);
     final badge = tester.widget<Container>(
       find.descendant(
         of: find.byType(ChatUnreadBadge),

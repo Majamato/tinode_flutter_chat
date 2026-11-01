@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_members_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/read_by_sheet.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// What the user can do with message [seq]: see who read it (their own,
@@ -22,6 +23,7 @@ class MessageActionsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
     final forEveryone = ref.watch(
       chatSummaryProvider(topic).select((c) => c?.canDeleteForEveryone),
@@ -34,7 +36,7 @@ class MessageActionsSheet extends ConsumerWidget {
         children: [
           if (readBy)
             ListTile(
-              leading: const Icon(Icons.done_all),
+              leading: Icon(icons.readBy),
               title: Text(strings.readBy),
               onTap: () {
                 Navigator.of(context).pop();
@@ -47,13 +49,13 @@ class MessageActionsSheet extends ConsumerWidget {
               },
             ),
           ListTile(
-            leading: const Icon(Icons.delete_outline),
+            leading: Icon(icons.delete),
             title: Text(strings.deleteForMe),
             onTap: () => _delete(context, ref, forEveryone: false),
           ),
           if (forEveryone ?? false)
             ListTile(
-              leading: const Icon(Icons.delete_forever_outlined),
+              leading: Icon(icons.deleteForever),
               title: Text(strings.deleteForEveryone),
               onTap: () => _delete(context, ref, forEveryone: true),
             ),

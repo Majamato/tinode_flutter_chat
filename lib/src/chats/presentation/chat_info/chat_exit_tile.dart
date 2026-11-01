@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_actions_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_exit.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/confirm_dialog.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Deletes the chat, deletes the group, or leaves it, after asking; then
@@ -39,6 +40,7 @@ class ChatExitTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final icons = TinodeChatIcons.of(context);
     final exit = ref.watch(chatExitProvider(topic));
     if (exit == null) {
       return const SizedBox.shrink();
@@ -50,7 +52,7 @@ class ChatExitTile extends ConsumerWidget {
     final (_, label) = _texts(TinodeChatStrings.of(context), exit);
     return ListTile(
       leading: Icon(
-        exit == ChatExit.leaveGroup ? Icons.logout : Icons.delete_outline,
+        exit == ChatExit.leaveGroup ? icons.leaveChat : icons.delete,
         color: color,
       ),
       title: Text(label, style: TextStyle(color: color)),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/message_receipt.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -32,30 +33,31 @@ class MessageStatusIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
     final (icon, label, tint) = switch ((status, receipt)) {
       (null, MessageReceipt.read) => (
-        Icons.done_all,
+        icons.read,
         strings.messageRead,
         readColor ?? TinodeChatTheme.of(context).readReceiptColor,
       ),
       (null, MessageReceipt.delivered) => (
-        Icons.done_all,
+        icons.delivered,
         strings.messageDelivered,
         color,
       ),
       (null, MessageReceipt.sent || null) => (
-        Icons.done,
+        icons.sent,
         strings.messageSent,
         color,
       ),
       (OutgoingStatus.queued || OutgoingStatus.sending, _) => (
-        Icons.schedule,
+        icons.sending,
         strings.messageWaiting,
         color,
       ),
       (OutgoingStatus.failed, _) => (
-        Icons.error_outline,
+        icons.failed,
         strings.messageNotSent,
         Theme.of(context).colorScheme.error,
       ),

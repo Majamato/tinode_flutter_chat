@@ -65,7 +65,8 @@ Timers and durations use tabular figures.
 4 px grid; 16 px screen padding; bubbles 10 px from the edges. Radii in `TinodeChatTheme`:
 `bubbleRadius` 20, `photoRadius` 15, `composerRadius` 22, `fieldRadius` 14, `buttonRadius` 16,
 `sheetRadius` 28; chips and badges are stadiums. Touch targets are at least 44 × 44. Icons are
-24 px strokes, never emoji.
+24 px [Phosphor](https://phosphoricons.com) strokes (`TinodeChatIcons`), never emoji: Regular,
+Fill for the current tab, play, pause and hang up, Bold for the small ticks and the send arrow.
 
 ## Bubbles
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/search/application/message_search_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// The text field of a message search; each change goes to the search of
@@ -31,7 +32,7 @@ class _MessageSearchFieldState extends ConsumerState<MessageSearchField> {
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: TinodeChatStrings.of(context).messageSearchHint,
-        prefixIcon: const Icon(Icons.search),
+        prefixIcon: Icon(TinodeChatIcons.of(context).search),
         border: InputBorder.none,
       ),
       onChanged: (text) => ref

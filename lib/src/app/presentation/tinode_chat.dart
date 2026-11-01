@@ -29,6 +29,8 @@ import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_header_scope.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_theme_scope.dart';
@@ -69,6 +71,7 @@ class TinodeChat extends StatefulWidget {
     this.controller,
     this.pushToken,
     this.strings = const TinodeChatStrings(),
+    this.icons = const TinodeChatIcons(),
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
     this.bubbleBuilder,
@@ -116,6 +119,7 @@ class TinodeChat extends StatefulWidget {
     this.controller,
     this.pushToken,
     this.strings = const TinodeChatStrings(),
+    this.icons = const TinodeChatIcons(),
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
     this.bubbleBuilder,
@@ -158,6 +162,9 @@ class TinodeChat extends StatefulWidget {
 
   /// The texts the chat shows.
   final TinodeChatStrings strings;
+
+  /// The icons the chat shows, Phosphor's by default.
+  final TinodeChatIcons icons;
 
   /// Which features the chat offers: signing up and resetting a forgotten
   /// password (by default only where the server sends email) on the login
@@ -332,16 +339,19 @@ class _TinodeChatState extends State<TinodeChat> {
       container: _container,
       child: TinodeChatStringsScope(
         strings: widget.strings,
-        child: BubbleBuilderScope(
-          builder: widget.bubbleBuilder,
-          child: LoginHeaderScope(
-            header: widget.loginHeader,
-            child: ShellScope(
-              tabBar: _tabBar,
-              child: AppearanceScope(
-                appearance: widget.appearance,
-                extra: widget.appearanceExtra,
-                child: const ChatThemeScope(child: SessionGate()),
+        child: TinodeChatIconsScope(
+          icons: widget.icons,
+          child: BubbleBuilderScope(
+            builder: widget.bubbleBuilder,
+            child: LoginHeaderScope(
+              header: widget.loginHeader,
+              child: ShellScope(
+                tabBar: _tabBar,
+                child: AppearanceScope(
+                  appearance: widget.appearance,
+                  extra: widget.appearanceExtra,
+                  child: const ChatThemeScope(child: SessionGate()),
+                ),
               ),
             ),
           ),

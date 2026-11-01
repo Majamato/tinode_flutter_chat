@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/call_record.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// How a call shows in its bubble and in the calls history.
@@ -29,10 +30,11 @@ extension CallRecordTexts on CallRecord {
       };
 
   /// An arrow for its direction, bent when it didn't happen.
-  IconData icon({required bool outgoing}) => switch ((outgoing, failed)) {
-    (true, false) => Icons.call_made,
-    (false, false) => Icons.call_received,
-    (true, true) => Icons.call_missed_outgoing,
-    (false, true) => Icons.call_missed,
-  };
+  IconData icon(TinodeChatIcons icons, {required bool outgoing}) =>
+      switch ((outgoing, failed)) {
+        (true, false) => icons.outgoingCall,
+        (false, false) => icons.incomingCall,
+        (true, true) => icons.cancelledCall,
+        (false, true) => icons.missedCall,
+      };
 }

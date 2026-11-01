@@ -4,6 +4,7 @@ import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_minimized.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/call_status_text.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// [child], the chats, under a bar for the minimized call: who is on the
@@ -45,6 +46,7 @@ class _Bar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final icons = TinodeChatIcons.of(context);
     final call = ref.watch(
       callControllerProvider.select(
         (c) => c == null ? null : (topic: c.topic, video: !c.audioOnly),
@@ -77,9 +79,7 @@ class _Bar extends ConsumerWidget {
                   child: Row(
                     children: [
                       Icon(
-                        call.video
-                            ? Icons.videocam_rounded
-                            : Icons.call_rounded,
+                        call.video ? icons.videoCall : icons.voiceCall,
                         size: 18,
                         color: colors.onPrimary,
                       ),
@@ -88,10 +88,7 @@ class _Bar extends ConsumerWidget {
                       Text(' · ', style: style),
                       CallStatusText(textAlign: TextAlign.start, style: style),
                       const Spacer(),
-                      Icon(
-                        Icons.keyboard_arrow_up_rounded,
-                        color: colors.onPrimary,
-                      ),
+                      Icon(icons.restoreCall, color: colors.onPrimary),
                     ],
                   ),
                 ),

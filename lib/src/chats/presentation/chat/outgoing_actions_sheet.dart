@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// What the user can do with a message not sent yet: retry it once it
@@ -21,6 +22,7 @@ class OutgoingActionsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
     final (status, hasAttachment) = ref.watch(
       outgoingMessageProvider(
@@ -36,13 +38,13 @@ class OutgoingActionsSheet extends ConsumerWidget {
         children: [
           if (status == OutgoingStatus.failed)
             ListTile(
-              leading: const Icon(Icons.refresh),
+              leading: Icon(icons.retry),
               title: Text(strings.retry),
               onTap: () => _act(context, chat.retry),
             ),
           if (status != OutgoingStatus.sending)
             ListTile(
-              leading: const Icon(Icons.delete_outline),
+              leading: Icon(icons.delete),
               // Discarding a waiting attachment stops its upload.
               title: Text(
                 hasAttachment && status == OutgoingStatus.queued

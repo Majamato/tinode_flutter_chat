@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scope
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_screen.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_screen.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -21,7 +22,7 @@ class AccountMenuButton extends ConsumerWidget {
     return PopupMenuButton<void>(
       tooltip: strings.accountMenu,
       icon: Icon(
-        Icons.account_circle_outlined,
+        TinodeChatIcons.of(context).account,
         color: TinodeChatTheme.of(context).linkColor,
       ),
       itemBuilder: (_) => [

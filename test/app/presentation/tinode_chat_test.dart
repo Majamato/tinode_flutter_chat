@@ -14,6 +14,8 @@ import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
 import '../../support/test_container.dart';
 
+const icons = TinodeChatIcons();
+
 void main() {
   late FakeTinodeSession session;
 
@@ -101,6 +103,20 @@ void main() {
     expect(session.calls, contains('detach $bob'));
   });
 
+  testWidgets('shows the icons the host passes in', (tester) async {
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+      icons: const TinodeChatIcons(search: Icons.abc, newChat: Icons.add),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.abc), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsWidgets);
+    expect(find.byIcon(icons.search), findsNothing);
+  });
+
   testWidgets('a refused message shows as not sent and can be retried', (
     tester,
   ) async {
@@ -123,14 +139,14 @@ void main() {
       isEmpty,
     );
     expect(find.text('Hello?'), findsOneWidget);
-    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    expect(find.byIcon(icons.failed), findsOneWidget);
 
     await tester.longPress(find.text('Hello?'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.error_outline), findsNothing);
+    expect(find.byIcon(icons.failed), findsNothing);
     expect(find.text('Hello?'), findsOneWidget);
     expect(
       session.calls.where((c) => c == 'publish $bob Hello?'),
@@ -159,12 +175,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('See you'), findsOneWidget);
-    expect(find.byIcon(Icons.schedule), findsOneWidget);
+    expect(find.byIcon(icons.sending), findsOneWidget);
 
     session.emitStatus(const Connected());
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.schedule), findsNothing);
+    expect(find.byIcon(icons.sending), findsNothing);
     expect(find.text('See you'), findsOneWidget);
   });
 

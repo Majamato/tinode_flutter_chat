@@ -12,6 +12,8 @@ import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
 
+const icons = TinodeChatIcons();
+
 void main() {
   late FakeTinodeSession session;
 
@@ -115,12 +117,12 @@ void main() {
   ) async {
     await openFriends(tester);
     expect(find.byTooltip('Record voice message'), findsOneWidget);
-    expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
+    expect(find.byIcon(icons.microphone), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'hello');
     await tester.pumpAndSettle();
     expect(find.byTooltip('Send'), findsOneWidget);
-    expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+    expect(find.byIcon(icons.send), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), '   ');
     await tester.pumpAndSettle();

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scope.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/settings_tile.dart';
 
@@ -16,7 +17,7 @@ class AppearanceTile extends StatelessWidget {
     final strings = TinodeChatStrings.of(context);
     final appearance = AppearanceScope.maybeOf(context);
     return SettingsTile(
-      icon: Icons.palette_outlined,
+      icon: TinodeChatIcons.of(context).appearance,
       title: strings.appearance,
       subtitle: (appearance?.palettes.length ?? 0) > 1
           ? appearance?.palette.label

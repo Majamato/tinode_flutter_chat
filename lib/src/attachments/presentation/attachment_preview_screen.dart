@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// The picked image (or the file's name and size) with a caption field,
@@ -39,6 +40,7 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
     final file = widget.file;
     final path = file.path;
@@ -60,10 +62,7 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
                     : Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.insert_drive_file_outlined,
-                            size: 64,
-                          ),
+                          Icon(icons.file, size: 64),
                           const SizedBox(height: 8),
                           Text(file.name, textAlign: TextAlign.center),
                           Text(fileSizeLabel(file.length)),
@@ -91,7 +90,7 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
                   ),
                   IconButton(
                     tooltip: strings.send,
-                    icon: const Icon(Icons.send),
+                    icon: Icon(icons.send),
                     onPressed: _send,
                   ),
                 ],

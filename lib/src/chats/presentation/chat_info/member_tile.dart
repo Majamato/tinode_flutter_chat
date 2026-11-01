@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_actions_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/confirm_dialog.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/profile_avatar.dart';
 
@@ -54,7 +55,7 @@ class MemberTile extends ConsumerWidget {
       trailing: removable
           ? IconButton(
               tooltip: strings.removeMember,
-              icon: const Icon(Icons.person_remove_outlined),
+              icon: Icon(TinodeChatIcons.of(context).removeMember),
               onPressed: busy
                   ? null
                   : () => unawaited(_remove(context, ref, name)),

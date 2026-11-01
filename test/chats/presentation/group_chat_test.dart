@@ -9,6 +9,8 @@ import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
 
+const icons = TinodeChatIcons();
+
 void main() {
   late FakeTinodeSession session;
 
@@ -74,12 +76,12 @@ void main() {
     tester,
   ) async {
     await openFriends(tester);
-    expect(find.byIcon(Icons.done), findsOneWidget);
+    expect(find.byIcon(icons.sent), findsOneWidget);
 
     emitMarker(InfoEvent.received, bob, 4);
     emitMarker(InfoEvent.received, carol, 4);
     await tester.pump();
-    expect(find.byIcon(Icons.done_all), findsOneWidget);
+    expect(find.byIcon(icons.delivered), findsOneWidget);
 
     final rebuilt = <String>[];
     debugOnRebuildDirtyWidget = (element, _) =>
@@ -90,7 +92,7 @@ void main() {
     emitMarker(InfoEvent.read, carol, 4);
     await tester.pump();
 
-    final icon = tester.widget<Icon>(find.byIcon(Icons.done_all));
+    final icon = tester.widget<Icon>(find.byIcon(icons.delivered));
     expect(icon.semanticLabel, 'Read');
     expect(rebuilt, contains('MessageFooter'));
     expect(

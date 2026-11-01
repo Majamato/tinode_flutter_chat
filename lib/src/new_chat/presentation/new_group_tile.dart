@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/new_group_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// The search's entry that opens the new group screen. Watches nothing.
@@ -9,7 +10,7 @@ class NewGroupTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: const CircleAvatar(child: Icon(Icons.group_add_outlined)),
+      leading: CircleAvatar(child: Icon(TinodeChatIcons.of(context).newGroup)),
       title: Text(TinodeChatStrings.of(context).newGroup),
       onTap: () => NewGroupScreen.open(context),
     );

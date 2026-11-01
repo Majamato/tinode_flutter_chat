@@ -1,5 +1,11 @@
 ## Unreleased
 
+- Icons are [Phosphor](https://phosphoricons.com) instead of Material: Regular, with Fill for
+  the current tab, the play and pause buttons and hang up, and Bold for the ticks. Adds the
+  `phosphoricons_flutter` dependency.
+- **API:** `TinodeChatIcons`, passed as `TinodeChat(icons:)`, holds every icon the chat shows,
+  one `IconData` per role, so a host can swap one icon or the whole set (Material, Cupertino,
+  another package or its own icon font).
 - Screen headers (the chat list, calls, settings, appearance and a chat) are solid; lists start
   below them instead of scrolling under.
 - Voice messages. The send button rests on the microphone while the field is blank: a tap

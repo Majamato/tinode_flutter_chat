@@ -78,6 +78,10 @@ business logic in UI files. Flutter's own guidance is in
   someone or counts something is a function field (`typingOne(name)`) whose default is a private
   top-level function, so `TinodeChatStrings` stays `const`. Choosing between such texts (one name,
   two, a count) is a plain function next to its widget, like `typingMessage`, not code in `build`.
+- No `Icons.*` in widgets: use `TinodeChatIcons.of(context)`. Add a field named for its role
+  (`voiceCall`, not `phone`) with a Phosphor default for a new icon; an on or selected state gets
+  its own field (`chatsTabSelected`). Only `tinode_chat_icons.dart` imports Phosphor. Helpers
+  that pick an icon outside `build` take the `TinodeChatIcons`, as `CallRecordTexts.icon` does.
 - No hard-coded colors: use `TinodeChatTheme.of(context)` or `Theme.of(context).colorScheme`. Add a
   field to `TinodeChatTheme` (and to `copyWith`, `lerp`, `fallback`) for new chat-specific colors.
 - Widgets must work at phone width and in dark mode.

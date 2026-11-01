@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/profile/application/delete_account_controller.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/confirm_dialog.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Deletes the account, after asking. Success shows the login screen;
@@ -40,7 +41,7 @@ class DeleteAccountTile extends ConsumerWidget {
     );
     final error = Theme.of(context).colorScheme.error;
     return ListTile(
-      leading: Icon(Icons.delete_forever_outlined, color: error),
+      leading: Icon(TinodeChatIcons.of(context).deleteForever, color: error),
       title: Text(
         TinodeChatStrings.of(context).deleteAccount,
         style: TextStyle(color: error),

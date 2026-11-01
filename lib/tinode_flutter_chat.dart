@@ -30,6 +30,8 @@ export 'src/session/domain/tinode_chat_features.dart'
     show PasswordResetMode, TinodeChatFeatures;
 export 'src/session/domain/tinode_credentials.dart'
     show PasswordCredentials, TinodeCredentials, TokenCredentials;
+export 'src/shared/presentation/icons/tinode_chat_icons.dart'
+    show TinodeChatIcons;
 export 'src/shared/presentation/l10n/tinode_chat_strings.dart'
     show TinodeChatStrings;
 export 'src/shared/presentation/theme/tinode_chat_palette.dart'

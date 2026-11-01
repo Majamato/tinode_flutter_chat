@@ -17,6 +17,8 @@ import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
 
+const icons = TinodeChatIcons();
+
 const reportRef = '/v0/file/s/report.pdf';
 
 DataMessage fileMessage(int seq) => DataMessage(
@@ -75,7 +77,7 @@ void main() {
   }
 
   Future<void> chooseFromMenu(WidgetTester tester, String entry) async {
-    await tester.tap(find.byIcon(Icons.attach_file));
+    await tester.tap(find.byIcon(icons.attach));
     await tester.pumpAndSettle();
     await tester.tap(find.text(entry));
     await tester.pumpAndSettle();
@@ -97,7 +99,7 @@ void main() {
     expect(find.byType(AttachmentPreviewScreen), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'Sunset');
-    await tester.tap(find.byIcon(Icons.send));
+    await tester.tap(find.byIcon(icons.send));
     await tester.pumpAndSettle();
 
     expect(find.byType(AttachmentPreviewScreen), findsNothing);
@@ -154,7 +156,7 @@ void main() {
     picker.hasCamera = false;
     await openBob(tester);
 
-    await tester.tap(find.byIcon(Icons.attach_file));
+    await tester.tap(find.byIcon(icons.attach));
     await tester.pumpAndSettle();
 
     expect(find.text('Photo'), findsOneWidget);
@@ -173,7 +175,7 @@ void main() {
     picker.next = pickedText('notes.txt', 'hello');
 
     await chooseFromMenu(tester, 'File');
-    await tester.tap(find.byIcon(Icons.send));
+    await tester.tap(find.byIcon(icons.send));
     await tester.pumpAndSettle();
 
     expect(
@@ -193,7 +195,7 @@ void main() {
       isImage: true,
     );
     await chooseFromMenu(tester, 'Photo');
-    await tester.tap(find.byIcon(Icons.send));
+    await tester.tap(find.byIcon(icons.send));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.byType(OutgoingAttachmentView), findsOneWidget);

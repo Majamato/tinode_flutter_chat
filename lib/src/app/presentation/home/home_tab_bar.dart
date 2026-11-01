@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:tinode_flutter_chat/src/app/domain/home_tab.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/home/home_unread_badge.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/frosted_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -155,17 +156,26 @@ class _Tab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
     final theme = Theme.of(context);
     final chat = TinodeChatTheme.of(context);
     final (label, icon, selectedIcon) = switch (tab) {
       HomeTab.chats => (
         strings.chatListTitle,
-        Icons.chat_bubble_outline,
-        Icons.chat_bubble,
+        icons.chatsTab,
+        icons.chatsTabSelected,
       ),
-      HomeTab.calls => (strings.callsTitle, Icons.call_outlined, Icons.call),
-      HomeTab.settings => (strings.settingsTitle, Icons.tune, Icons.tune),
+      HomeTab.calls => (
+        strings.callsTitle,
+        icons.callsTab,
+        icons.callsTabSelected,
+      ),
+      HomeTab.settings => (
+        strings.settingsTitle,
+        icons.settingsTab,
+        icons.settingsTabSelected,
+      ),
     };
     return MergeSemantics(
       child: Semantics(

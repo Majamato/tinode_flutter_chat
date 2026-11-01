@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/attachments/application/attachment_inputs.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Where to pick an attachment from: Photo, Camera (where the device has
@@ -12,6 +13,7 @@ class AttachSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
     final hasCamera = ref.watch(cameraAvailableProvider);
 
@@ -20,18 +22,18 @@ class AttachSheet extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: const Icon(Icons.photo_outlined),
+            leading: Icon(icons.photo),
             title: Text(strings.attachPhoto),
             onTap: () => _choose(context, AttachmentSource.gallery),
           ),
           if (hasCamera)
             ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
+              leading: Icon(icons.camera),
               title: Text(strings.attachCamera),
               onTap: () => _choose(context, AttachmentSource.camera),
             ),
           ListTile(
-            leading: const Icon(Icons.attach_file),
+            leading: Icon(icons.attach),
             title: Text(strings.attachFile),
             onTap: () => _choose(context, AttachmentSource.file),
           ),

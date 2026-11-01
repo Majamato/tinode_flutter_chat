@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_preview_controlle
 import 'package:tinode_flutter_chat/src/chats/application/message_runs.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_preview.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_indicator.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -26,6 +27,7 @@ class ChatPreviewLine extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final icons = TinodeChatIcons.of(context);
     final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
       color: Theme.of(context).colorScheme.outline,
     );
@@ -53,10 +55,10 @@ class ChatPreviewLine extends ConsumerWidget {
     };
     final call = preview.call;
     final (icon, iconColor) = switch (preview.kind) {
-      ChatPreviewKind.voice => (Icons.mic_none, theme.linkColor),
-      ChatPreviewKind.file => (Icons.description_outlined, theme.linkColor),
+      ChatPreviewKind.voice => (icons.microphone, theme.linkColor),
+      ChatPreviewKind.file => (icons.file, theme.linkColor),
       ChatPreviewKind.call => (
-        call?.audioOnly ?? true ? Icons.call_outlined : Icons.videocam_outlined,
+        call?.audioOnly ?? true ? icons.voiceCall : icons.videoCall,
         preview.isMissedCall ? theme.missedCallColor : theme.linkColor,
       ),
       ChatPreviewKind.text || ChatPreviewKind.photo => (null, null),
@@ -100,7 +102,7 @@ class ChatPreviewLine extends ConsumerWidget {
                       gaplessPlayback: true,
                     ),
                     null => Icon(
-                      Icons.photo_outlined,
+                      icons.photo,
                       size: _iconSize,
                       color: theme.linkColor,
                     ),

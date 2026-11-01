@@ -16,6 +16,8 @@ import '../../support/fake_voice_recorder.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
 
+const icons = TinodeChatIcons();
+
 const voiceRef = '/v0/file/s/hello.m4a';
 
 DataMessage voiceMessage(int seq) => DataMessage(
@@ -152,7 +154,7 @@ void main() {
     expect(recorder.paused, isTrue);
     expect(find.text('Resume'), findsOneWidget);
     expect(find.text('Pause'), findsNothing);
-    expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+    expect(find.byIcon(icons.microphone), findsOneWidget);
     final waveform = tester.widget<LiveVoiceWaveform>(
       find.byType(LiveVoiceWaveform),
     );
@@ -237,7 +239,7 @@ void main() {
     expect(bubble.value, '0:04');
     expect(bubble.hasAction(SemanticsAction.tap), isTrue);
 
-    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    await tester.tap(find.byIcon(icons.play));
     await playFor(tester);
     expect(player.playing, isTrue);
     expect(find.bySemanticsLabel(RegExp('Pause voice message')), findsOne);
@@ -247,7 +249,7 @@ void main() {
     await tester.pump();
     expect(find.text('0:02'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.pause_rounded));
+    await tester.tap(find.byIcon(icons.pause));
     await tester.pump();
     expect(player.playing, isFalse);
     expect(find.bySemanticsLabel(RegExp('Play voice message')), findsOne);
@@ -272,7 +274,7 @@ void main() {
     // The bubble shows complete while the file downloads, but can't play.
     expect(find.text('0:04'), findsOneWidget);
     expect(playButton(tester).hasAction(SemanticsAction.tap), isFalse);
-    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    await tester.tap(find.byIcon(icons.play));
     await tester.pump();
     expect(player.opened, isEmpty);
     expect(spinnerInBubble(), findsNothing);
@@ -282,10 +284,10 @@ void main() {
     expect(playButton(tester).hasAction(SemanticsAction.tap), isTrue);
 
     final open = player.openGate = Completer<void>();
-    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    await tester.tap(find.byIcon(icons.play));
     await tester.pump();
     // Pause shows at once, while the player opens the file.
-    expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
+    expect(find.byIcon(icons.pause), findsOneWidget);
     expect(spinnerInBubble(), findsNothing);
     open.complete();
     await playFor(tester);
@@ -322,7 +324,7 @@ void main() {
     expect(session.calls.where((c) => c.startsWith('download')), [
       'download $voiceRef',
     ]);
-    await tester.tap(find.byIcon(Icons.play_arrow_rounded).first);
+    await tester.tap(find.byIcon(icons.play).first);
     await playFor(tester);
     expect(player.playing, isTrue);
     expect(player.opened, hasLength(1));
@@ -331,12 +333,12 @@ void main() {
   testWidgets('a failed download is tried again with a tap', (tester) async {
     session.failDownload = ServerUnreachableException(Exception('offline'));
     await openBob(tester);
-    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    await tester.tap(find.byIcon(icons.play));
     await tester.pumpAndSettle();
     expect(player.playing, isFalse);
     expect(session.calls.where((c) => c == 'download $voiceRef'), hasLength(2));
 
-    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    await tester.tap(find.byIcon(icons.play));
     await playFor(tester);
     expect(player.playing, isTrue);
   });

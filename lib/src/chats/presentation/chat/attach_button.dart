@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/attach_sheet.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_preview_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Sends an image or a file: the attach menu, the picker, then a preview
@@ -19,7 +20,7 @@ class AttachButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return IconButton(
       tooltip: TinodeChatStrings.of(context).attach,
-      icon: const Icon(Icons.attach_file),
+      icon: Icon(TinodeChatIcons.of(context).attach),
       onPressed: () => unawaited(_attach(context, ref)),
     );
   }

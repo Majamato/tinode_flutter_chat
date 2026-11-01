@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/local_image.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/upload_progress_ring.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// The image or file of a message still in the outbox, shown from its
@@ -47,7 +48,7 @@ class OutgoingAttachmentView extends ConsumerWidget {
               child:
                   ring ??
                   Icon(
-                    Icons.insert_drive_file_outlined,
+                    TinodeChatIcons.of(context).file,
                     color: color,
                     size: 32,
                   ),

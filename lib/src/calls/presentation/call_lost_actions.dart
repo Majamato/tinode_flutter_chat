@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_failure.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/call_round_button.dart';
 import 'package:tinode_flutter_chat/src/session/application/reconnecting_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Whether the call ended because a connection dropped, the case in which
@@ -23,6 +24,7 @@ class CallLostActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final icons = TinodeChatIcons.of(context);
     final video = ref.watch(
       callControllerProvider.select((c) => !(c?.audioOnly ?? true)),
     );
@@ -33,7 +35,7 @@ class CallLostActions extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         CallRoundButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Icon(icons.close),
           tooltip: strings.closeCall,
           label: strings.closeCall,
           onPressed: controller.closeEnded,
@@ -41,7 +43,7 @@ class CallLostActions extends ConsumerWidget {
         Opacity(
           opacity: offline ? 0.4 : 1,
           child: CallRoundButton(
-            icon: Icon(video ? Icons.videocam_rounded : Icons.call_rounded),
+            icon: Icon(video ? icons.videoCall : icons.voiceCall),
             tooltip: strings.callAgain,
             label: strings.callAgain,
             style: CallButtonStyle.accept,

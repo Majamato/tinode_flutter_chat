@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/avatar_image.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/ref_photo_avatar.dart';
 
 /// A profile's photo in a circle, or its initials when it has none, or a
@@ -22,7 +23,7 @@ class ProfileAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = initials.isEmpty
-        ? Icon(Icons.person, size: radius)
+        ? Icon(TinodeChatIcons.of(context).avatarPlaceholder, size: radius)
         : Text(initials);
     return switch (photo) {
       AvatarImage(:final bytes?) => CircleAvatar(

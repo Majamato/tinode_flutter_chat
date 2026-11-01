@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/attachments/application/attachment_file.
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_viewer_screen.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/local_image.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -83,7 +84,7 @@ class _Placeholder extends StatelessWidget {
         child: switch (onRetry) {
           final onRetry? => IconButton(
             tooltip: TinodeChatStrings.of(context).retry,
-            icon: const Icon(Icons.refresh),
+            icon: Icon(TinodeChatIcons.of(context).retry),
             onPressed: onRetry,
           ),
           null => const SizedBox.square(

@@ -627,7 +627,7 @@ Only what `lib/tinode_flutter_chat.dart` exports is public: `TinodeChat`, `Tinod
 `TinodeCalls`, `TinodeCredentials`
 (`PasswordCredentials`, `TokenCredentials`), `TinodeChatFeatures` (`PasswordResetMode`),
 `TinodeCacheLimits`, `TinodeChatTheme`, `TinodeChatPalette`, `TinodeAppearance`
-(`TinodeAppearancePalette`), `TinodeChatStrings`,
+(`TinodeAppearancePalette`), `TinodeChatStrings`, `TinodeChatIcons`,
 `TinodeBubble` (`TinodeBubbleKind`, `TinodeBubbleStatus`), `TinodeBubbleBuilder`, and the
 client's `TinodeConfig`, `LoginResult`, `DevicePlatform` and `TinodePush` (`MessagePush`,
 `SubscriptionPush`, `ReadPush`). Everything else may change freely. Every exported symbol

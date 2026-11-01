@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Calls the peer of [topic], by voice or [video]. Shown only where calls
@@ -17,6 +18,7 @@ class CallButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final icons = TinodeChatIcons.of(context);
     final offered = ref.watch(
       tinodeChatFeaturesProvider.select((f) => f.allowsCall(audioOnly: !video)),
     );
@@ -36,7 +38,7 @@ class CallButton extends ConsumerWidget {
                   .start(topic, audioOnly: !video),
             ),
       tooltip: video ? strings.videoCall : strings.voiceCall,
-      icon: Icon(video ? Icons.videocam : Icons.call),
+      icon: Icon(video ? icons.videoCall : icons.voiceCall),
     );
   }
 }

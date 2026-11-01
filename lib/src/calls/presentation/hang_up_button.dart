@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/call_round_button.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Ends the call, red with a red glow; watches nothing.
@@ -16,7 +17,7 @@ class HangUpButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = TinodeChatStrings.of(context);
     return CallRoundButton(
-      icon: const Icon(Icons.call_end_rounded),
+      icon: Icon(TinodeChatIcons.of(context).hangUp),
       tooltip: strings.hangUp,
       label: labelled ? strings.callEndLabel : null,
       style: CallButtonStyle.danger,

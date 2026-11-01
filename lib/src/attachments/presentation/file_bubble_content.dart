@@ -4,6 +4,7 @@ import 'package:tinode_flutter_chat/src/attachments/application/file_download_co
 import 'package:tinode_flutter_chat/src/attachments/domain/file_download_state.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -50,8 +51,15 @@ class FileBubbleContent extends ConsumerWidget {
                       color: color,
                     ),
                   ),
-                  DownloadFailed() => Icon(Icons.error_outline, color: color),
-                  _ => Icon(_iconFor(file.mimeType), color: color, size: 32),
+                  DownloadFailed() => Icon(
+                    TinodeChatIcons.of(context).failed,
+                    color: color,
+                  ),
+                  _ => Icon(
+                    _iconFor(TinodeChatIcons.of(context), file.mimeType),
+                    color: color,
+                    size: 32,
+                  ),
                 },
               ),
               const SizedBox(width: 8),
@@ -99,11 +107,12 @@ class FileBubbleContent extends ConsumerWidget {
     }
   }
 
-  static IconData _iconFor(String? mimeType) => switch (mimeType) {
-    final m? when m.startsWith('audio/') => Icons.audio_file_outlined,
-    final m? when m.startsWith('video/') => Icons.video_file_outlined,
-    final m? when m.startsWith('image/') => Icons.image_outlined,
-    'application/pdf' => Icons.picture_as_pdf_outlined,
-    _ => Icons.insert_drive_file_outlined,
-  };
+  static IconData _iconFor(TinodeChatIcons icons, String? mimeType) =>
+      switch (mimeType) {
+        final m? when m.startsWith('audio/') => icons.audioFile,
+        final m? when m.startsWith('video/') => icons.videoFile,
+        final m? when m.startsWith('image/') => icons.imageFile,
+        'application/pdf' => icons.pdfFile,
+        _ => icons.file,
+      };
 }

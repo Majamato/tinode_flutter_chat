@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// The 44 px round button of a voice message: play, or pause while
@@ -29,13 +30,14 @@ class VoicePlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
     final Widget face;
     if (busy case final busy?) {
       face = Padding(padding: const EdgeInsets.all(6), child: busy);
     } else {
       face = Icon(
-        playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+        playing ? icons.pause : icons.play,
         color: iconColor,
         size: 26,
       );

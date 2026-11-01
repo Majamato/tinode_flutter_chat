@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// A password field with an eye that shows or hides what was typed.
@@ -27,6 +28,7 @@ class _PasswordFieldState extends State<PasswordField> {
 
   @override
   Widget build(BuildContext context) {
+    final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
     return TextField(
       controller: widget.controller,
@@ -35,8 +37,8 @@ class _PasswordFieldState extends State<PasswordField> {
         suffixIcon: IconButton(
           tooltip: _hidden ? strings.showPassword : strings.hidePassword,
           isSelected: !_hidden,
-          icon: const Icon(Icons.visibility_outlined),
-          selectedIcon: const Icon(Icons.visibility_off_outlined),
+          icon: Icon(icons.showPassword),
+          selectedIcon: Icon(icons.hidePassword),
           onPressed: () => setState(() => _hidden = !_hidden),
         ),
       ),

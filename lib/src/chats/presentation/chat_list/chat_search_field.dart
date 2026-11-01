@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// What looks like a search field in the chat list's header: a 38 px pill
@@ -34,7 +35,11 @@ class ChatSearchField extends StatelessWidget {
               child: Row(
                 children: [
                   const SizedBox(width: 12),
-                  Icon(Icons.search, size: 18, color: muted),
+                  Icon(
+                    TinodeChatIcons.of(context).search,
+                    size: 18,
+                    color: muted,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     strings.searchChats,

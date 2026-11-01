@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/session/application/sign_up_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/progress_button.dart';
 
@@ -17,7 +18,7 @@ class SignUpButton extends ConsumerWidget {
       label: TinodeChatStrings.of(context).signUp,
       busy: ref.watch(signUpControllerProvider.select((s) => s.isLoading)),
       onPressed: onSubmit,
-      trailingIcon: Icons.arrow_forward,
+      trailingIcon: TinodeChatIcons.of(context).forward,
     );
   }
 }

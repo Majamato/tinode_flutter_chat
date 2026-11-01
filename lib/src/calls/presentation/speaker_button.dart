@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/call_round_button.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// Moves the call between the earpiece and the loudspeaker; watches only
@@ -22,7 +23,7 @@ class SpeakerButton extends ConsumerWidget {
     );
     final strings = TinodeChatStrings.of(context);
     return CallRoundButton(
-      icon: const Icon(Icons.volume_up_rounded),
+      icon: Icon(TinodeChatIcons.of(context).speaker),
       tooltip: on ? strings.speakerOff : strings.speakerOn,
       label: labelled ? strings.callSpeakerLabel : null,
       active: on,

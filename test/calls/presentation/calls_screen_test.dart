@@ -11,6 +11,8 @@ import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
 
+const icons = TinodeChatIcons();
+
 const strings = TinodeChatStrings();
 
 void main() {
@@ -91,8 +93,8 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byIcon(Icons.call_missed), findsOneWidget);
-    expect(find.byIcon(Icons.call_made), findsOneWidget);
+    expect(find.byIcon(icons.missedCall), findsOneWidget);
+    expect(find.byIcon(icons.outgoingCall), findsOneWidget);
     Color? nameColor(String name) =>
         DefaultTextStyle.of(tester.element(find.text(name))).style.color;
     final missedColor = ThemeData().colorScheme.error;

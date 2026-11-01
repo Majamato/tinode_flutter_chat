@@ -11,6 +11,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -99,7 +100,10 @@ class CallHistoryTile extends ConsumerWidget {
                                   spacing: 4,
                                   children: [
                                     Icon(
-                                      call.icon(outgoing: entry.outgoing),
+                                      call.icon(
+                                        TinodeChatIcons.of(context),
+                                        outgoing: entry.outgoing,
+                                      ),
                                       size: 16,
                                       color: accent,
                                     ),
@@ -130,7 +134,7 @@ class CallHistoryTile extends ConsumerWidget {
                             tooltip: strings.openChat,
                             color: chat.linkColor,
                             onPressed: () => ChatScreen.open(context, id.topic),
-                            icon: const Icon(Icons.chat_bubble_outline),
+                            icon: Icon(TinodeChatIcons.of(context).openChat),
                           ),
                         ],
                       ),

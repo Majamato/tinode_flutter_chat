@@ -67,8 +67,9 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 - A floating tab bar with the chats, the calls history and the settings (turn it off with
   `TinodeChat(tabBar: false)`), and an Appearance screen where the user picks one of your
   palettes and light, dark or system (`TinodeAppearance`).
-- Restyle it with a `TinodeChatTheme` theme extension, and translate or reword it with
-  `TinodeChatStrings`.
+- Restyle it with a `TinodeChatTheme` theme extension, translate or reword it with
+  `TinodeChatStrings`, and swap its [Phosphor](https://phosphoricons.com) icons for your own
+  with `TinodeChatIcons` (e.g. `TinodeChat(icons: const TinodeChatIcons(send: Icons.send))`).
 - Needs no `ProviderScope` or other setup in your app.
 
 ## Usage

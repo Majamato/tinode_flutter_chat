@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/attachments/application/attachment_input
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_controller.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_photo_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/profile_avatar.dart';
 
@@ -26,13 +27,13 @@ class ProfilePhotoButton extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.photo_outlined),
+                    leading: Icon(TinodeChatIcons.of(context).photo),
                     title: Text(strings.attachPhoto),
                     onTap: () =>
                         Navigator.of(context).pop(AttachmentSource.gallery),
                   ),
                   ListTile(
-                    leading: const Icon(Icons.photo_camera_outlined),
+                    leading: Icon(TinodeChatIcons.of(context).camera),
                     title: Text(strings.attachCamera),
                     onTap: () =>
                         Navigator.of(context).pop(AttachmentSource.camera),
@@ -68,7 +69,7 @@ class ProfilePhotoButton extends ConsumerWidget {
           child: IconButton.filledTonal(
             tooltip: TinodeChatStrings.of(context).changePhoto,
             onPressed: busy ? null : () => unawaited(_change(context, ref)),
-            icon: const Icon(Icons.photo_camera_outlined),
+            icon: Icon(TinodeChatIcons.of(context).camera),
           ),
         ),
       ],

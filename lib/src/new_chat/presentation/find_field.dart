@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/new_chat/application/find_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 
 /// The text field of a search; each change goes to the [scope]'s search.
 /// Watches nothing.
@@ -38,7 +39,7 @@ class _FindFieldState extends ConsumerState<FindField> {
       autocorrect: false,
       decoration: InputDecoration(
         hintText: widget.hint,
-        prefixIcon: const Icon(Icons.search),
+        prefixIcon: Icon(TinodeChatIcons.of(context).search),
         border: InputBorder.none,
       ),
       onChanged: (text) =>

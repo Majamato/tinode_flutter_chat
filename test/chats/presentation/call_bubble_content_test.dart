@@ -4,6 +4,9 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/call_record.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/call_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
+
+const icons = TinodeChatIcons();
 
 void main() {
   const foreground = Color(0xFF000001);
@@ -40,7 +43,7 @@ void main() {
 
     expect(find.text('Outgoing voice call'), findsOneWidget);
     expect(colorOf(tester, '2:05'), foreground);
-    expect(find.byIcon(Icons.call_made), findsOneWidget);
+    expect(find.byIcon(icons.outgoingCall), findsOneWidget);
   });
 
   testWidgets('a missed call stands out', (tester) async {
@@ -49,7 +52,7 @@ void main() {
     expect(find.text('Incoming video call'), findsOneWidget);
     final error = ThemeData().colorScheme.error;
     expect(colorOf(tester, 'Missed'), error);
-    expect(find.byIcon(Icons.call_missed), findsOneWidget);
+    expect(find.byIcon(icons.missedCall), findsOneWidget);
   });
 
   testWidgets('the caller sees an unanswered call as no answer', (
@@ -62,7 +65,7 @@ void main() {
     );
 
     expect(find.text('No answer'), findsOneWidget);
-    expect(find.byIcon(Icons.call_missed_outgoing), findsOneWidget);
+    expect(find.byIcon(icons.cancelledCall), findsOneWidget);
   });
 
   testWidgets('a running call is in progress', (tester) async {

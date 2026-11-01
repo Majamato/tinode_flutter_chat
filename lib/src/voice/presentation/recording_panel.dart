@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 import 'package:tinode_flutter_chat/src/voice/application/voice_recorder_controller.dart';
@@ -108,6 +109,7 @@ class _RecordingPanelState extends ConsumerState<RecordingPanel>
 
   @override
   Widget build(BuildContext context) {
+    final icons = TinodeChatIcons.of(context);
     final (elapsed, paused) = ref.watch(
       voiceRecorderControllerProvider(widget.topic).select(
         (s) => s is VoiceRecording
@@ -194,7 +196,7 @@ class _RecordingPanelState extends ConsumerState<RecordingPanel>
               children: [
                 _RoundButton(
                   tooltip: strings.deleteRecording,
-                  icon: Icons.delete_outline_rounded,
+                  icon: icons.delete,
                   background: theme.recordingColor.withValues(alpha: 0.12),
                   foreground: theme.recordingColor,
                   onPressed: widget.onDelete,
@@ -209,7 +211,7 @@ class _RecordingPanelState extends ConsumerState<RecordingPanel>
                 const SizedBox(width: 10),
                 _RoundButton(
                   tooltip: strings.sendVoiceMessage,
-                  icon: Icons.send_rounded,
+                  icon: icons.send,
                   background: theme.ownBubbleColor,
                   foreground: theme.onOwnBubbleColor,
                   onPressed: widget.onSend,
@@ -262,6 +264,7 @@ class _PausePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
     final colors = Theme.of(context).colorScheme;
     final theme = TinodeChatTheme.of(context);
@@ -278,7 +281,7 @@ class _PausePill extends StatelessWidget {
           context,
         ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
       ),
-      icon: Icon(paused ? Icons.mic_rounded : Icons.pause_rounded),
+      icon: Icon(paused ? icons.microphone : icons.pause),
       label: Text(paused ? strings.resumeRecording : strings.pauseRecording),
     );
   }

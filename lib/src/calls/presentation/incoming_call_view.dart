@@ -8,6 +8,7 @@ import 'package:tinode_flutter_chat/src/calls/presentation/call_backdrop.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/call_entrance.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/call_round_button.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -20,6 +21,7 @@ class IncomingCallView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final icons = TinodeChatIcons.of(context);
     final call = ref.watch(
       callControllerProvider.select(
         (c) => c == null ? null : (topic: c.topic, audioOnly: c.audioOnly),
@@ -90,7 +92,7 @@ class IncomingCallView extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       CallRoundButton(
-                        icon: const Icon(Icons.call_end_rounded),
+                        icon: Icon(icons.hangUp),
                         tooltip: strings.declineCall,
                         label: strings.declineCall,
                         style: CallButtonStyle.danger,
@@ -98,9 +100,7 @@ class IncomingCallView extends ConsumerWidget {
                       ),
                       CallRoundButton(
                         icon: Icon(
-                          call.audioOnly
-                              ? Icons.call_rounded
-                              : Icons.videocam_rounded,
+                          call.audioOnly ? icons.voiceCall : icons.videoCall,
                         ),
                         tooltip: strings.acceptCall,
                         label: strings.acceptCall,

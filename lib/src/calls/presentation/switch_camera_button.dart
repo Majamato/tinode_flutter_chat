@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/call_round_button.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -35,7 +36,7 @@ class _SwitchCameraButtonState extends ConsumerState<SwitchCameraButton> {
         turns: _turns,
         duration: still ? Duration.zero : _spin,
         curve: TinodeChatTheme.of(context).springCurve,
-        child: const Icon(Icons.cameraswitch_rounded),
+        child: Icon(TinodeChatIcons.of(context).switchCamera),
       ),
       tooltip: TinodeChatStrings.of(context).switchCamera,
       size: widget.size,

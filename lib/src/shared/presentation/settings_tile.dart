@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// One row of a `SettingsSection`: [leading] (or an [icon] in the link
@@ -69,7 +70,10 @@ class SettingsTile extends StatelessWidget {
                 ),
               ),
               if (!destructive && onTap != null)
-                Icon(Icons.chevron_right, color: colors.outline),
+                Icon(
+                  TinodeChatIcons.of(context).disclosure,
+                  color: colors.outline,
+                ),
             ],
           ),
         ),
