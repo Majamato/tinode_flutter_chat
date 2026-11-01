@@ -30,7 +30,7 @@ import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 /// )
 /// ```
 final class TinodeChatPalette with ValueObject {
-  /// Creates a palette with every role given.
+  /// Creates a palette with every role given; [bubble] may be left out.
   const TinodeChatPalette({
     required this.primary,
     required this.night,
@@ -41,6 +41,7 @@ final class TinodeChatPalette with ValueObject {
     required this.onDark,
     required this.deep,
     required this.scene,
+    this.bubble,
   });
 
   /// The palette the chat uses when the app gives none: a slate blue.
@@ -56,12 +57,13 @@ final class TinodeChatPalette with ValueObject {
     scene: Color(0xFF172236),
   );
 
-  /// The user's own messages, primary buttons, selected chips and unread
-  /// badges in light mode. White text on it must pass 4.5:1.
+  /// Primary buttons, the send button, selected chips, unread badges and
+  /// read ticks in light mode. White text on it must pass 4.5:1.
   final Color primary;
 
-  /// Takes the place of [primary] in dark mode, a little lifted so it
-  /// stands out from near-black. White text on it must pass 4.5:1.
+  /// Takes the place of [primary] in dark mode, and fills the user's own
+  /// messages there; a little lifted so it stands out from near-black.
+  /// White text on it must pass 4.5:1.
   final Color night;
 
   /// Decoration only, never behind text: waveform highlights, photo
@@ -88,6 +90,16 @@ final class TinodeChatPalette with ValueObject {
   /// The base color in place of the remote video before it shows.
   final Color scene;
 
+  /// The user's own messages in light mode, under dark text; a light tint
+  /// of [bright] when null. A dark color gets white text instead.
+  final Color? bubble;
+
+  /// The user's own messages in light mode: [bubble], or a light tint of
+  /// [bright] that stands out from the [soft] wallpaper.
+  Color get lightBubble =>
+      bubble ??
+      Color.alphaBlend(bright.withValues(alpha: 0.28), const Color(0xFFFFFFFF));
+
   @override
   List<Object?> get props => [
     primary,
@@ -99,5 +111,6 @@ final class TinodeChatPalette with ValueObject {
     onDark,
     deep,
     scene,
+    bubble,
   ];
 }

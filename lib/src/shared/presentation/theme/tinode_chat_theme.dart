@@ -21,6 +21,9 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.peerBubbleColor,
     required this.onPeerBubbleColor,
     required this.peerMetaColor,
+    required this.ownAccentColor,
+    required this.actionColor,
+    required this.onActionColor,
     required this.bubbleRadius,
     required this.bubbleTail,
     required this.photoRadius,
@@ -79,6 +82,9 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       peerBubbleColor: colors.surfaceContainerHighest,
       onPeerBubbleColor: colors.onSurface,
       peerMetaColor: colors.onSurface.withValues(alpha: 0.7),
+      ownAccentColor: colors.primary,
+      actionColor: colors.primary,
+      onActionColor: colors.onPrimary,
       bubbleRadius: 16,
       bubbleTail: false,
       photoRadius: 8,
@@ -145,13 +151,19 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     final neutrals = ChatNeutrals.of(brightness);
     final primary = dark ? palette.night : palette.primary;
     const onPrimary = Color(0xFFFFFFFF);
+    final ownBubble = dark ? palette.night : palette.lightBubble;
+    final onOwnBubble = _onColor(ownBubble);
+    final filledBubble = onOwnBubble == onPrimary;
     return TinodeChatTheme(
-      ownBubbleColor: primary,
-      onOwnBubbleColor: onPrimary,
-      ownMetaColor: onPrimary.withValues(alpha: 0.85),
+      ownBubbleColor: ownBubble,
+      onOwnBubbleColor: onOwnBubble,
+      ownMetaColor: onOwnBubble.withValues(alpha: filledBubble ? 0.85 : 0.6),
       peerBubbleColor: neutrals.peerBubble,
       onPeerBubbleColor: neutrals.text,
       peerMetaColor: neutrals.muted,
+      ownAccentColor: filledBubble ? onPrimary : primary,
+      actionColor: primary,
+      onActionColor: onPrimary,
       bubbleRadius: 20,
       bubbleTail: true,
       photoRadius: 15,
@@ -170,7 +182,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       mutedBadgeColor: neutrals.mutedBadge,
       onlineColor: ChatNeutrals.online,
       missedCallColor: ChatNeutrals.danger,
-      readReceiptColor: onPrimary,
+      readReceiptColor: filledBubble ? onPrimary : primary,
       waveOffColor: neutrals.waveOff,
       senderNameColors: _senderNameColors(brightness),
       revealedMessageColor: primary.withValues(alpha: 0.16),
@@ -249,6 +261,13 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     displayFontFamily: displayFontFamily,
   );
 
+  /// Text on [background]: the light neutrals' text on a light color,
+  /// white on a dark one.
+  static Color _onColor(Color background) =>
+      ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+      ? const Color(0xFFFFFFFF)
+      : ChatNeutrals.light.text;
+
   static const List<MaterialColor> _senderSwatches = [
     Colors.red,
     Colors.pink,
@@ -283,6 +302,17 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
 
   /// The time on [peerBubbleColor].
   final Color peerMetaColor;
+
+  /// The brand's hue on [ownBubbleColor]: a voice message's play button
+  /// (under an icon in [ownBubbleColor]) and its played bars.
+  final Color ownAccentColor;
+
+  /// The brand's strong color behind icons: the send button, and the play
+  /// button and played bars of others' voice messages.
+  final Color actionColor;
+
+  /// Icons on [actionColor].
+  final Color onActionColor;
 
   /// Corner radius of message bubbles.
   final double bubbleRadius;
@@ -439,6 +469,9 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     Color? peerBubbleColor,
     Color? onPeerBubbleColor,
     Color? peerMetaColor,
+    Color? ownAccentColor,
+    Color? actionColor,
+    Color? onActionColor,
     double? bubbleRadius,
     bool? bubbleTail,
     double? photoRadius,
@@ -492,6 +525,9 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     peerBubbleColor: peerBubbleColor ?? this.peerBubbleColor,
     onPeerBubbleColor: onPeerBubbleColor ?? this.onPeerBubbleColor,
     peerMetaColor: peerMetaColor ?? this.peerMetaColor,
+    ownAccentColor: ownAccentColor ?? this.ownAccentColor,
+    actionColor: actionColor ?? this.actionColor,
+    onActionColor: onActionColor ?? this.onActionColor,
     bubbleRadius: bubbleRadius ?? this.bubbleRadius,
     bubbleTail: bubbleTail ?? this.bubbleTail,
     photoRadius: photoRadius ?? this.photoRadius,
@@ -561,6 +597,9 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       peerBubbleColor: color(peerBubbleColor, other.peerBubbleColor),
       onPeerBubbleColor: color(onPeerBubbleColor, other.onPeerBubbleColor),
       peerMetaColor: color(peerMetaColor, other.peerMetaColor),
+      ownAccentColor: color(ownAccentColor, other.ownAccentColor),
+      actionColor: color(actionColor, other.actionColor),
+      onActionColor: color(onActionColor, other.onActionColor),
       bubbleRadius: number(bubbleRadius, other.bubbleRadius),
       bubbleTail: near.bubbleTail,
       photoRadius: number(photoRadius, other.photoRadius),

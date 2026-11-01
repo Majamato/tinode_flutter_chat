@@ -18,8 +18,9 @@ is the default. Its roles:
 
 | Role | Use |
 |---|---|
-| `primary` | Own bubbles, primary buttons, selected chips, unread badges, the FAB, the active tab. White text on it passes 4.5:1. |
-| `night` | `primary` in dark mode, a little lifted from near-black. White text on it passes 4.5:1. |
+| `primary` | Primary buttons, the send button, selected chips, unread badges, the FAB, the active tab; read ticks and the voice player on own bubbles in light mode. White text on it passes 4.5:1. |
+| `night` | `primary` in dark mode, a little lifted from near-black, and the own bubbles there. White text on it passes 4.5:1. |
+| `bubble` | Optional. Own bubbles in light mode, under near-black text (white if it is dark). By default `lightBubble`, `bright` at 28 % over white, a step stronger than the `soft` wallpaper. |
 | `bright` | Decoration only: waveform highlights, photo placeholders, call blobs, recording rings. Never behind text. |
 | `accent` | The clashing pop for small decorations. Never behind small text. |
 | `soft` | Light chat wallpaper, secondary buttons, the login background. |
@@ -30,6 +31,10 @@ is the default. Its roles:
 
 Dark mode swaps `primary` for `night` and `ink` for `onDark`, and uses the dark neutrals
 (`TinodeChatTheme.fromPalette(palette, brightness: Brightness.dark)`).
+
+The status bar is clear, with dark icons over light screens and light ones over dark screens
+(`chatOverlayStyle`): `TinodeChat` sets it for screens without an app bar, the chat header and
+`materialTheme`'s app bars for theirs, and the call screens always take light icons.
 
 ## Neutrals and semantic colors
 
@@ -73,8 +78,14 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 - Fully rounded, at most 78% of the width. The last bubble of a run has a tail at its bottom
   corner (`bubbleTail`): bottom left for others, mirrored bottom right for the user's own.
 - `sameRunGap` (2 px) between the bubbles of a run, `newRunGap` (12 px) between runs.
-- Own: `ownBubbleColor` with `onOwnBubbleColor` text and `ownMetaColor` time and ticks.
+- Own: `ownBubbleColor` with `onOwnBubbleColor` text and `ownMetaColor` time and ticks, the
+  ticks of a read message in `readReceiptColor`. As in Telegram and WhatsApp, light mode puts
+  near-black text on a light tint of the brand (`palette.lightBubble`, with the time at 60 %
+  and read ticks in `primary`); dark mode fills them with `night` under white text.
   Others: `peerBubbleColor`, `onPeerBubbleColor`, `peerMetaColor`.
+- The brand's strong color for actions is `actionColor` / `onActionColor` (the send button,
+  the recording panel's send, others' voice players), so it stays strong while own bubbles are
+  light; `ownAccentColor` is the brand drawn on an own bubble (its voice player).
 - The time and ticks sit at the end of the last line when they fit, else on a line of their
   own (`BubbleTextLayout`). On a photo without a caption they sit on a dark pill over it.
 - Padding: text 7 × 12, files and calls 10 × 12, photos 4 (caption 2 × 8 × 6 below).
@@ -229,8 +240,9 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 - Recordings are AAC in MPEG-4 (`audio/mp4`), mono, 16 kHz at 24 kbps, as Tindroid records,
   sent as a Drafty `AU` entity with the duration and a 96-value loudness preview, so TinodeWeb
   and Tindroid play them. They go through the outbox like files.
-- **The bubble** (232 px, padding 10 × 12): a 44 px play button (`primary` with a white icon on
-  others' bubbles, white @ 22 % on the user's own), then bars 2 px wide, 2 px apart, 2 to 22 px
+- **The bubble** (232 px, padding 10 × 12): a 44 px play button (`actionColor` with an `onActionColor` icon on
+  others' bubbles, `ownAccentColor` with an icon in the bubble's color on the user's own, as
+  in Telegram), then bars 2 px wide, 2 px apart, 2 to 22 px
   tall (the preview's loudness to the power .7, so silence shows as dots and speech rises and
   falls), as many as fit the width less 6 px at each end (42 in the bubble), all 2 px without a
   preview. The playhead dot, in the played colour on top, is centred exactly on the position:

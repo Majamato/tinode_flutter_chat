@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_minimized.dart';
@@ -7,6 +8,7 @@ import 'package:tinode_flutter_chat/src/calls/presentation/call_failure_message.
 import 'package:tinode_flutter_chat/src/calls/presentation/call_view.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/incoming_call_view.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_overlay_style.dart';
 
 /// The call, over every chat route: the ringing screen, the call screen,
 /// or nothing, also while the call is minimized to the call bar. It sits
@@ -38,8 +40,21 @@ class CallLayer extends ConsumerWidget {
     return switch (ringing) {
       null => const SizedBox.shrink(),
       false when minimized => const SizedBox.shrink(),
-      true => const Positioned.fill(child: IncomingCallView()),
-      false => const Positioned.fill(child: CallView()),
+      true => const Positioned.fill(child: _DarkStatusBar(IncomingCallView())),
+      false => const Positioned.fill(child: _DarkStatusBar(CallView())),
     };
   }
+}
+
+/// Light status bar icons over the call screens, which are always dark.
+class _DarkStatusBar extends StatelessWidget {
+  const _DarkStatusBar(this.child);
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+    value: chatOverlayStyle(Brightness.dark),
+    child: child,
+  );
 }

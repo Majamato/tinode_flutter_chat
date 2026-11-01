@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_neutrals.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_overlay_style.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_palette.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -13,13 +14,13 @@ ThemeData chatMaterialTheme({
   final dark = brightness == Brightness.dark;
   final neutrals = ChatNeutrals.of(brightness);
   final chat = TinodeChatTheme.fromPalette(palette, brightness: brightness);
-  final primary = chat.ownBubbleColor;
+  final primary = chat.actionColor;
   final colors =
       ColorScheme.fromSeed(seedColor: primary, brightness: brightness).copyWith(
         primary: primary,
-        onPrimary: chat.onOwnBubbleColor,
+        onPrimary: chat.onActionColor,
         primaryContainer: dark ? palette.night : palette.soft,
-        onPrimaryContainer: dark ? chat.onOwnBubbleColor : palette.ink,
+        onPrimaryContainer: dark ? chat.onActionColor : palette.ink,
         secondaryContainer: dark ? neutrals.surface : palette.soft,
         onSecondaryContainer: dark ? neutrals.text : palette.ink,
         tertiary: palette.accent,
@@ -58,6 +59,7 @@ ThemeData chatMaterialTheme({
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,
+      systemOverlayStyle: chatOverlayStyle(brightness),
       titleTextStyle: text.titleLarge,
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -100,7 +102,7 @@ ThemeData chatMaterialTheme({
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: primary,
-      foregroundColor: chat.onOwnBubbleColor,
+      foregroundColor: chat.onActionColor,
       shape: const CircleBorder(),
     ),
     bottomSheetTheme: BottomSheetThemeData(
@@ -116,13 +118,11 @@ ThemeData chatMaterialTheme({
     chipTheme: ChipThemeData(
       backgroundColor: neutrals.surface,
       selectedColor: primary,
-      checkmarkColor: chat.onOwnBubbleColor,
+      checkmarkColor: chat.onActionColor,
       side: BorderSide.none,
       shape: const StadiumBorder(),
       labelStyle: text.bodyMedium,
-      secondaryLabelStyle: text.bodyMedium?.copyWith(
-        color: chat.onOwnBubbleColor,
-      ),
+      secondaryLabelStyle: text.bodyMedium?.copyWith(color: chat.onActionColor),
     ),
     dividerTheme: DividerThemeData(color: neutrals.line, space: 1),
     extensions: [chat],

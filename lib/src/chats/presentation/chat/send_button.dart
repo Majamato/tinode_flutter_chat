@@ -99,7 +99,7 @@ class _Face extends StatelessWidget {
       height: SendButton._size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: filled ? theme.ownBubbleColor : Colors.transparent,
+        color: filled ? theme.actionColor : Colors.transparent,
       ),
       child: AnimatedSwitcher(
         duration: still ? Duration.zero : const Duration(milliseconds: 300),
@@ -121,7 +121,7 @@ class _Face extends StatelessWidget {
           arrow ? icons.send : icons.microphone,
           key: ValueKey(arrow),
           color: filled
-              ? theme.onOwnBubbleColor
+              ? theme.onActionColor
               : Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),

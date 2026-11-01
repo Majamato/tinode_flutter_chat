@@ -1,5 +1,17 @@
 ## Unreleased
 
+- The user's own bubbles in light mode are a light tint of the brand with near-black text,
+  as in Telegram and WhatsApp, instead of the brand color with white text; the time is grey
+  and read ticks are in the brand color. Dark mode is unchanged. The voice player on an own
+  bubble is a brand-colored button with the bubble's color for its icon.
+- The status bar's icons follow the theme: dark over light screens (they were white on the
+  chat's white header), light over dark ones and over calls.
+- **API:** `TinodeChatPalette.bubble`, optional, sets the own bubble in light mode (a dark one
+  gets white text); `lightBubble` is the color in use. `TinodeChatTheme` gains
+  `actionColor` / `onActionColor` (the send button and others' voice players, which used to
+  take `ownBubbleColor`) and `ownAccentColor` (the voice player on own bubbles).
+  `materialTheme`'s `colorScheme.primary` is `actionColor`.
+
 - Sheets share one look (attach, message actions, read by, profile photo): Material 3's
   docked sheet with a drag handle, and rows with the icon on a tinted rounded square, deleting
   ones in red, the attach menu's Photo, Camera and File each in its own colour.

@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
 import 'package:tinode_flutter_chat/src/search/presentation/message_search_button.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/header_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_overlay_style.dart';
 
 /// The bar over a chat: back (with the other chats' unread
 /// count), the chat's avatar, name and status (typing, online), then
@@ -28,6 +29,8 @@ class ChatHeader extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: Colors.transparent,
+      // A clear app bar reads as dark; the bar behind it is the theme's.
+      systemOverlayStyle: chatOverlayStyle(Theme.of(context).brightness),
       toolbarHeight: _height,
       titleSpacing: 4,
       centerTitle: false,

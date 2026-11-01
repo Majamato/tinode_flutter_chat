@@ -212,8 +212,8 @@ class _RecordingPanelState extends ConsumerState<RecordingPanel>
                 _RoundButton(
                   tooltip: strings.sendVoiceMessage,
                   icon: icons.send,
-                  background: theme.ownBubbleColor,
-                  foreground: theme.onOwnBubbleColor,
+                  background: theme.actionColor,
+                  foreground: theme.onActionColor,
                   onPressed: widget.onSend,
                 ),
               ],

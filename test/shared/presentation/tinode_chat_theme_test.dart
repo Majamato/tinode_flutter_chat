@@ -19,7 +19,10 @@ void main() {
     test('uses primary and ink in light mode', () {
       final theme = TinodeChatTheme.fromPalette(palette);
 
-      expect(theme.ownBubbleColor, palette.primary);
+      expect(theme.ownBubbleColor, palette.lightBubble);
+      expect(theme.actionColor, palette.primary);
+      expect(theme.ownAccentColor, palette.primary);
+      expect(theme.readReceiptColor, palette.primary);
       expect(theme.unreadBadgeColor, palette.primary);
       expect(theme.linkColor, palette.ink);
       expect(theme.wallpaperColor, palette.soft);
@@ -32,6 +35,8 @@ void main() {
       );
 
       expect(theme.ownBubbleColor, palette.night);
+      expect(theme.onOwnBubbleColor, _white);
+      expect(theme.actionColor, palette.night);
       expect(theme.unreadBadgeColor, palette.night);
       expect(theme.linkColor, palette.onDark);
       expect(theme.wallpaperColor, isNot(palette.soft));
@@ -62,6 +67,66 @@ void main() {
     expect(dark.tabBarLensColor, const Color(0x24FFFFFF));
     expect(light.pageColor, isNot(light.cardColor));
     expect(dark.pageColor, isNot(dark.cardColor));
+  });
+
+  group('own bubble', () {
+    test('has dark text on a light tint in light mode', () {
+      final theme = TinodeChatTheme.fromPalette(palette);
+
+      expect(
+        ThemeData.estimateBrightnessForColor(theme.ownBubbleColor),
+        Brightness.light,
+      );
+      expect(theme.onOwnBubbleColor, isNot(_white));
+    });
+
+    test('text passes 4.5:1 on it in either mode', () {
+      for (final brightness in Brightness.values) {
+        final theme = TinodeChatTheme.fromPalette(
+          palette,
+          brightness: brightness,
+        );
+
+        expect(
+          _contrast(theme.onOwnBubbleColor, theme.ownBubbleColor),
+          greaterThanOrEqualTo(4.5),
+          reason: '$brightness',
+        );
+      }
+    });
+
+    test('stands out from the light wallpaper', () {
+      final theme = TinodeChatTheme.fromPalette(palette);
+
+      expect(
+        _contrast(theme.ownBubbleColor, theme.wallpaperColor),
+        greaterThan(1.05),
+      );
+    });
+
+    test('takes the palette bubble, with white text on a dark one', () {
+      const custom = TinodeChatPalette(
+        primary: Color(0xFF34507A),
+        night: Color(0xFF3F5F8F),
+        bright: Color(0xFF6B8CC4),
+        accent: Color(0xFFF2A541),
+        soft: Color(0xFFE8EDF5),
+        ink: Color(0xFF23385A),
+        onDark: Color(0xFF9DB8E8),
+        deep: Color(0xFF0B1424),
+        scene: Color(0xFF172236),
+        bubble: Color(0xFF1B5E20),
+      );
+      final theme = TinodeChatTheme.fromPalette(custom);
+
+      expect(theme.ownBubbleColor, custom.bubble);
+      expect(theme.onOwnBubbleColor, _white);
+      expect(theme.ownAccentColor, _white);
+      expect(
+        _contrast(theme.onOwnBubbleColor, theme.ownBubbleColor),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
   });
 
   test('white text passes 4.5:1 on the neutral primary and night', () {
@@ -97,6 +162,31 @@ void main() {
       expect(theme.extension<TinodeChatTheme>()?.ownBubbleColor, palette.night);
     });
 
+    test('keeps the brand primary while own bubbles are light', () {
+      final theme = TinodeChatTheme.materialTheme();
+
+      expect(theme.colorScheme.primary, palette.primary);
+      expect(theme.colorScheme.onPrimary, _white);
+      expect(
+        theme.extension<TinodeChatTheme>()?.ownBubbleColor,
+        palette.lightBubble,
+      );
+    });
+
+    test('keeps the status bar icons readable', () {
+      final light = TinodeChatTheme.materialTheme();
+      final dark = TinodeChatTheme.materialTheme(brightness: Brightness.dark);
+
+      expect(
+        light.appBarTheme.systemOverlayStyle?.statusBarIconBrightness,
+        Brightness.dark,
+      );
+      expect(
+        dark.appBarTheme.systemOverlayStyle?.statusBarIconBrightness,
+        Brightness.light,
+      );
+    });
+
     test('sets the fonts', () {
       final theme = TinodeChatTheme.materialTheme(
         fontFamily: 'Body',
@@ -118,6 +208,9 @@ final List<(String, Object? Function(TinodeChatTheme))> _fields = [
   ('peerBubbleColor', (t) => t.peerBubbleColor),
   ('onPeerBubbleColor', (t) => t.onPeerBubbleColor),
   ('peerMetaColor', (t) => t.peerMetaColor),
+  ('ownAccentColor', (t) => t.ownAccentColor),
+  ('actionColor', (t) => t.actionColor),
+  ('onActionColor', (t) => t.onActionColor),
   ('bubbleRadius', (t) => t.bubbleRadius),
   ('bubbleTail', (t) => t.bubbleTail),
   ('photoRadius', (t) => t.photoRadius),

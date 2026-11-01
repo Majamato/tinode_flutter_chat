@@ -79,10 +79,8 @@ class VoiceBubbleContent extends ConsumerWidget {
         children: [
           VoicePlayButton(
             playing: playback?.playing ?? false,
-            color: own
-                ? theme.onOwnBubbleColor.withValues(alpha: 0.22)
-                : theme.ownBubbleColor,
-            iconColor: theme.onOwnBubbleColor,
+            color: own ? theme.ownAccentColor : theme.actionColor,
+            iconColor: own ? theme.ownBubbleColor : theme.onActionColor,
             value: voiceClock(duration),
             busy: busy,
             onPressed: onPressed,
@@ -99,11 +97,9 @@ class VoiceBubbleContent extends ConsumerWidget {
                   duration: duration,
                   playing:
                       playback != null && playback.playing && !playback.loading,
-                  playedColor: own
-                      ? theme.onOwnBubbleColor
-                      : theme.ownBubbleColor,
+                  playedColor: own ? theme.ownAccentColor : theme.actionColor,
                   unplayedColor: own
-                      ? theme.onOwnBubbleColor.withValues(alpha: 0.45)
+                      ? theme.ownAccentColor.withValues(alpha: 0.35)
                       : theme.waveOffColor,
                   onSeek: playback == null || source == null
                       ? null
