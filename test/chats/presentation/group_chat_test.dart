@@ -123,7 +123,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: sheet, matching: find.text('Delivered to')),
+      find.descendant(of: sheet, matching: find.text('DELIVERED TO')),
       findsOneWidget,
     );
     expect(

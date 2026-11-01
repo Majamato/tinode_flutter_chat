@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/attach_sheet.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_preview_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
@@ -26,8 +27,8 @@ class AttachButton extends ConsumerWidget {
   }
 
   Future<void> _attach(BuildContext context, WidgetRef ref) async {
-    final source = await showModalBottomSheet<AttachmentSource>(
-      context: context,
+    final source = await showChatSheet<AttachmentSource>(
+      context,
       builder: (_) => const AttachSheet(),
     );
     if (source == null || !context.mounted) {

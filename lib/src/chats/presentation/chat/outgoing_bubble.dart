@@ -19,6 +19,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/outgoing_actions
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/photo_time_chip.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/send_pop.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/voice_bubble_content.dart';
@@ -72,8 +73,8 @@ class OutgoingBubble extends ConsumerWidget {
         _ => BubbleFrame.tilePadding,
       },
       onLongPress: () => unawaited(
-        showModalBottomSheet<void>(
-          context: context,
+        showChatSheet<void>(
+          context,
           builder: (_) =>
               OutgoingActionsSheet(topic: topic, clientId: clientId),
         ),

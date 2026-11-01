@@ -19,6 +19,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_slot.dar
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/photo_time_chip.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/sender_avatar.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/sender_name.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/voice_bubble_content.dart';
 
@@ -119,8 +120,8 @@ class MessageBubble extends ConsumerWidget {
       tail: run.endsRun,
       padding: padding,
       onLongPress: () => unawaited(
-        showModalBottomSheet<void>(
-          context: context,
+        showChatSheet<void>(
+          context,
           builder: (_) => MessageActionsSheet(topic: topic, seq: seq),
         ),
       ),

@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Sheets share one look (attach, message actions, read by, profile photo): Material 3's
+  docked sheet with a drag handle, and rows with the icon on a tinted rounded square, deleting
+  ones in red, the attach menu's Photo, Camera and File each in its own colour.
 - Icons are [Phosphor](https://phosphoricons.com) instead of Material: Regular, with Fill for
   the current tab, the play and pause buttons and hang up, and Bold for the ticks. Adds the
   `phosphoricons_flutter` dependency.

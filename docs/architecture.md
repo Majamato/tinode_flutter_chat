@@ -104,6 +104,7 @@ lib/
       domain/                     ValueObject, ChatFailure
       application/                BuildLifetime
       presentation/               theme, strings, time format, error view, confirm dialog,
+                                  sheets (showChatSheet, ChatSheet, ChatSheetAction),
                                   progress button, frosted bar, header bar, sliding segments,
                                   settings sections and tiles
 ```
@@ -554,8 +555,8 @@ during a call doesn't end the call.
 chat shows it with a clock until the server numbers it, or with an error mark if it refuses it.
 Only a local failure (no session) keeps the text and shows a snack bar.
 
-**Sending and receiving files.** The composer's attach button opens `AttachSheet` (Photo, Camera
-where `cameraAvailable`, File), `SendController.pick` asks the `AttachmentPicker`, and
+**Sending and receiving files.** The composer's attach button opens `AttachSheet` with `showChatSheet` (Photo, Camera
+where `cameraAvailable`, File; the profile photo reuses it without File), `SendController.pick` asks the `AttachmentPicker`, and
 `AttachmentPreviewScreen` takes a caption; `SendController.sendAttachment` queues it (a file over
 `maxFileUploadSize` is refused there, naming the limit). The outgoing bubble shows the staged
 copy (`stagedFile`) and an `UploadProgressRing`, the only widget that watches

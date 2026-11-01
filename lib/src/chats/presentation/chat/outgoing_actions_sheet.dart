@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet_action.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
@@ -32,29 +34,25 @@ class OutgoingActionsSheet extends ConsumerWidget {
     );
     final chat = ref.read(chatControllerProvider(topic).notifier);
 
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (status == OutgoingStatus.failed)
-            ListTile(
-              leading: Icon(icons.retry),
-              title: Text(strings.retry),
-              onTap: () => _act(context, chat.retry),
-            ),
-          if (status != OutgoingStatus.sending)
-            ListTile(
-              leading: Icon(icons.delete),
-              // Discarding a waiting attachment stops its upload.
-              title: Text(
-                hasAttachment && status == OutgoingStatus.queued
-                    ? strings.cancelUpload
-                    : strings.discardMessage,
-              ),
-              onTap: () => _act(context, chat.discard),
-            ),
-        ],
-      ),
+    return ChatSheet(
+      children: [
+        if (status == OutgoingStatus.failed)
+          ChatSheetAction(
+            icon: icons.retry,
+            label: strings.retry,
+            onTap: () => _act(context, chat.retry),
+          ),
+        if (status != OutgoingStatus.sending)
+          ChatSheetAction(
+            icon: icons.delete,
+            // Discarding a waiting attachment stops its upload.
+            label: hasAttachment && status == OutgoingStatus.queued
+                ? strings.cancelUpload
+                : strings.discardMessage,
+            destructive: true,
+            onTap: () => _act(context, chat.discard),
+          ),
+      ],
     );
   }
 

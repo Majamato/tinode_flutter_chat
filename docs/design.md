@@ -170,6 +170,22 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 - The host's own `appearanceExtra`, if any, then "Reset to <default>" in
   `linkColor`, which resets only the palette.
 
+## Sheets
+
+- Every sheet opens with `showChatSheet` and is a `ChatSheet`: Material 3's modal bottom sheet,
+  full width and docked to the bottom, its top corners `sheetRadius`, on `colorScheme.surface`
+  with Material's drag handle in `outlineVariant`, its motion and its scrim. An optional title
+  (`titleLarge`) and subtitle (`bodySmall` in `outline`) sit under the handle, 24 px in. Rows that
+  pass the height Material allows scroll inside.
+- **Rows** (`ChatSheetAction`): at least 56 px, the ripple a rounded pill 8 px in from the sides
+  (`buttonRadius`); a 40 px rounded square (radius 12) in the row's tint @ 12 % behind a 22 px
+  icon in the tint, then the label (`bodyLarge` 600). The tint is `linkColor` unless the row sets
+  one: Attach tints Photo, Camera and File with `senderNameColors` blue, pink and purple. What
+  deletes or discards is `destructive`: icon, square and label in `colorScheme.error`. A tap
+  ticks the haptics.
+- Read by lists the members under its title, with "Delivered to" as an upper-case
+  `labelMedium` label in `outline`.
+
 ## Chat screen
 
 - The messages sit below a solid header (`HeaderBar`: `glassColor` over the surface, a
@@ -284,7 +300,7 @@ typing (typing wins). Presence is live only, never cached.
 ## Motion
 
 `springCurve` (a spring with a little overshoot, `Cubic(.2, .9, .3, 1.25)`) over
-`springDuration` for pops, pills, lenses and sheets; `fadeDuration` for fades and color changes.
+`springDuration` for pops, pills and lenses; `fadeDuration` for fades and color changes.
 A sent message pops from its tail corner (420 ms: scale .35 → 1.05 → .98 → 1, rising 18 px);
 the typing dots hop 4 px in a 1.2 s loop, 150 ms apart. The call screens' blobs drift in 9 to
 14 s loops and their avatar rings pulse every 2.2 s. The recording rings pulse every 1.4 s, the

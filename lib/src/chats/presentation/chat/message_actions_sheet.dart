@@ -6,6 +6,8 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_members_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/read_by_sheet.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet_action.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
@@ -30,36 +32,37 @@ class MessageActionsSheet extends ConsumerWidget {
     );
     final readBy = ref.watch(showsReadByProvider(topic, seq));
 
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (readBy)
-            ListTile(
-              leading: Icon(icons.readBy),
-              title: Text(strings.readBy),
-              onTap: () {
-                Navigator.of(context).pop();
-                unawaited(
-                  showModalBottomSheet<void>(
-                    context: context,
-                    builder: (_) => ReadBySheet(topic: topic, seq: seq),
-                  ),
-                );
-              },
-            ),
-          ListTile(
-            leading: Icon(icons.delete),
-            title: Text(strings.deleteForMe),
-            onTap: () => _delete(context, ref, forEveryone: false),
+    return ChatSheet(
+      children: [
+        if (readBy)
+          ChatSheetAction(
+            icon: icons.readBy,
+            label: strings.readBy,
+            onTap: () => _showReadBy(context),
           ),
-          if (forEveryone ?? false)
-            ListTile(
-              leading: Icon(icons.deleteForever),
-              title: Text(strings.deleteForEveryone),
-              onTap: () => _delete(context, ref, forEveryone: true),
-            ),
-        ],
+        ChatSheetAction(
+          icon: icons.delete,
+          label: strings.deleteForMe,
+          onTap: () => _delete(context, ref, forEveryone: false),
+        ),
+        if (forEveryone ?? false)
+          ChatSheetAction(
+            icon: icons.deleteForever,
+            label: strings.deleteForEveryone,
+            destructive: true,
+            onTap: () => _delete(context, ref, forEveryone: true),
+          ),
+      ],
+    );
+  }
+
+  /// Swaps this sheet for the one listing who read the message.
+  void _showReadBy(BuildContext context) {
+    Navigator.of(context).pop();
+    unawaited(
+      showChatSheet<void>(
+        context,
+        builder: (_) => ReadBySheet(topic: topic, seq: seq),
       ),
     );
   }
