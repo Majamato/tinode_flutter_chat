@@ -66,3 +66,70 @@ abstract class _$ReconnectingController extends $Notifier<bool> {
     element.handleCreate(ref, build);
   }
 }
+
+/// Whether to tell the user the link is being restored: true once
+/// [ReconnectingController] has stayed true for [networkSettle], so a blip
+/// that heals sooner shows nothing; false as soon as the link is back.
+
+@ProviderFor(ReconnectingNotice)
+final reconnectingNoticeProvider = ReconnectingNoticeProvider._();
+
+/// Whether to tell the user the link is being restored: true once
+/// [ReconnectingController] has stayed true for [networkSettle], so a blip
+/// that heals sooner shows nothing; false as soon as the link is back.
+final class ReconnectingNoticeProvider
+    extends $NotifierProvider<ReconnectingNotice, bool> {
+  /// Whether to tell the user the link is being restored: true once
+  /// [ReconnectingController] has stayed true for [networkSettle], so a blip
+  /// that heals sooner shows nothing; false as soon as the link is back.
+  ReconnectingNoticeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'reconnectingNoticeProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$reconnectingNoticeHash();
+
+  @$internal
+  @override
+  ReconnectingNotice create() => ReconnectingNotice();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$reconnectingNoticeHash() =>
+    r'2f38981ec9472f055260e3b6cbc6b3b6ef700362';
+
+/// Whether to tell the user the link is being restored: true once
+/// [ReconnectingController] has stayed true for [networkSettle], so a blip
+/// that heals sooner shows nothing; false as soon as the link is back.
+
+abstract class _$ReconnectingNotice extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

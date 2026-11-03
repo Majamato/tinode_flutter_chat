@@ -140,4 +140,38 @@ void main() {
       0,
     );
   });
+
+  testWidgets('a link down for a second turns "Chats" into reconnecting, '
+      'with the bar and the list where they were', (tester) async {
+    await pumpList(tester);
+    final header = tester.getRect(find.byType(ChatListHeader));
+    final screen = tester.getRect(find.byType(ChatListScreen));
+
+    session.emitStatus(const Reconnecting(attempt: 1, retryIn: Duration.zero));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text(strings.reconnecting), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(seconds: 1));
+    final title = find.descendant(
+      of: find.byType(ChatListHeader),
+      matching: find.text(strings.reconnecting),
+    );
+    expect(title, findsOneWidget);
+    expect(find.text(strings.chatListTitle), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(ChatListHeader),
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.getRect(find.byType(ChatListHeader)), header);
+    expect(tester.getRect(find.byType(ChatListScreen)), screen);
+
+    session.emitStatus(const Connected());
+    await tester.pumpAndSettle();
+    expect(find.text(strings.reconnecting), findsNothing);
+    expect(find.text(strings.chatListTitle), findsOneWidget);
+  });
 }

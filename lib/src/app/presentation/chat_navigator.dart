@@ -13,15 +13,14 @@ import 'package:tinode_flutter_chat/src/calls/presentation/call_layer.dart';
 import 'package:tinode_flutter_chat/src/chats/application/requested_chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_screen.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/reconnecting_banner.dart';
 
 /// The logged-in chat's own navigator, starting at the chat list (in the
 /// tab bar's [HomeScreen] when the host wants one), so chat routes stay
 /// below the package's provider scope. System back pops it
 /// first, then the host's routes; during a call it minimizes the call to
 /// the call bar instead, and does nothing while the call rings or ends.
-/// The call layer sits over it, the call bar above it and the
-/// reconnecting banner below it, so they show over every chat route. It
+/// The call layer sits over it and the call bar above it, so they show
+/// over every chat route. It
 /// opens the chats the host asks for (`TinodeChatController.openChat`)
 /// over the chat list, switching to the chats tab.
 class ChatNavigator extends ConsumerStatefulWidget {
@@ -82,28 +81,21 @@ class _ChatNavigatorState extends ConsumerState<ChatNavigator> {
     });
     return NavigatorPopHandler<Object?>(
       onPopWithResult: (_) => _back(),
-      child: Column(
+      child: Stack(
         children: [
-          Expanded(
-            child: Stack(
-              children: [
-                CallBar(
-                  child: Navigator(
-                    key: _navigator,
-                    onGenerateInitialRoutes: (_, _) => [
-                      MaterialPageRoute<void>(
-                        builder: (_) => ShellScope.tabBarOf(context)
-                            ? HomeScreen(tab: _tab)
-                            : const ChatListScreen(),
-                      ),
-                    ],
-                  ),
+          CallBar(
+            child: Navigator(
+              key: _navigator,
+              onGenerateInitialRoutes: (_, _) => [
+                MaterialPageRoute<void>(
+                  builder: (_) => ShellScope.tabBarOf(context)
+                      ? HomeScreen(tab: _tab)
+                      : const ChatListScreen(),
                 ),
-                const CallLayer(),
               ],
             ),
           ),
-          const ReconnectingBanner(),
+          const CallLayer(),
         ],
       ),
     );

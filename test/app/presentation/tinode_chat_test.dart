@@ -367,7 +367,9 @@ void main() {
     expect(find.text('Hi Alice'), findsNothing);
   });
 
-  testWidgets('a banner shows while the link is restored', (tester) async {
+  testWidgets('the chat says reconnecting while the link is restored', (
+    tester,
+  ) async {
     await pumpTinodeChat(
       tester,
       session,
@@ -379,6 +381,7 @@ void main() {
     session.emitStatus(
       const Reconnecting(attempt: 1, retryIn: Duration(seconds: 1)),
     );
+    await tester.pump(const Duration(seconds: 1));
     await tester.pump();
     expect(find.text('Reconnecting…'), findsOneWidget);
     expect(find.text('Hi Alice'), findsOneWidget);

@@ -203,6 +203,41 @@ void main() {
     expect(find.text(strings.online), findsNothing);
   });
 
+  testWidgets('a lost link says reconnecting under the name, over typing '
+      'and online, and nothing at the bottom', (tester) async {
+    const strings = TinodeChatStrings();
+    session.chats.add(
+      chat(bob, name: 'Bob', lastSeq: 1, read: 1, online: true),
+    );
+    session.histories[bob] = [message(bob, 1, text: 'hi')];
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+    );
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+    session
+      ..emitInfo(
+        const InfoMessage(topic: bob, event: InfoEvent.typing, from: bob),
+      )
+      ..emitStatus(const Reconnecting(attempt: 1, retryIn: Duration.zero));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+
+    expect(find.text(strings.reconnecting), findsOneWidget);
+    expect(find.text(strings.typingDirect), findsNothing);
+    expect(find.text(strings.online), findsNothing);
+    // It sits in the app bar's title row, not in a strip at the bottom.
+    final text = tester.getRect(find.text(strings.reconnecting));
+    expect(text.bottom, lessThan(tester.getRect(find.text('Bob')).bottom + 30));
+
+    session.emitStatus(const Connected());
+    await tester.pump();
+    expect(find.text(strings.reconnecting), findsNothing);
+    expect(find.text(strings.typingDirect), findsOneWidget);
+  });
+
   group('dayLabel', () {
     const strings = TinodeChatStrings();
     const localizations = DefaultMaterialLocalizations();

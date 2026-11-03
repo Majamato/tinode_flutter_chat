@@ -208,4 +208,31 @@ void main() {
       0,
     );
   });
+
+  testWidgets('a lost link turns "Calls" into reconnecting', (tester) async {
+    await openCalls(tester);
+
+    session.emitStatus(const Reconnecting(attempt: 1, retryIn: Duration.zero));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    final appBar = find.descendant(
+      of: find.byType(CallsScreen),
+      matching: find.byType(TinodeAppBar),
+    );
+    expect(
+      find.descendant(of: appBar, matching: find.text(strings.reconnecting)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: appBar, matching: find.text(strings.callsTitle)),
+      findsNothing,
+    );
+
+    session.emitStatus(const Connected());
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: appBar, matching: find.text(strings.callsTitle)),
+      findsOneWidget,
+    );
+  });
 }

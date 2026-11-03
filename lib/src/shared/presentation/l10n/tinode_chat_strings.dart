@@ -271,7 +271,8 @@ class TinodeChatStrings {
   /// Label of the button that connects again after a failure.
   final String reconnect;
 
-  /// Shown while the client restores a dropped connection by itself.
+  /// Shown while the client restores a dropped connection by itself: in
+  /// place of the chat list's and calls' titles, and under a chat's name.
   final String reconnecting;
 
   /// Placeholder of the message field.

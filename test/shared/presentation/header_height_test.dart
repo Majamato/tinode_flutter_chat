@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_header.dart';
+import 'package:tinode_flutter_chat/src/session/application/reconnecting_controller.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 /// A [Scaffold] caps its app bar at the status bar plus the preferred
@@ -14,17 +16,25 @@ void main() {
     WidgetTester tester,
     PreferredSizeWidget header, {
     double textScale = 1,
+    bool reconnecting = false,
   }) async {
     await tester.pumpWidget(
-      MaterialApp(
-        theme: TinodeChatTheme.materialTheme(),
-        home: Builder(
-          builder: (context) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              padding: const EdgeInsets.only(top: statusBar),
-              textScaler: TextScaler.linear(textScale),
+      ProviderScope(
+        overrides: [
+          reconnectingNoticeProvider.overrideWith(
+            () => _Link(down: reconnecting),
+          ),
+        ],
+        child: MaterialApp(
+          theme: TinodeChatTheme.materialTheme(),
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                padding: const EdgeInsets.only(top: statusBar),
+                textScaler: TextScaler.linear(textScale),
+              ),
+              child: Align(alignment: Alignment.topCenter, child: header),
             ),
-            child: Align(alignment: Alignment.topCenter, child: header),
           ),
         ),
       ),
@@ -59,13 +69,29 @@ void main() {
       );
     });
 
-    testWidgets('the chat list header is as tall as it says, text at '
-        '$textScale', (tester) async {
-      const header = ChatListHeader(accountMenu: false);
-      expect(
-        await naturalHeight(tester, header, textScale: textScale),
-        statusBar + header.preferredSize.height,
-      );
-    });
+    for (final reconnecting in [false, true]) {
+      testWidgets('the chat list header is as tall as it says, text at '
+          '$textScale${reconnecting ? ', reconnecting' : ''}', (tester) async {
+        const header = ChatListHeader(accountMenu: false);
+        expect(
+          await naturalHeight(
+            tester,
+            header,
+            textScale: textScale,
+            reconnecting: reconnecting,
+          ),
+          statusBar + header.preferredSize.height,
+        );
+      });
+    }
   }
+}
+
+class _Link extends ReconnectingNotice {
+  _Link({required this.down});
+
+  final bool down;
+
+  @override
+  bool build() => down;
 }

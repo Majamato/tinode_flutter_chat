@@ -112,10 +112,14 @@ Which screen the session gate shows: connecting, awaiting login, logged in, fail
 **Failure**
 An error put in terms the UI can explain. *In code:* `ChatFailure`.
 
-**Reconnecting banner**
-The strip under the chats while the client restores a dropped link, or connects after an offline
-start. The screens stay as they were; what the user sends meanwhile waits in the outbox.
-*In code:* `ReconnectingBanner`, `ReconnectingController`.
+**Reconnecting title**
+While the client restores a dropped link, or connects after an offline start, the chat list's and
+calls history's titles turn into a spinner and "Reconnecting…", and so does the line under a
+chat's name. It shows only once the link has been down for 1 s. The screens stay as they were;
+what the user sends meanwhile waits in the outbox.
+*In code:* `ReconnectingTitle`, `ReconnectingNotice` (the 1 s grace), `ReconnectingController`
+(the link itself, which also disables a lost call's Call again at once), `ChatStatus`.
+*Avoid:* "reconnecting banner" or "strip": nothing is added to the screen.
 
 **Network hint**
 A network change reported by the OS. It is not proof of anything: it only makes the client check
@@ -418,7 +422,7 @@ minimized. *In code:* `CallMinimized`, `CallBar`, `CallMinimizeButton`.
 
 **Reconnecting (call)**
 The WebRTC link between the two devices dropped during a connected call and may come back by
-itself; the call goes on. Not the session's reconnecting, which the reconnecting banner shows: a
+itself; the call goes on. Not the session's reconnecting, which the reconnecting title shows: a
 dropped session ends the call. *In code:* `ActiveCall.reconnecting`, `CallReconnectingPill`.
 
 **Lost call**

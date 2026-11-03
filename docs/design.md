@@ -155,6 +155,12 @@ them.
   profile, appearance, log out) as a round button, "Chats" (`titleLarge`) centred and the
   compose button in `linkColor`, then a 40 px glass search pill that opens the people search.
   No folder chips.
+- **Reconnecting title** (`ReconnectingTitle`), as in Telegram: once the link has been down for
+  1 s (`networkSettle`, so a blip shows nothing), "Chats" turns into a 16 px spinner (stroke 2)
+  and "Reconnecting…", 8 px apart, in the title's `titleLarge` muted to `onSurfaceVariant`, so
+  it reads as a state rather than a name. It turns back as soon as the link is. Nothing else
+  moves: there is no strip or banner, and the bar keeps its height. Screen readers announce it
+  (a live region).
 - Rows are 76 px: a 56 px avatar with the presence dot; the name (`titleMedium` at 16), a muted
   icon, the ticks of the user's own last message (read in `linkColor`) and the time (`bodySmall`,
   in `linkColor` while unread, else `outline`); then the preview (`bodyMedium` in `outline`) and
@@ -199,6 +205,8 @@ them.
   4:12", "Video call · Missed") in `outline`, the time as in the chat list, and a button to the
   chat in `linkColor`. A tap calls back, by the same kind, or the other when the host leaves that
   one out. Pull to fetch again.
+- "Calls" turns into the reconnecting title while the link is down, as on the chat list.
+  Settings and Appearance don't show it.
 
 ## Settings
 
@@ -245,6 +253,9 @@ them.
   photo (or initials), then the name (15/700) over who is typing or "online" in `linkColor`,
   which opens the chat's info, then search, video and voice call buttons (only the calls
   offered) on one island of glass; search alone is a round button.
+- While the link is down (after the same 1 s as the chat list's reconnecting title), the line
+  under the name is a 10 px spinner (stroke 1.5) and "Reconnecting…" in `bodySmall`, both in
+  `outline`. It outranks typing and "online", which are stale meanwhile.
 - The composer has no bar: three pieces of glass float 8 px above the keyboard, or above the
   home indicator, over a fade of the wallpaper: the round attach button, the field
   (`composerRadius`, transparent inside, 44 px for one line, up to five) and the round send
@@ -363,8 +374,10 @@ A sent message pops from its tail corner (420 ms: scale .35 → 1.05 → .98 →
 the typing dots hop 4 px in a 1.2 s loop, 150 ms apart. The call screens' blobs drift in 9 to
 14 s loops and their avatar rings pulse every 2.2 s. The recording rings pulse every 1.4 s, the
 recording dot blinks each second, and the bars at a voice message's playhead swell in 0.9 s.
+The reconnecting title swaps in and out over `springDuration`, fading while it rises 6 px and
+grows from .92 on `springCurve`.
 With the OS's Reduce motion (`MediaQuery.disableAnimationsOf`), scale and slide become plain
-fades and looping background animations stop: the call blobs hold still, the avatar rings go
+fades (the reconnecting title included) and looping background animations stop: the call blobs hold still, the avatar rings go
 and the dots of "Ringing…" stop pulsing; while recording, the button changes colour without
 growing, the rings go, and the dot and the chevron hold still; the playhead's bars stop
 swelling.

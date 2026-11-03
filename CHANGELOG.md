@@ -1,5 +1,11 @@
 ## Unreleased
 
+- **Behaviour change:** the reconnecting strip at the bottom of the chats is gone. While the link
+  is down, the titles of the chat list and the calls history turn into a small spinner and
+  "Reconnecting…", as in Telegram, and so does the line under a chat's name, ahead of typing and
+  "online". It shows once the link has been down for 1 s, so a short network flap shows nothing.
+  A host that replaces the app bar with `TinodeChat.appBarBuilder` no longer gets the
+  reconnecting state.
 - **Behaviour change:** the app bars and the composer are floating glass, as in Telegram.
   Content scrolls under both: at the top a fade of the screen's background with glass
   capsules on it (a chat's back pill with the unread count, a pill with its photo, name and
