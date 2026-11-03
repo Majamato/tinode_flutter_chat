@@ -88,13 +88,25 @@ business logic in UI files. Flutter's own guidance is in
 - **Sheets.** Open every bottom sheet with `showChatSheet` and build it as a `ChatSheet` of
   `ChatSheetAction` rows, never a raw `showModalBottomSheet` with `ListTile`s, so they all
   look, move and read alike.
-- **Headers and bars.** A screen's header (`ScreenHeader`, `ChatListHeader`, `ChatHeader`) is a
-  solid `PreferredSizeWidget` in `Scaffold.appBar`; the Scaffold puts the body below it, so lists
-  need no top inset. The Scaffold caps the header at the status bar plus `preferredSize`, so a
-  preferred height that is too small squashes it silently: `header_height_test.dart` lays each
-  header out on its own and checks it. Only bottom bars float over content: the composer, whose
-  height depends on its content, is measured with `SizeReporter` into a `ValueNotifier`, and the
-  tab bar's room reaches the lists as `MediaQuery` bottom padding.
+- **App bars and bottom bars.** A screen with an app bar is a `GlassScaffold`: a `Scaffold`
+  with `extendBodyBehindAppBar` and `extendBody`, inside one `BackdropGroup`. Its app bar is a
+  `TinodeAppBar` (or a widget building one: `ChatListHeader`, `ChatHeader`), which the host's
+  `appBarBuilder` may wrap or replace; a bottom bar (the chat's `ComposerDock`) goes in
+  `bottomNavigationBar`. The Scaffold hands the body both bars' heights as `MediaQuery`
+  padding in the same layout pass, so **lists pad by `MediaQuery.paddingOf(context)`, read
+  inside the body, and never measure a bar**; whatever bar the host brings, solid or not, then
+  just works. Read the padding in a widget under the Scaffold, not in the screen's own `build`
+  (that context is above the Scaffold), or let a `ListView` without `padding` add it. The
+  Scaffold caps the app bar at the status bar plus `preferredSize`, so a preferred height that
+  is too small squashes it silently: `header_height_test.dart` lays each bar out on its own and
+  checks it. With a bottom bar the Scaffold doesn't resize for the keyboard; the bar pads
+  itself above it, so its height (keyboard included) is the body's bottom padding, and only the
+  dock reads `viewInsets`. The tab bar's room reaches the tabs as `MediaQuery` bottom padding,
+  under a `GlassBelow`, so their scaffolds paint only a light veil there, not the solid
+  fade (the bar's glass blurs the rows instead); touches on that room still stop there.
+- **Glass.** Every translucent piece is a `GlassSurface` (round buttons: `GlassIconButton`),
+  whose `BackdropFilter.grouped` joins the screen's `BackdropGroup`. Glass must not overlap
+  other glass of the same group.
 
 ## Public widgets
 

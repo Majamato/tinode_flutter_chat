@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// Sends the composer's [text]. While it is blank the button rests on the
-/// mic, which records a voice message ([onRecord]), or, without voice
-/// messages, rests disabled. With text it fills with the brand colour and
-/// its arrow spins in. (While recording, the recording panel takes the
-/// composer's place, button and all.) A spinner shows while a message is
-/// on its way. The only part of the composer that rebuilds for any of
-/// these.
+/// Sends the composer's [text], from a round piece of glass. While it is
+/// blank the button rests on the mic, which records a voice message
+/// ([onRecord]), or, without voice messages, rests disabled. With text it
+/// fills with the brand colour and its arrow spins in. (While recording,
+/// the recording panel takes the composer's place, button and all.) A
+/// spinner shows while a message is on its way. The only part of the
+/// composer that rebuilds for any of these.
 class SendButton extends ConsumerWidget {
   const SendButton({
     required this.topic,
@@ -22,7 +23,7 @@ class SendButton extends ConsumerWidget {
     super.key,
   });
 
-  static const _size = 40.0;
+  static const _size = 44.0;
 
   final String topic;
   final TextEditingController text;
@@ -39,16 +40,22 @@ class SendButton extends ConsumerWidget {
     );
     final strings = TinodeChatStrings.of(context);
     if (sending) {
-      return IconButton(
-        onPressed: null,
-        tooltip: strings.send,
-        icon: const SizedBox.square(
-          dimension: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
+      return GlassSurface(
+        child: IconButton(
+          onPressed: null,
+          tooltip: strings.send,
+          constraints: const BoxConstraints.tightFor(
+            width: _size,
+            height: _size,
+          ),
+          icon: const SizedBox.square(
+            dimension: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
         ),
       );
     }
-    return ValueListenableBuilder(
+    final button = ValueListenableBuilder(
       valueListenable: text,
       builder: (context, value, _) {
         final ready = value.text.trim().isNotEmpty;
@@ -61,10 +68,15 @@ class SendButton extends ConsumerWidget {
           onPressed: onPressed,
           tooltip: tooltip,
           padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(
+            width: _size,
+            height: _size,
+          ),
           icon: _Face(face: face),
         );
       },
     );
+    return GlassSurface(child: button);
   }
 }
 

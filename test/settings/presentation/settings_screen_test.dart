@@ -5,7 +5,7 @@ import 'package:tinode_flutter_chat/src/app/presentation/home/home_tab_bar.dart'
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_screen.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_screen.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/screen_header.dart';
+import 'package:tinode_flutter_chat/src/settings/presentation/settings_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/settings_section.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
@@ -111,10 +111,25 @@ void main() {
     );
     await tester.pump();
 
-    final header = find.byType(ScreenHeader);
+    final header = find.descendant(
+      of: find.byType(SettingsScreen),
+      matching: find.byType(TinodeAppBar),
+    );
     expect(
       tester.getSize(header).height,
-      24 + tester.widget<ScreenHeader>(header).preferredSize.height,
+      24 + tester.widget<TinodeAppBar>(header).preferredSize.height,
+    );
+    // The list runs under the bar, and its first card starts below it.
+    expect(
+      tester
+          .getTopLeft(
+            find.descendant(
+              of: find.byType(SettingsScreen),
+              matching: find.byType(ListView),
+            ),
+          )
+          .dy,
+      0,
     );
     expect(
       tester.getTopLeft(find.byType(SettingsSection).first).dy,

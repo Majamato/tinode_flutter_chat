@@ -13,7 +13,7 @@ import 'package:tinode_flutter_chat/src/calls/presentation/hang_up_button.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/mic_button.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/switch_camera_button.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/frosted_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 

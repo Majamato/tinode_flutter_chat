@@ -7,10 +7,12 @@ import 'package:tinode_flutter_chat/src/attachments/presentation/attach_sheet.da
 import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_preview_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_icon_button.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// Sends an image or a file: the attach menu, the picker, then a preview
+/// The composer's round glass button that sends an image or a file: the
+/// attach menu, the picker, then a preview
 /// with a caption. Watches nothing; failures show through the composer.
 class AttachButton extends ConsumerWidget {
   const AttachButton({required this.topic, super.key});
@@ -19,9 +21,10 @@ class AttachButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return IconButton(
+    return GlassIconButton(
       tooltip: TinodeChatStrings.of(context).attach,
-      icon: Icon(TinodeChatIcons.of(context).attach),
+      icon: TinodeChatIcons.of(context).attach,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
       onPressed: () => unawaited(_attach(context, ref)),
     );
   }

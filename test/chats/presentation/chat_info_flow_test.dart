@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_header.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_info_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
@@ -47,7 +48,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ChatScreen), findsOneWidget);
     await tester.tap(
-      find.descendant(of: find.byType(AppBar), matching: find.text(title)),
+      find.descendant(of: find.byType(ChatHeader), matching: find.text(title)),
     );
     await tester.pumpAndSettle();
     expect(find.byType(ChatInfoScreen), findsOneWidget);

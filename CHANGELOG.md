@@ -1,5 +1,25 @@
 ## Unreleased
 
+- **Behaviour change:** the app bars and the composer are floating glass, as in Telegram.
+  Content scrolls under both: at the top a fade of the screen's background with glass
+  capsules on it (a chat's back pill with the unread count, a pill with its photo, name and
+  status, and its search and call buttons sharing one glass island; "Chats" with the compose
+  button and a search pill; "Calls"; "Settings"; "‹ Settings" on Appearance), at the bottom a
+  round attach button, a glass field and a round send button floating above the keyboard. The
+  messages make room for the composer, keyboard and recording panel in
+  the same frame, with no lag.
+- The light chat follows the design more closely, in every palette: the wallpaper is a
+  greyish tint of the brand (`primary` at 6 % over a light grey,
+  `TinodeChatPalette.lightWallpaper`) whose lightness sits between others' white bubbles and
+  the own ones, so both stand out from it, own bubbles are a muted tint of `primary` (26 % over
+  white, was `bright` at 28 %), and their time and ticks take
+  the brand's `ink` instead of grey. The wallpaper is flat, with no dot grid. Dark mode keeps its
+  colors.
+- **API:** `TinodeChat.appBarBuilder` (`TinodeAppBarBuilder`) wraps or replaces the app bar of
+  each screen, told which by a `TinodeScreen` (`TinodeChatListScreen`, `TinodeCallsScreen`,
+  `TinodeSettingsScreen`, `TinodeAppearanceScreen`, `TinodeChatScreen(topic)`). `TinodeAppBar`
+  is public, to build bars in the same style. `TinodeChatTheme` gains `glassShadowColor`.
+
 - The user's own bubbles in light mode are a light tint of the brand with near-black text,
   as in Telegram and WhatsApp, instead of the brand color with white text; the time is grey
   and read ticks are in the brand color. Dark mode is unchanged. The voice player on an own
@@ -21,8 +41,6 @@
 - **API:** `TinodeChatIcons`, passed as `TinodeChat(icons:)`, holds every icon the chat shows,
   one `IconData` per role, so a host can swap one icon or the whole set (Material, Cupertino,
   another package or its own icon font).
-- Screen headers (the chat list, calls, settings, appearance and a chat) are solid; lists start
-  below them instead of scrolling under.
 - Voice messages. The send button rests on the microphone while the field is blank: a tap
   records, and the composer grows into the recording panel: a blinking dot, the recorded time
   and a live waveform scrolling as the user speaks, then delete, a wide Pause pill (Resume
@@ -122,7 +140,7 @@
   `callSpeakerLabel`, `callMuteLabel`, `callEndLabel`, `minimizeCall`,
   `returnToCall`, `callReconnecting`, `cameraOff`, `yourCamera`, `toggleCallControls`.
 
-- Login in the chat's design: one screen signs in and up, over a dotted backdrop with drifting
+- Login in the chat's design: one screen signs in and up, over the wallpaper with drifting
   bubbles. A sheet rises in with a Sign in | Sign up switch, the form (the password with a
   show/hide eye) and a button with an arrow. `TinodeChat(loginHeader:)` puts the host's widget,
   e.g. an animated logo, near the top. Signing up no longer opens its own screen: `SignUpScreen`
@@ -155,7 +173,7 @@
   run, 2 px between the bubbles of a run and 12 px between runs; the user's newest message and
   the outbox make one run. The time and ticks sit after the last line when they fit. A photo
   without a caption carries its time on it. A date ("Today", "Yesterday" or the date) shows
-  above each day's first message. The messages scroll over a dotted wallpaper, under a frosted
+  above each day's first message. The messages scroll over the wallpaper, under a frosted
   header (back with the other chats' unread count, the avatar, the name, who is typing, search
   and calls) and a frosted composer with a pill field. The send button fills with the brand
   color and its arrow spins in once there is text. A sent message pops in from its tail
@@ -172,7 +190,7 @@
   fontFamily:, displayFontFamily:)` builds a whole app theme from it: colors, the type scale,
   inputs, buttons, app bars, sheets and chips. `TinodeChatTheme.fromPalette` builds only the
   extension. `TinodeChatTheme` gains the tokens the screens move to: meta colors, bubble tail,
-  photo radius, run gaps, wallpaper and dots, date chip, glass, link, muted badge, online,
+  photo radius, run gaps, wallpaper, date chip, glass, link, muted badge, online,
   waveform, field, button, composer and sheet radii, spring curve and durations. Its
   constructor now needs them all; `fallback` and `copyWith` keep existing code working.
   Photos and file tiles in bubbles use `photoRadius`.

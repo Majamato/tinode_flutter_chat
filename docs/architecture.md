@@ -101,12 +101,14 @@ lib/
     push/                         push notifications; the host owns the push service
       application/                PushTokenController, PushRegistration
     shared/                       used by several features
-      domain/                     ValueObject, ChatFailure
+      domain/                     ValueObject, ChatFailure, TinodeScreen
       application/                BuildLifetime
       presentation/               theme, strings, time format, error view, confirm dialog,
                                   sheets (showChatSheet, ChatSheet, ChatSheetAction),
-                                  progress button, frosted bar, header bar, sliding segments,
-                                  settings sections and tiles
+                                  progress button, glass (GlassSurface, GlassIconButton,
+                                  EdgeFade, GlassBelow), app bar (TinodeAppBar, GlassScaffold,
+                                  AppBarBuilderScope), sliding segments, settings sections
+                                  and tiles
 ```
 
 A feature is something the user *does* (connect, chat), not a screen. New work goes into an
@@ -178,7 +180,7 @@ TinodeChat                      owns the container
           └ SessionGate             watches the session phase only
             ├ ConnectingView
             ├ AuthNavigator         nested Navigator, only while awaiting login
-            │ ├ LoginScreen         first route: LoginBackdrop (dots, LoginBubbles), the host's
+            │ ├ LoginScreen         first route: LoginBackdrop (LoginBubbles), the host's
             │ │                     header, LoginSheet (AuthModeSwitch, LoginForm or SignUpForm,
             │ │                     ForgotPasswordLink)
             │ ├ ConfirmEmailScreen  pushed by either form
@@ -197,9 +199,10 @@ TinodeChat                      owns the container
               ├ FindPeopleScreen    pushed by NewChatButton, the header's compose or ChatSearchField
               ├ NewGroupScreen      pushed from the search
               ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`): ChatWallpaper,
-              │                     MessageList below the ChatHeader (back with the other
-              │                     chats' unread count, MessageSearchButton, CallButtons), scrolling
-              │                     under the frosted composer, whose height it reports
+              │                     MessageList scrolling under the glass ChatHeader (back
+              │                     with the other chats' unread count, the photo and name
+              │                     pill, MessageSearchButton and CallButtons on one glass
+              │                     island) and the ComposerDock, padded by their heights
               ├ MessageSearchScreen pushed by MessageSearchButton, over its chat
               ├ ChatInfoScreen      pushed by tapping the chat's title
               ├ CallLayer           over the routes: IncomingCallView or CallView

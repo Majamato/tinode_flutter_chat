@@ -11,6 +11,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/attach_button.da
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/send_button.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 import 'package:tinode_flutter_chat/src/voice/application/voice_recorder_controller.dart';
@@ -19,15 +20,18 @@ import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder_state.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/recording_panel.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/voice_failure_message.dart';
 
-/// The attach button, the pill-shaped message field and the send button.
-/// Typing and sending never rebuild it: the button watches both on its
+/// Three pieces of glass floating over the messages: the round attach
+/// button, the message field (a pill, its corners `composerRadius` as it
+/// grows to more lines) and the round send button. Typing and sending
+/// never rebuild it: the button watches both on its
 /// own. Typing tells the other members. A failed send, or a refused
 /// attachment, shows a snack bar and keeps the text.
 ///
 /// The send button's mic records a voice message: the recording panel
-/// (delete, pause or resume, send) takes the composer's place, growing on
-/// the spring, until the recording is sent or deleted; the field keeps its
-/// text meanwhile. Hiding the app drops the recording, paused or not.
+/// (delete, pause or resume, send), on one piece of glass, takes the
+/// composer's place, growing on the spring, until the recording is sent or
+/// deleted; the field keeps its text meanwhile. Hiding the app drops the
+/// recording, paused or not.
 class Composer extends ConsumerStatefulWidget {
   const Composer({required this.topic, super.key});
 
@@ -38,6 +42,9 @@ class Composer extends ConsumerStatefulWidget {
 }
 
 class _ComposerState extends ConsumerState<Composer> {
+  /// From the screen's sides.
+  static const _side = 8.0;
+
   final _text = TextEditingController();
   late final AppLifecycleListener _lifecycle;
 
@@ -154,54 +161,56 @@ class _ComposerState extends ConsumerState<Composer> {
         widget.topic,
       ).select((s) => s is VoiceRecording),
     );
-    final pill = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(
-        TinodeChatTheme.of(context).composerRadius,
-      ),
-      borderSide: BorderSide.none,
-    );
     final theme = TinodeChatTheme.of(context);
     final still = MediaQuery.disableAnimationsOf(context);
     final body = recording
-        ? RecordingPanel(
-            topic: widget.topic,
-            onDelete: _cancelRecording,
-            onPause: () => unawaited(_pauseRecording()),
-            onResume: () => unawaited(_resumeRecording()),
-            onSend: () => unawaited(_sendRecording()),
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: _side),
+            child: GlassSurface(
+              radius: theme.composerRadius,
+              child: RecordingPanel(
+                topic: widget.topic,
+                onDelete: _cancelRecording,
+                onPause: () => unawaited(_pauseRecording()),
+                onResume: () => unawaited(_resumeRecording()),
+                onSend: () => unawaited(_sendRecording()),
+              ),
+            ),
           )
         : Padding(
-            padding: const EdgeInsets.fromLTRB(4, 6, 6, 6),
+            padding: const EdgeInsets.symmetric(horizontal: _side),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
+              spacing: 8,
               children: [
                 AttachButton(topic: widget.topic),
                 Expanded(
-                  child: TextField(
-                    controller: _text,
-                    decoration: InputDecoration(
-                      hintText: TinodeChatStrings.of(context).messageHint,
-                      isDense: true,
-                      filled: true,
-                      fillColor: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                  child: GlassSurface(
+                    radius: theme.composerRadius,
+                    child: TextField(
+                      controller: _text,
+                      decoration: InputDecoration(
+                        hintText: TinodeChatStrings.of(context).messageHint,
+                        isDense: true,
+                        filled: false,
+                        // 22 px of text: as tall as the round buttons.
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 11,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
                       ),
-                      border: pill,
-                      enabledBorder: pill,
-                      focusedBorder: pill,
+                      minLines: 1,
+                      maxLines: 5,
+                      textCapitalization: TextCapitalization.sentences,
+                      textInputAction: TextInputAction.send,
+                      onChanged: (_) => ref
+                          .read(typingControllerProvider(widget.topic).notifier)
+                          .typed(),
+                      onSubmitted: (_) => _send(),
                     ),
-                    minLines: 1,
-                    maxLines: 5,
-                    textCapitalization: TextCapitalization.sentences,
-                    textInputAction: TextInputAction.send,
-                    onChanged: (_) => ref
-                        .read(typingControllerProvider(widget.topic).notifier)
-                        .typed(),
-                    onSubmitted: (_) => _send(),
                   ),
                 ),
                 SendButton(

@@ -3,14 +3,15 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_body.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_header.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_wallpaper.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/composer_area.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/frosted_bar.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/size_reporter.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/composer_dock.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
 
-/// One chat: its messages over the wallpaper, below the header (who is
-/// typing, message search, the call buttons) and scrolling under the
-/// frosted composer where the user may post. Tapping the title opens the chat's
-/// info. Watches nothing itself.
-class ChatScreen extends StatefulWidget {
+/// One chat: its messages over the wallpaper, scrolling under the glass
+/// app bar (who is typing, message search, the call buttons) and, where the
+/// user may post, the glass composer, which rises with the keyboard.
+/// Tapping the title opens the chat's info. Watches nothing itself.
+class ChatScreen extends StatelessWidget {
   const ChatScreen({required this.topic, super.key});
 
   /// The name of every chat's route; its arguments are the topic.
@@ -50,44 +51,17 @@ class ChatScreen extends StatefulWidget {
   final String topic;
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
-}
-
-class _ChatScreenState extends State<ChatScreen> {
-  /// The composer's height, so the messages can scroll out from under it.
-  final _composerHeight = ValueNotifier<double>(0);
-
-  @override
-  void dispose() {
-    _composerHeight.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final topic = widget.topic;
-    return Scaffold(
+    return GlassScaffold(
+      screen: TinodeChatScreen(topic),
       appBar: ChatHeader(topic: topic),
       body: Stack(
         children: [
           const Positioned.fill(child: ChatWallpaper()),
-          Positioned.fill(
-            child: ChatBody(topic: topic, bottomInset: _composerHeight),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SizeReporter(
-              height: _composerHeight,
-              child: FrostedBar(
-                edge: AxisDirection.up,
-                child: SafeArea(top: false, child: ComposerArea(topic: topic)),
-              ),
-            ),
-          ),
+          Positioned.fill(child: ChatBody(topic: topic)),
         ],
       ),
+      bottomBar: ComposerDock(child: ComposerArea(topic: topic)),
     );
   }
 }

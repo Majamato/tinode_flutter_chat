@@ -30,10 +30,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.sameRunGap,
     required this.newRunGap,
     required this.wallpaperColor,
-    required this.wallpaperDotColor,
     required this.dateChipColor,
     required this.glassColor,
     required this.glassEdgeColor,
+    required this.glassShadowColor,
     required this.linkColor,
     required this.unreadBadgeColor,
     required this.onUnreadBadgeColor,
@@ -91,10 +91,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       sameRunGap: 2,
       newRunGap: 2,
       wallpaperColor: colors.surface,
-      wallpaperDotColor: Colors.transparent,
       dateChipColor: colors.scrim.withValues(alpha: 0.34),
       glassColor: colors.surface,
       glassEdgeColor: colors.outlineVariant,
+      glassShadowColor: colors.shadow.withValues(alpha: 0.14),
       linkColor: colors.primary,
       unreadBadgeColor: colors.primary,
       onUnreadBadgeColor: colors.onPrimary,
@@ -157,7 +157,11 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     return TinodeChatTheme(
       ownBubbleColor: ownBubble,
       onOwnBubbleColor: onOwnBubble,
-      ownMetaColor: onOwnBubble.withValues(alpha: filledBubble ? 0.85 : 0.6),
+      // On a light bubble the time and ticks take the brand's ink, as in
+      // Telegram; 80 % still passes 4.5:1 on the bubble.
+      ownMetaColor: filledBubble
+          ? onOwnBubble.withValues(alpha: 0.85)
+          : palette.ink.withValues(alpha: 0.8),
       peerBubbleColor: neutrals.peerBubble,
       onPeerBubbleColor: neutrals.text,
       peerMetaColor: neutrals.muted,
@@ -169,13 +173,11 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       photoRadius: 15,
       sameRunGap: 2,
       newRunGap: 12,
-      wallpaperColor: dark ? neutrals.page : palette.soft,
-      wallpaperDotColor: dark
-          ? const Color(0x12FFFFFF)
-          : palette.primary.withValues(alpha: 0.13),
+      wallpaperColor: dark ? neutrals.page : palette.lightWallpaper,
       dateChipColor: neutrals.dateChip,
       glassColor: neutrals.glass,
       glassEdgeColor: neutrals.glassEdge,
+      glassShadowColor: neutrals.glassShadow,
       linkColor: dark ? palette.onDark : palette.ink,
       unreadBadgeColor: primary,
       onUnreadBadgeColor: onPrimary,
@@ -332,18 +334,17 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// Behind the messages of a chat.
   final Color wallpaperColor;
 
-  /// The dot pattern on [wallpaperColor]; transparent for none.
-  final Color wallpaperDotColor;
-
   /// Behind the date between messages, under white text.
   final Color dateChipColor;
 
-  /// Frosted bars (the composer, the tab bar), and the headers laid over
-  /// the surface.
+  /// Floating glass: the app bar's capsules, the composer's, the tab bar.
   final Color glassColor;
 
-  /// The hairline between a bar and the content.
+  /// The hairline around floating glass.
   final Color glassEdgeColor;
+
+  /// The soft shadow under floating glass.
+  final Color glassShadowColor;
 
   /// Links and text buttons in the brand's hue.
   final Color linkColor;
@@ -478,10 +479,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     double? sameRunGap,
     double? newRunGap,
     Color? wallpaperColor,
-    Color? wallpaperDotColor,
     Color? dateChipColor,
     Color? glassColor,
     Color? glassEdgeColor,
+    Color? glassShadowColor,
     Color? linkColor,
     Color? unreadBadgeColor,
     Color? onUnreadBadgeColor,
@@ -534,10 +535,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     sameRunGap: sameRunGap ?? this.sameRunGap,
     newRunGap: newRunGap ?? this.newRunGap,
     wallpaperColor: wallpaperColor ?? this.wallpaperColor,
-    wallpaperDotColor: wallpaperDotColor ?? this.wallpaperDotColor,
     dateChipColor: dateChipColor ?? this.dateChipColor,
     glassColor: glassColor ?? this.glassColor,
     glassEdgeColor: glassEdgeColor ?? this.glassEdgeColor,
+    glassShadowColor: glassShadowColor ?? this.glassShadowColor,
     linkColor: linkColor ?? this.linkColor,
     unreadBadgeColor: unreadBadgeColor ?? this.unreadBadgeColor,
     onUnreadBadgeColor: onUnreadBadgeColor ?? this.onUnreadBadgeColor,
@@ -606,10 +607,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       sameRunGap: number(sameRunGap, other.sameRunGap),
       newRunGap: number(newRunGap, other.newRunGap),
       wallpaperColor: color(wallpaperColor, other.wallpaperColor),
-      wallpaperDotColor: color(wallpaperDotColor, other.wallpaperDotColor),
       dateChipColor: color(dateChipColor, other.dateChipColor),
       glassColor: color(glassColor, other.glassColor),
       glassEdgeColor: color(glassEdgeColor, other.glassEdgeColor),
+      glassShadowColor: color(glassShadowColor, other.glassShadowColor),
       linkColor: color(linkColor, other.linkColor),
       unreadBadgeColor: color(unreadBadgeColor, other.unreadBadgeColor),
       onUnreadBadgeColor: color(onUnreadBadgeColor, other.onUnreadBadgeColor),

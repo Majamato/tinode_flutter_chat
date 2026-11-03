@@ -61,12 +61,21 @@ The date above the first message of a day ("Today", "Yesterday", or the date).
 *In code:* `DateChip`, `ChatState.startsDay`.
 
 **Wallpaper**
-Behind a chat's messages: a color with a faint dot grid. *In code:* `ChatWallpaper`.
+Behind a chat's messages: a flat color.
+*In code:* `ChatWallpaper`, `wallpaperColor`.
 
-**Frosted bar**
-A translucent, blurring bar that content scrolls under: the composer and the tab bar. Headers
-are solid and content starts below them. *In code:* `FrostedBar`, `HomeTabBar`; the headers'
-`HeaderBar`.
+**Glass**
+A floating, translucent piece that blurs what scrolls under it: the app bar's buttons and
+title pill, the composer's attach button, field and send button, and the tab bar. All the glass
+of a screen shares one backdrop. *In code:* `GlassSurface`, `GlassIconButton`.
+*Avoid:* "frosted bar": there are no bars, only glass over the content.
+
+**App bar**
+The row of glass at the top of a screen (chat list, calls history, settings, appearance, a
+chat), over an **edge fade** of the screen's background. Content scrolls under it and starts
+below it. The host can wrap or replace it per screen. *In code:* `TinodeAppBar`, `EdgeFade`,
+`GlassScaffold`, `TinodeChat.appBarBuilder`, `TinodeScreen`.
+*Avoid:* "header" for the bar itself (the chat's is `ChatHeader` for history).
 
 **Tab bar**
 The floating glass bar with the chats, the calls history and the settings, on by default
@@ -82,8 +91,9 @@ The palette and the light, dark or system theme the user picks on this device, f
 palettes. *In code:* `TinodeAppearance`, `AppearanceScreen`.
 
 **Composer**
-The attach button, the pill-shaped message field and the send button, which fills with the
-brand color once there is text. *In code:* `Composer`, `SendButton`.
+The round attach button, the message field and the round send button, glass floating over the
+messages above the keyboard; the send button fills with the brand color once there is text.
+*In code:* `Composer`, `ComposerDock`, `SendButton`.
 
 **Unread count / unread badge**
 `lastSeq − read`, never negative, shown as a badge on the tile.

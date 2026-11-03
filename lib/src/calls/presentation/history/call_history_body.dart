@@ -15,6 +15,6 @@ class CallHistoryBody extends ConsumerWidget {
     );
     return loaded
         ? const CallHistoryList()
-        : const Center(child: CircularProgressIndicator());
+        : const SafeArea(child: Center(child: CircularProgressIndicator()));
   }
 }

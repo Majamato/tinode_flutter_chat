@@ -4,7 +4,6 @@ import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_previ
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_screen.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/palette_swatch.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/palette_swatch_grid.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/screen_header.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -128,12 +127,20 @@ void main() {
     expect(transition.scale.value, 1);
   });
 
-  testWidgets('the preview starts under the header', (tester) async {
+  testWidgets('the preview starts under the app bar', (tester) async {
     await open(tester);
 
     expect(
       tester.getTopLeft(find.byType(AppearancePreview)).dy,
-      tester.getBottomLeft(find.byType(ScreenHeader)).dy + 8,
+      tester
+              .getBottomLeft(
+                find.descendant(
+                  of: find.byType(AppearanceScreen),
+                  matching: find.byType(TinodeAppBar),
+                ),
+              )
+              .dy +
+          8,
     );
   });
 }

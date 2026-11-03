@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scope.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_frame.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/dot_grid_painter.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -26,13 +25,8 @@ class AppearancePreview extends StatelessWidget {
     return ExcludeSemantics(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: CustomPaint(
-          painter: DotGridPainter(
-            background: theme.wallpaperColor,
-            dot: theme.wallpaperDotColor,
-            grid: 22,
-            shifts: const [Offset(11, 11)],
-          ),
+        child: ColoredBox(
+          color: theme.wallpaperColor,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 18, 14, 22),
             child: Column(

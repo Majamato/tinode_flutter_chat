@@ -25,7 +25,7 @@ void main() {
       expect(theme.readReceiptColor, palette.primary);
       expect(theme.unreadBadgeColor, palette.primary);
       expect(theme.linkColor, palette.ink);
-      expect(theme.wallpaperColor, palette.soft);
+      expect(theme.wallpaperColor, palette.lightWallpaper);
     });
 
     test('swaps in night and onDark in dark mode', () {
@@ -95,13 +95,51 @@ void main() {
       }
     });
 
-    test('stands out from the light wallpaper', () {
-      final theme = TinodeChatTheme.fromPalette(palette);
+    test('it and the bubbles of others stand out from the light '
+        'wallpaper, in every palette', () {
+      for (final colors in [palette, _plum]) {
+        final theme = TinodeChatTheme.fromPalette(colors);
 
-      expect(
-        _contrast(theme.ownBubbleColor, theme.wallpaperColor),
-        greaterThan(1.05),
-      );
+        expect(
+          _contrast(theme.ownBubbleColor, theme.wallpaperColor),
+          greaterThanOrEqualTo(1.2),
+          reason: '${colors.primary} own',
+        );
+        expect(
+          _contrast(theme.peerBubbleColor, theme.wallpaperColor),
+          greaterThanOrEqualTo(1.2),
+          reason: '${colors.primary} peer',
+        );
+      }
+    });
+
+    test('its time and ticks pass 4.5:1 on it, in every palette', () {
+      for (final colors in [palette, _plum]) {
+        for (final brightness in Brightness.values) {
+          final theme = TinodeChatTheme.fromPalette(
+            colors,
+            brightness: brightness,
+          );
+          final meta = Color.alphaBlend(
+            theme.ownMetaColor,
+            theme.ownBubbleColor,
+          );
+          expect(
+            _contrast(meta, theme.ownBubbleColor),
+            greaterThanOrEqualTo(4.5),
+            reason: '${colors.primary} $brightness',
+          );
+        }
+      }
+    });
+
+    test("matches the design's light chat: a greyish lavender wallpaper, "
+        'white bubbles from others and a muted tint for the own', () {
+      final theme = TinodeChatTheme.fromPalette(_plum);
+
+      expect(theme.wallpaperColor, _near(const Color(0xFFE7E3EA)));
+      expect(theme.ownBubbleColor, _near(const Color(0xFFD4C3E1)));
+      expect(theme.peerBubbleColor, const Color(0xFFFFFFFF));
     });
 
     test('takes the palette bubble, with white text on a dark one', () {
@@ -217,7 +255,6 @@ final List<(String, Object? Function(TinodeChatTheme))> _fields = [
   ('sameRunGap', (t) => t.sameRunGap),
   ('newRunGap', (t) => t.newRunGap),
   ('wallpaperColor', (t) => t.wallpaperColor),
-  ('wallpaperDotColor', (t) => t.wallpaperDotColor),
   ('dateChipColor', (t) => t.dateChipColor),
   ('glassColor', (t) => t.glassColor),
   ('glassEdgeColor', (t) => t.glassEdgeColor),
@@ -257,3 +294,26 @@ final List<(String, Object? Function(TinodeChatTheme))> _fields = [
   ('springDuration', (t) => t.springDuration),
   ('fadeDuration', (t) => t.fadeDuration),
 ];
+
+/// The example app's purple palette, which the design was drawn in.
+const _plum = TinodeChatPalette(
+  primary: Color(0xFF5B1A8C),
+  night: Color(0xFF6E29A8),
+  bright: Color(0xFF8A3FD1),
+  accent: Color(0xFFFF9A3D),
+  soft: Color(0xFFF1E5FA),
+  ink: Color(0xFF42106A),
+  onDark: Color(0xFFC08BFF),
+  deep: Color(0xFF1A0730),
+  scene: Color(0xFF28133D),
+);
+
+/// Matches a color within one step per channel of [expected].
+Matcher _near(Color expected) => predicate<Color>(
+  (c) => [
+    (c.r - expected.r).abs(),
+    (c.g - expected.g).abs(),
+    (c.b - expected.b).abs(),
+  ].every((d) => d * 255 <= 1),
+  'within one step of $expected',
+);

@@ -28,8 +28,8 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
   typing, under the chat's name and as a bubble with bouncing dots. The user's own messages get
   delivered and read ticks, and a "Read by" list in groups.
 - Bubbles in the chat's design: a tail on the last of each run, the time inline after the
-  last line, a date above each day, a dotted wallpaper, a solid header and a frosted composer. A
-  sent message pops in. Wrap or replace bubbles with `bubbleBuilder`:
+  last line, a date above each day, a flat wallpaper, and floating glass for the app bar and
+  the composer, the messages scrolling under both. A sent message pops in. Wrap or replace bubbles with `bubbleBuilder`:
 
   ```dart
   TinodeChat(
@@ -38,6 +38,20 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
             TinodeBubbleKind.call
         ? MyCallBubble(bubble)
         : defaultBubble,
+  )
+  ```
+- Every screen with an app bar (chat list, calls, settings, appearance, a chat) shares one
+  glass `TinodeAppBar`. Wrap it or bring your own with `appBarBuilder`; the content scrolls
+  under whatever bar you return and starts below its preferred height:
+
+  ```dart
+  TinodeChat(
+    config: config,
+    appBarBuilder: (context, screen, defaultAppBar) => switch (screen) {
+      TinodeChatScreen(:final topic) => MyChatBar(topic: topic),
+      TinodeSettingsScreen() => const TinodeAppBar(title: Text('Me')),
+      _ => defaultAppBar,
+    },
   )
   ```
 - Finds people and groups by login, email, phone or tag, opens 1:1 chats with them, and creates
@@ -493,7 +507,7 @@ where it needs the protocol:
    `TinodeCacheLimits`).
 8. ~~**Design**~~: done ([`docs/design.md`](docs/design.md): the palette, the theme's tokens
    and `TinodeChatTheme.materialTheme`; the chat screen with bubble tails, runs, date chips,
-   the wallpaper, the header and the frosted composer, the send button's morph and the bubble
+   the wallpaper, the glass app bar and composer, the send button's morph and the bubble
    builder; online presence; the chat list; login with a `loginHeader` slot; the call screens
    and the call bar; the app shell with the floating tab bar, the calls history, the settings
    and the Appearance screen; and voice messages).

@@ -132,7 +132,7 @@ class _RecordingPanelState extends ConsumerState<RecordingPanel>
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 6, 4, 12),
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -73,8 +73,7 @@ final class TinodeChatPalette with ValueObject {
   /// The clashing pop for small decorations, never behind small text.
   final Color accent;
 
-  /// A light tint of [primary]: the chat wallpaper in light mode and
-  /// secondary buttons.
+  /// A light tint of [primary]: secondary buttons.
   final Color soft;
 
   /// Text and links in the brand's hue on light backgrounds: links, the
@@ -91,14 +90,27 @@ final class TinodeChatPalette with ValueObject {
   final Color scene;
 
   /// The user's own messages in light mode, under dark text; a light tint
-  /// of [bright] when null. A dark color gets white text instead.
+  /// of [primary] when null. A dark color gets white text instead.
   final Color? bubble;
 
-  /// The user's own messages in light mode: [bubble], or a light tint of
-  /// [bright] that stands out from the [soft] wallpaper.
+  /// The user's own messages in light mode: [bubble], or [primary] at
+  /// 26 % over white, a muted tint of the brand that stands out from the
+  /// wallpaper and the white bubbles of others.
   Color get lightBubble =>
       bubble ??
-      Color.alphaBlend(bright.withValues(alpha: 0.28), const Color(0xFFFFFFFF));
+      Color.alphaBlend(
+        primary.withValues(alpha: 0.26),
+        const Color(0xFFFFFFFF),
+      );
+
+  /// The chat's wallpaper in light mode: [primary] at 6 % over a light
+  /// grey. Its lightness sits between the white bubbles of others and the
+  /// own tint, so both stand out on it by about 1.2:1, and it is greyer
+  /// than the own tint, which sets that apart by hue too.
+  Color get lightWallpaper => Color.alphaBlend(
+    primary.withValues(alpha: 0.06),
+    const Color(0xFFF0F0F0),
+  );
 
   @override
   List<Object?> get props => [

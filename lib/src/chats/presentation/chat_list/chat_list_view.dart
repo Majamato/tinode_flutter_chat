@@ -5,9 +5,9 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_t
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/row_entrance.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// The list of chat tiles, scrolling over the tab bar (the bottom padding
-/// of [MediaQuery]). Rebuilds only when the order of chats changes; each
-/// tile watches its own chat.
+/// The list of chat tiles, scrolling under the app bar and over the tab bar
+/// (the top and bottom padding of [MediaQuery]). Rebuilds only when the
+/// order of chats changes; each tile watches its own chat.
 ///
 /// The first rows to show fade up one after the other, once per screen.
 class ChatListView extends ConsumerStatefulWidget {
@@ -32,19 +32,23 @@ class _ChatListViewState extends ConsumerState<ChatListView> {
   Widget build(BuildContext context) {
     final order = ref.watch(chatListControllerProvider.select((s) => s.order));
     if (order.isEmpty) {
-      return Center(child: Text(TinodeChatStrings.of(context).noChats));
+      return SafeArea(
+        child: Center(child: Text(TinodeChatStrings.of(context).noChats)),
+      );
     }
     if (_entering) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _entering = false);
     }
     final entering = _entering;
+    final padding = MediaQuery.paddingOf(context);
     return MediaQuery.removePadding(
       context: context,
+      removeTop: true,
       removeBottom: true,
       child: ListView.builder(
         padding: EdgeInsets.only(
-          bottom:
-              MediaQuery.paddingOf(context).bottom + ChatListView._bottomRoom,
+          top: padding.top,
+          bottom: padding.bottom + ChatListView._bottomRoom,
         ),
         itemExtent: ChatListTile.height,
         itemCount: order.length,

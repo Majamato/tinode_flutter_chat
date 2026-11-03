@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
@@ -7,15 +6,13 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_list.dar
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/error_retry_view.dart';
 
-/// Progress, error or the messages. Rebuilds only when the load status
-/// does. While it is shown the chat stays attached.
+/// Progress, error or the messages, which scroll under the bars; the rest
+/// sits between them. Rebuilds only when the load status does. While it is
+/// shown the chat stays attached.
 class ChatBody extends ConsumerWidget {
-  const ChatBody({required this.topic, required this.bottomInset, super.key});
+  const ChatBody({required this.topic, super.key});
 
   final String topic;
-
-  /// The composer's height, for the messages to scroll out from under.
-  final ValueListenable<double> bottomInset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,15 +20,19 @@ class ChatBody extends ConsumerWidget {
       chatControllerProvider(topic).select((s) => (s.status, s.failure)),
     );
     return switch (status) {
-      LoadStatus.loading => const Center(child: CircularProgressIndicator()),
-      LoadStatus.failed => ErrorRetryView(
-        failure: failure ?? ChatFailure.unexpected,
-        // A chat that is gone stays gone.
-        onRetry: failure == ChatFailure.gone
-            ? null
-            : ref.read(chatControllerProvider(topic).notifier).reload,
+      LoadStatus.loading => const SafeArea(
+        child: Center(child: CircularProgressIndicator()),
       ),
-      LoadStatus.ready => MessageList(topic: topic, bottomInset: bottomInset),
+      LoadStatus.failed => SafeArea(
+        child: ErrorRetryView(
+          failure: failure ?? ChatFailure.unexpected,
+          // A chat that is gone stays gone.
+          onRetry: failure == ChatFailure.gone
+              ? null
+              : ref.read(chatControllerProvider(topic).notifier).reload,
+        ),
+      ),
+      LoadStatus.ready => MessageList(topic: topic),
     };
   }
 }

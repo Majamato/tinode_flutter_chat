@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/home/home_tab_bar.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_tile.dart';
+import 'package:tinode_flutter_chat/src/calls/presentation/history/calls_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/screen_header.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -183,12 +183,29 @@ void main() {
     expect(find.text(strings.noCalls), findsOneWidget);
   });
 
-  testWidgets('the calls start under the header', (tester) async {
+  testWidgets('the calls scroll under the app bar, starting below it', (
+    tester,
+  ) async {
     await openCalls(tester);
 
+    final bar = find.descendant(
+      of: find.byType(CallsScreen),
+      matching: find.byType(TinodeAppBar),
+    );
     expect(
       tester.getTopLeft(find.byType(CallHistoryTile).first).dy,
-      tester.getBottomLeft(find.byType(ScreenHeader)).dy,
+      tester.getBottomLeft(bar).dy,
+    );
+    expect(
+      tester
+          .getTopLeft(
+            find.descendant(
+              of: find.byType(CallsScreen),
+              matching: find.byType(ListView),
+            ),
+          )
+          .dy,
+      0,
     );
   });
 }

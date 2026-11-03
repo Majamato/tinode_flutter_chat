@@ -6,7 +6,8 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_v
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/error_retry_view.dart';
 
-/// Progress, error or the list. Rebuilds only when the load status does.
+/// Progress or error between the bars, or the list scrolling under them.
+/// Rebuilds only when the load status does.
 class ChatListBody extends ConsumerWidget {
   const ChatListBody({super.key});
 
@@ -18,12 +19,14 @@ class ChatListBody extends ConsumerWidget {
     if (status == LoadStatus.ready) {
       return const ChatListView();
     }
-    return switch (status) {
-      LoadStatus.failed => ErrorRetryView(
-        failure: failure ?? ChatFailure.unexpected,
-        onRetry: ref.read(chatListControllerProvider.notifier).reload,
-      ),
-      _ => const Center(child: CircularProgressIndicator()),
-    };
+    return SafeArea(
+      child: switch (status) {
+        LoadStatus.failed => ErrorRetryView(
+          failure: failure ?? ChatFailure.unexpected,
+          onRetry: ref.read(chatListControllerProvider.notifier).reload,
+        ),
+        _ => const Center(child: CircularProgressIndicator()),
+      },
+    );
   }
 }

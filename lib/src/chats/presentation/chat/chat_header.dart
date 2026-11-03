@@ -1,76 +1,95 @@
 import 'package:flutter/material.dart';
-import 'package:tinode_flutter_chat/src/calls/presentation/call_button.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_back_button.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_header_actions.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_status.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_info_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
-import 'package:tinode_flutter_chat/src/search/presentation/message_search_button.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/header_bar.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_overlay_style.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 
-/// The bar over a chat: back (with the other chats' unread
-/// count), the chat's avatar, name and status (typing, online), then
-/// message search and the call buttons. Tapping the name opens the chat's
-/// info. Watches nothing itself.
+/// The glass app bar over a chat: back (with the other chats' unread
+/// count), a pill with the chat's photo, name and status (typing, online)
+/// that opens the chat's info, then message search and the call buttons on
+/// one island, over a fade of the wallpaper. Watches nothing itself.
 class ChatHeader extends StatelessWidget implements PreferredSizeWidget {
   const ChatHeader({required this.topic, super.key});
-
-  static const _height = 56.0;
 
   final String topic;
 
   @override
-  Size get preferredSize => const Size.fromHeight(_height);
+  Size get preferredSize => const TinodeAppBar().preferredSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return TinodeAppBar(
+      fadeColor: TinodeChatTheme.of(context).wallpaperColor,
+      centerTitle: false,
+      titleOnGlass: true,
+      leading: ChatBackButton(topic: topic),
+      title: _TitlePill(topic: topic),
+      actions: [ChatHeaderActions(topic: topic)],
+    );
+  }
+}
+
+/// The chat's photo, then its name over its status, on glass, as wide as
+/// they need.
+class _TitlePill extends StatelessWidget {
+  const _TitlePill({required this.topic});
+
+  /// 34 px across, 5 px inside the 44 px pill.
+  static const _avatarRadius = 17.0;
+
+  final String topic;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: Colors.transparent,
-      // A clear app bar reads as dark; the bar behind it is the theme's.
-      systemOverlayStyle: chatOverlayStyle(Theme.of(context).brightness),
-      toolbarHeight: _height,
-      titleSpacing: 4,
-      centerTitle: false,
-      flexibleSpace: const HeaderBar(child: SizedBox.expand()),
-      title: Row(
-        children: [
-          ChatBackButton(topic: topic),
-          const SizedBox(width: 4),
-          Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => ChatInfoScreen.open(context, topic),
-              child: Row(
-                children: [
-                  ChatAvatar(topic: topic, radius: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        DefaultTextStyle.merge(
-                          style: textTheme.titleMedium,
-                          child: ChatTitle(topic: topic),
-                        ),
-                        ChatStatus(topic: topic),
-                      ],
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: GlassSurface(
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: () => ChatInfoScreen.open(context, topic),
+            child: Padding(
+              // The photo sits concentric in the pill's round end.
+              padding: const EdgeInsetsDirectional.only(start: 5, end: 14),
+              child: SizedBox(
+                height: TinodeAppBar.rowHeight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 8,
+                  children: [
+                    ExcludeSemantics(
+                      child: ChatAvatar(topic: topic, radius: _avatarRadius),
                     ),
-                  ),
-                ],
+                    Flexible(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          DefaultTextStyle.merge(
+                            style: textTheme.titleMedium?.copyWith(
+                              fontSize: 15,
+                              height: 1.2,
+                            ),
+                            child: ChatTitle(topic: topic),
+                          ),
+                          ChatStatus(topic: topic),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ],
+        ),
       ),
-      actions: [
-        MessageSearchButton(topic: topic),
-        CallButton(topic: topic, video: true),
-        CallButton(topic: topic, video: false),
-      ],
     );
   }
 }

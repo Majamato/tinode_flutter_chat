@@ -20,10 +20,10 @@ is the default. Its roles:
 |---|---|
 | `primary` | Primary buttons, the send button, selected chips, unread badges, the FAB, the active tab; read ticks and the voice player on own bubbles in light mode. White text on it passes 4.5:1. |
 | `night` | `primary` in dark mode, a little lifted from near-black, and the own bubbles there. White text on it passes 4.5:1. |
-| `bubble` | Optional. Own bubbles in light mode, under near-black text (white if it is dark). By default `lightBubble`, `bright` at 28 % over white, a step stronger than the `soft` wallpaper. |
+| `bubble` | Optional. Own bubbles in light mode, under near-black text (white if it is dark). By default `lightBubble`, `primary` at 26 % over white: a muted tint of the brand. |
 | `bright` | Decoration only: waveform highlights, photo placeholders, call blobs, recording rings. Never behind text. |
 | `accent` | The clashing pop for small decorations. Never behind small text. |
-| `soft` | Light chat wallpaper, secondary buttons, the login background. |
+| `soft` | Secondary buttons and Material's containers in light mode. |
 | `ink` | Text and links in the brand's hue on light backgrounds. |
 | `onDark` | `ink` in dark mode. |
 | `deep` | Base of the voice call background. |
@@ -41,8 +41,9 @@ The status bar is clear, with dark icons over light screens and light ones over 
 `ChatNeutrals.light` and `.dark`: `page` (outermost, and the dark wallpaper; `pageColor` behind
 settings), `background` (lists, sheets), `surface` (inputs, chips), `card` (settings groups:
 `cardColor`, radius `cardRadius` 20), `peerBubble`, `text`,
-`muted` (times, previews, labels), `line` (dividers, borders), `glass` and `glassEdge` (frosted
-bars, and the solid headers), `waveOff`, `dateChip`, `mutedBadge`. Fixed in both modes: `danger` (end call, recording,
+`muted` (times, previews, labels), `line` (dividers, borders), `glass`, `glassEdge` and
+`glassShadow` (floating glass: the app bar's and the composer's capsules, the tab bar),
+`waveOff`, `dateChip`, `mutedBadge`. Fixed in both modes: `danger` (end call, recording,
 missed calls) and `online` (the presence dot, with a 2–3 px ring in `background`).
 
 ## Type
@@ -80,8 +81,11 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 - `sameRunGap` (2 px) between the bubbles of a run, `newRunGap` (12 px) between runs.
 - Own: `ownBubbleColor` with `onOwnBubbleColor` text and `ownMetaColor` time and ticks, the
   ticks of a read message in `readReceiptColor`. As in Telegram and WhatsApp, light mode puts
-  near-black text on a light tint of the brand (`palette.lightBubble`, with the time at 60 %
-  and read ticks in `primary`); dark mode fills them with `night` under white text.
+  near-black text on a muted tint of the brand (`palette.lightBubble`), with the time and
+  ticks in `ink` at 80 % (4.5:1 on the bubble) and read ticks in `primary`; others' bubbles
+  are white on the lighter wallpaper. Every palette the user picks in Appearance derives its
+  own, so the chat follows the pick. Dark mode fills own bubbles with `night` under white
+  text.
   Others: `peerBubbleColor`, `onPeerBubbleColor`, `peerMetaColor`.
 - The brand's strong color for actions is `actionColor` / `onActionColor` (the send button,
   the recording panel's send, others' voice players), so it stays strong while own bubbles are
@@ -91,16 +95,16 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 - Padding: text 7 × 12, files and calls 10 × 12, photos 4 (caption 2 × 8 × 6 below).
   A photo's bubble takes the photo's radius plus that 4 px (19), so the rim is even. The tail's
   base reaches into the bubble, so it stays joined to a photo's thin rim.
-- The wallpaper is `wallpaperColor` with two offset 28 px dot grids in `wallpaperDotColor`;
-  the first message of a day has a `dateChipColor` pill above it, in white.
+- The wallpaper is a flat `wallpaperColor`, as in the design. In light mode it is
+  `lightWallpaper`, `primary` at 6 % over a light grey: its lightness sits between others'
+  white bubbles and the own tint, so both stand out from it by at least 1.2:1. The first message of a day has a `dateChipColor` pill above it, in white.
 - While someone types, a bubble with three bouncing dots (`peerMetaColor`) sits at the bottom.
 - A host wraps or replaces any bubble with `TinodeChat.bubbleBuilder`, which gets a
   `TinodeBubble` and the default bubble.
 
 ## Login
 
-- One screen signs in and up. Behind it: `wallpaperColor` with a 20 px dot grid in
-  `wallpaperDotColor`, and decorative bubbles (an incoming hello, an outgoing reply, a tiny voice
+- One screen signs in and up. Behind it: `wallpaperColor` and decorative bubbles (an incoming hello, an outgoing reply, a tiny voice
   note, an `accent` dot) drifting 12 px over 5–7 s, hidden from screen readers and still with
   Reduce motion.
 - The host's `TinodeChat.loginHeader` (e.g. an animated logo) sits centred near the top; by
@@ -116,11 +120,41 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 - The screen scrolls from the bottom: with the keyboard open, the sheet and its button stay just
   above the keyboard, and the header scrolls off the top.
 
+## Glass
+
+Floating glass, as in Telegram: no bars, only capsules over the content, which scrolls under
+them.
+
+- **Glass** (`GlassSurface`): `glassColor` over a blur of 22 with saturation 1.6, a 0.5 px
+  `glassEdgeColor` edge and a soft `glassShadowColor` shadow (blur 24, 6 px down; `raised`
+  glass such as the tab bar casts it at twice the alpha, blur 34, 12 px down). A stadium,
+  or round when square; the field and the recording panel take `composerRadius`. All the glass
+  of a screen joins one `BackdropGroup`, so the blur reads the content behind it once.
+- **App bar** (`TinodeAppBar`): a 44 px row 6 px under the status bar, 8 px from the sides,
+  its pieces 8 px apart: a leading capsule, the title (`titleLarge`, centred, or a capsule of
+  its own), round 44 px buttons (`GlassIconButton`, 22 px icons in `onSurface`), then an
+  optional bottom row such as a search pill. Buttons that belong together share one island of
+  glass instead, 40 px wide each with 2 px at its ends (the chat's search and calls), leaving
+  the title more room. Behind it an **edge fade** (`EdgeFade`) of the
+  screen's background keeps what isn't on glass readable: solid under the status bar and
+  under a plain-text title's row, then easing (85 %, 45 %, clear) over the rest of the bar and
+  16 px past it, so content slides in from under the bar without an edge. The fade only
+  paints; each bar blocks the touches on its own area, so content under the bar's overhang
+  stays tappable. A title on glass of
+  its own (the chat's name pill, which starts with its 34 px photo 5 px in, `titleOnGlass`) needs no solid row: there the fade is solid
+  under the status bar only and the messages show behind the capsules. The bar takes every touch that lands on it, between the buttons too, so nothing
+  under it can be tapped through it; the composer's dock does the same. Text grows to 1.3
+  times at most. The chat list, calls history, settings, appearance and each chat use it; a
+  host wraps or replaces it with `TinodeChat.appBarBuilder`, which gets the `TinodeScreen`.
+- The content runs under the bars and is padded by their heights, which the `Scaffold` gives
+  it, so a host's bar of any height, solid or not, works.
+
 ## Chat list
 
-- The chats sit under a header: the account menu (only without the tab bar: profile,
-  appearance, log out), "Chats" (`titleLarge`) and the compose button in `linkColor`, then a 38 px search pill (`surfaceContainer`, radius 12) that
-  opens the people search. No folder chips.
+- The chats scroll under the glass app bar: the account menu (only without the tab bar:
+  profile, appearance, log out) as a round button, "Chats" (`titleLarge`) centred and the
+  compose button in `linkColor`, then a 40 px glass search pill that opens the people search.
+  No folder chips.
 - Rows are 76 px: a 56 px avatar with the presence dot; the name (`titleMedium` at 16), a muted
   icon, the ticks of the user's own last message (read in `linkColor`) and the time (`bodySmall`,
   in `linkColor` while unread, else `outline`); then the preview (`bodyMedium` in `outline`) and
@@ -138,9 +172,16 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 - `TinodeChat(tabBar: true)`, the default: the chat list, the calls history (when the host
   offers some kind of call) and the settings are tabs of a floating glass bar. Hosts with tabs of
   their own turn it off; the chat list's account menu then holds the settings.
-- The bar: 16 px from the sides, 26 px from the bottom (or the system inset, if more), 66 px
-  tall, radius 33, `glassColor` with blur 24 and saturation 1.6, a 1 px `glassEdgeColor` edge and
-  a soft shadow. A lens (`tabBarLensColor`: `primary` at 10 % in light, white at 14 % in dark,
+- The bar: 16 px from the sides, 66 px tall, on the same glass as the capsules (a stadium).
+  Over an iOS home indicator it sits 8 px from the edge, the indicator across it; elsewhere
+  12 px above what the system keeps at the bottom (Android's navigation buttons or gesture
+  strip when the app draws behind them, else the screen's edge).
+- Under it only a veil: the tab's background at 60 % at the screen's edge, easing to clear at
+  the bar's top, never solid, so rows scroll under the bar, blur through its glass and still
+  show around it. Touches anywhere in the bar's room stop there, so a row half under the bar
+  can't be opened by a near miss. The bar's raised shadow keeps it floating. A glass screen without a composer or the tab bar fades its
+  background in under the system's own bars instead, solid from the screen's edge to their
+  middle and clear at their top; touches there stop. A lens (`tabBarLensColor`: `primary` at 10 % in light, white at 14 % in dark,
   radius 27) slides under the current tab on `springCurve`. Each tab is a 24 px icon over an
   11/700 label, in `linkColor` when current, else `outline`. The chats tab carries the unread
   count of chats that aren't muted (an 18 px `unreadBadgeColor` stadium, "99+" above 99). A
@@ -152,7 +193,7 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 
 ## Calls history
 
-- The calls of direct chats, newest first, under a "Calls" header: 72 px rows with a
+- The calls of direct chats, newest first, scrolling under a "Calls" glass app bar: 72 px rows with a
   48 px avatar, the chat's name (`missedCallColor` when the user missed the call), then the
   direction arrow (bent when the call didn't happen), the kind and how it went ("Voice call ·
   4:12", "Video call · Missed") in `outline`, the time as in the chat list, and a button to the
@@ -161,16 +202,16 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 
 ## Settings
 
-- Cards (`cardColor`, `cardRadius`) on `pageColor`, 22 px apart, under a "Settings"
-  header: the user's photo (56 px) and name over "Name, photo and password", opening the
+- Cards (`cardColor`, `cardRadius`) on `pageColor`, 22 px apart, scrolling under a
+  "Settings" glass app bar fading from `pageColor`: the user's photo (56 px) and name over "Name, photo and password", opening the
   profile; Appearance with the palette in use, when the host offers one; Log out in
   `colorScheme.error`. Rows are at least 52 px, with a `linkColor` icon and a chevron.
 - Section labels are `labelMedium`, upper case, in `outline` (`SettingsLabel`).
 
 ## Appearance
 
-- Under a header, "‹ Settings" in `linkColor` and "Appearance": a preview card (radius
-  24) with the wallpaper, a 22 px dot grid and two bubbles with tails, the answer naming the
+- Under a glass app bar, a "‹ Settings" pill in `linkColor` and "Appearance": a preview card (radius
+  24) with the wallpaper and two bubbles with tails, the answer naming the
   palette and popping in again from its tail (.6 → 1.06 → 1, 380 ms) when it changes.
 - **Color** (when the host offers more than one palette): five swatches to a row on a card,
   48 px circles split at 135° into the palette's `accent` (38 %) and light `primary`, the name
@@ -199,20 +240,25 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 
 ## Chat screen
 
-- The messages sit below a solid header (`HeaderBar`: `glassColor` over the surface, a
-  `glassEdgeColor` hairline) and scroll under a frosted composer (`FrostedBar`: `glassColor`,
-  blur 22, saturation 1.6, the same hairline). The header has back (with the other chats' unread count in
-  a badge), the avatar, the name, who is typing in `linkColor`, then search and the call
-  buttons. The composer has attach, a pill field (`composerRadius`) and the send button.
+- The messages scroll under the glass app bar, fading from `wallpaperColor`: a back pill
+  (the chevron, and the other chats' unread count in a badge), a pill with the chat's 34 px
+  photo (or initials), then the name (15/700) over who is typing or "online" in `linkColor`,
+  which opens the chat's info, then search, video and voice call buttons (only the calls
+  offered) on one island of glass; search alone is a round button.
+- The composer has no bar: three pieces of glass float 8 px above the keyboard, or above the
+  home indicator, over a fade of the wallpaper: the round attach button, the field
+  (`composerRadius`, transparent inside, 44 px for one line, up to five) and the round send
+  button. A read-only chat shows a glass pill instead. The messages are padded by the
+  composer's height, keyboard included, in the same frame it changes.
 - While the field is blank the send button rests on the microphone (in `onSurfaceVariant`),
-  or, without `TinodeChatFeatures.voiceMessages`, on a greyed arrow. With text it fills with
-  `primary` and the arrow turns in from a quarter turn as the mic turns out (300 ms on
+  or, without `TinodeChatFeatures.voiceMessages`, on a greyed arrow. With text its glass fills
+  with `actionColor` and the arrow turns in from a quarter turn as the mic turns out (300 ms on
   `springCurve`, scale .4 ↔ 1).
 
 ## Voice messages
 
 - **Recording.** A tap on the mic records (a medium haptic, and "Recording voice message" read
-  out). The whole composer gives way to the **recording panel**, the field keeping its text: the
+  out). The whole composer gives way to the **recording panel**, on one piece of glass, the field keeping its text: the
   composer grows to it on `springCurve` over `springDuration` (at once with Reduce motion), and
   the panel slides in 12 px as it fades in (250 ms). The list above is reversed, so the last
   message stays in view.

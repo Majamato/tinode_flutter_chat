@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// What looks like a search field in the chat list's header: a 38 px pill
-/// that opens the search for people and groups. Watches nothing.
-class ChatSearchField extends StatelessWidget {
+/// What looks like a search field under the chat list's app bar: a glass
+/// pill that opens the search for people and groups. Watches nothing.
+class ChatSearchField extends StatelessWidget implements PreferredSizeWidget {
   const ChatSearchField({super.key});
 
-  /// Its height, which the header's preferred size counts on.
-  static const height = 38.0;
-  static const _radius = BorderRadius.all(Radius.circular(12));
+  /// Its height.
+  static const height = 40.0;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(height);
 
   @override
   Widget build(BuildContext context) {
@@ -24,28 +27,35 @@ class ChatSearchField extends StatelessWidget {
         button: true,
         label: strings.findPeople,
         excludeSemantics: true,
-        child: Material(
-          color: theme.colorScheme.surfaceContainer,
-          borderRadius: _radius,
-          child: InkWell(
-            borderRadius: _radius,
-            onTap: () => FindPeopleScreen.open(context),
-            child: SizedBox(
-              height: height,
-              child: Row(
-                children: [
-                  const SizedBox(width: 12),
-                  Icon(
-                    TinodeChatIcons.of(context).search,
-                    size: 18,
-                    color: muted,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    strings.searchChats,
-                    style: theme.textTheme.bodyLarge?.copyWith(color: muted),
-                  ),
-                ],
+        child: GlassSurface(
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              customBorder: const StadiumBorder(),
+              onTap: () => FindPeopleScreen.open(context),
+              child: SizedBox(
+                height: height,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 14),
+                    Icon(
+                      TinodeChatIcons.of(context).search,
+                      size: 18,
+                      color: muted,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        strings.searchChats,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: muted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

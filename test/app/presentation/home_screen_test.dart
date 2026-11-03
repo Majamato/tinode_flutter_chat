@@ -157,7 +157,8 @@ void main() {
     expect(bar.top - button.bottom, closeTo(20, 0.5));
     expect(screen.right - button.right, closeTo(18, 0.5));
     expect(bar.left - screen.left, 16);
-    expect(screen.bottom - bar.bottom, 26);
+    // No system inset: 12 px from the edge, where the app ends.
+    expect(screen.bottom - bar.bottom, 12);
   });
 
   testWidgets(
@@ -176,7 +177,7 @@ void main() {
     variant: TargetPlatformVariant.only(TargetPlatform.iOS),
   );
 
-  testWidgets('elsewhere the bar clears the system bottom inset', (
+  testWidgets('elsewhere the bar floats 12 px over the system bottom inset', (
     tester,
   ) async {
     tester.view.padding = const FakeViewPadding(bottom: 144);
@@ -187,7 +188,7 @@ void main() {
 
     final screen = tester.getRect(find.byType(ChatListScreen));
     final bar = tester.getRect(find.byType(HomeTabBar));
-    expect(screen.bottom - bar.bottom, 48);
+    expect(screen.bottom - bar.bottom, 48 + 12);
   });
 
   testWidgets('screen readers hear the tabs and which one is current', (

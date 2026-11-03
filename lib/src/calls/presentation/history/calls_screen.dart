@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_history_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_body.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/screen_header.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 
-/// The calls tab: the calls of the direct chats, newest first, under a
-/// header. Each time it shows (its tab is picked, or a screen over it
-/// closes) it fetches the chats the cache is behind on. Watches nothing.
+/// The calls tab: the calls of the direct chats, newest first, scrolling
+/// under the glass app bar. Each time it shows (its tab is picked, or a
+/// screen over it closes) it fetches the chats the cache is behind on.
+/// Watches nothing.
 class CallsScreen extends ConsumerStatefulWidget {
   const CallsScreen({super.key});
 
@@ -32,8 +35,11 @@ class _CallsScreenState extends ConsumerState<CallsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: ScreenHeader(title: TinodeChatStrings.of(context).callsTitle),
+    return GlassScaffold(
+      screen: const TinodeCallsScreen(),
+      appBar: TinodeAppBar(
+        title: Text(TinodeChatStrings.of(context).callsTitle),
+      ),
       body: const CallHistoryBody(),
     );
   }

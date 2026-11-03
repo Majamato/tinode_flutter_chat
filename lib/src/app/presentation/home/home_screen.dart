@@ -6,15 +6,17 @@ import 'package:tinode_flutter_chat/src/calls/presentation/history/calls_screen.
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_screen.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/settings/presentation/settings_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_below.dart';
 
 /// The chat navigator's first route with the tab bar: the chats, the
 /// calls history and the settings, over the floating [HomeTabBar].
 ///
 /// A tab is built the first time it shows and then kept, its tickers and
 /// focus off while hidden. The tabs see the bar's footprint as the bottom
-/// padding, so lists and floating buttons clear it. System back on another
-/// tab goes to the chats first. [tab] is the current tab; the navigator
-/// owns it, to show the chats when it opens one. Watches nothing.
+/// padding, so lists and floating buttons clear it; lists scroll under it
+/// behind a light veil ([GlassBelow]). System back on another tab goes to the
+/// chats first. [tab] is the current tab; the navigator owns it, to show
+/// the chats when it opens one. Watches nothing.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({required this.tab, super.key});
 
@@ -56,28 +58,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding: media.padding.copyWith(bottom: footprint),
                     viewPadding: media.viewPadding.copyWith(bottom: footprint),
                   ),
-                  child: IndexedStack(
-                    index: _tabs.indexOf(current),
-                    sizing: StackFit.expand,
-                    children: [
-                      for (final tab in _tabs)
-                        if (_built.contains(tab))
-                          TickerMode(
-                            enabled: tab == current,
-                            child: ExcludeFocus(
-                              excluding: tab != current,
-                              child: switch (tab) {
-                                HomeTab.chats => const ChatListScreen(
-                                  inTabs: true,
-                                ),
-                                HomeTab.calls => const CallsScreen(),
-                                HomeTab.settings => const SettingsScreen(),
-                              },
-                            ),
-                          )
-                        else
-                          const SizedBox.shrink(),
-                    ],
+                  child: GlassBelow(
+                    child: IndexedStack(
+                      index: _tabs.indexOf(current),
+                      sizing: StackFit.expand,
+                      children: [
+                        for (final tab in _tabs)
+                          if (_built.contains(tab))
+                            TickerMode(
+                              enabled: tab == current,
+                              child: ExcludeFocus(
+                                excluding: tab != current,
+                                child: switch (tab) {
+                                  HomeTab.chats => const ChatListScreen(
+                                    inTabs: true,
+                                  ),
+                                  HomeTab.calls => const CallsScreen(),
+                                  HomeTab.settings => const SettingsScreen(),
+                                },
+                              ),
+                            )
+                          else
+                            const SizedBox.shrink(),
+                      ],
+                    ),
                   ),
                 ),
               ),

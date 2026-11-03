@@ -29,6 +29,7 @@ import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_header_scope.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/app_bar_builder_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
@@ -75,6 +76,7 @@ class TinodeChat extends StatefulWidget {
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
     this.bubbleBuilder,
+    this.appBarBuilder,
     this.loginHeader,
     this.tabBar = true,
     this.appearance,
@@ -123,6 +125,7 @@ class TinodeChat extends StatefulWidget {
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
     this.bubbleBuilder,
+    this.appBarBuilder,
     this.loginHeader,
     this.tabBar = true,
     this.appearance,
@@ -181,8 +184,26 @@ class TinodeChat extends StatefulWidget {
   /// Read on every build.
   final TinodeBubbleBuilder? bubbleBuilder;
 
-  /// Shown centred near the top of the login screen, over its dotted
-  /// backdrop and above the sheet that signs in or up: e.g. the app's
+  /// Builds the app bar of the chat list, the calls history, the settings,
+  /// the appearance and each chat in place of the default glass bar, e.g.
+  /// to wrap it or bring the app's own. Gets the screen (`TinodeScreen`)
+  /// and the default bar. The screens' content scrolls under the bar and
+  /// starts below its preferred height, so a solid bar works too. Null for
+  /// the default bars. Read on every build.
+  ///
+  /// ```dart
+  /// TinodeChat(
+  ///   config: config,
+  ///   appBarBuilder: (context, screen, defaultAppBar) => switch (screen) {
+  ///     TinodeChatScreen(:final topic) => MyChatBar(topic: topic),
+  ///     _ => defaultAppBar,
+  ///   },
+  /// )
+  /// ```
+  final TinodeAppBarBuilder? appBarBuilder;
+
+  /// Shown centred near the top of the login screen, over its backdrop
+  /// and above the sheet that signs in or up: e.g. the app's
   /// animated logo. Null shows nothing there. Read on every build.
   final Widget? loginHeader;
 
@@ -343,14 +364,17 @@ class _TinodeChatState extends State<TinodeChat> {
           icons: widget.icons,
           child: BubbleBuilderScope(
             builder: widget.bubbleBuilder,
-            child: LoginHeaderScope(
-              header: widget.loginHeader,
-              child: ShellScope(
-                tabBar: _tabBar,
-                child: AppearanceScope(
-                  appearance: widget.appearance,
-                  extra: widget.appearanceExtra,
-                  child: const ChatThemeScope(child: SessionGate()),
+            child: AppBarBuilderScope(
+              builder: widget.appBarBuilder,
+              child: LoginHeaderScope(
+                header: widget.loginHeader,
+                child: ShellScope(
+                  tabBar: _tabBar,
+                  child: AppearanceScope(
+                    appearance: widget.appearance,
+                    extra: widget.appearanceExtra,
+                    child: const ChatThemeScope(child: SessionGate()),
+                  ),
                 ),
               ),
             ),

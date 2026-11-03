@@ -14,6 +14,7 @@ final class ChatNeutrals {
     required this.line,
     required this.glass,
     required this.glassEdge,
+    required this.glassShadow,
     required this.waveOff,
     required this.dateChip,
     required this.mutedBadge,
@@ -34,6 +35,7 @@ final class ChatNeutrals {
     line: Color(0xFFE7E5E0),
     glass: Color(0xD1FFFFFF),
     glassEdge: Color(0x0F14161B),
+    glassShadow: Color(0x2414161B),
     waveOff: Color(0xFFC9CCD2),
     dateChip: Color(0x5714161B),
     mutedBadge: Color(0xFF9BA1AB),
@@ -50,6 +52,7 @@ final class ChatNeutrals {
     line: Color(0x1FFFFFFF),
     glass: Color(0xDB121419),
     glassEdge: Color(0x24FFFFFF),
+    glassShadow: Color(0x66000000),
     waveOff: Color(0xFF5A606B),
     dateChip: Color(0x2EFFFFFF),
     mutedBadge: Color(0xFF5A606B),
@@ -102,9 +105,12 @@ final class ChatNeutrals {
   /// Dividers and borders.
   final Color line;
 
-  /// Frosted bars.
+  /// Floating glass: its fill and edge.
   final Color glass;
   final Color glassEdge;
+
+  /// The soft shadow under floating glass.
+  final Color glassShadow;
 
   /// The unplayed part of a waveform.
   final Color waveOff;

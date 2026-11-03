@@ -5,7 +5,7 @@ import 'package:tinode_flutter_chat/src/session/presentation/login_header_scope.
 import 'package:tinode_flutter_chat/src/session/presentation/login_sheet.dart';
 
 /// The built-in login screen, shown when the host gave no credentials or
-/// its token was rejected: the dotted backdrop with its floating bubbles,
+/// its token was rejected: the backdrop with its floating bubbles,
 /// the host's `loginHeader` near the top, and the sheet that signs in or
 /// up. With the keyboard open, the sheet stays above it, button included,
 /// and the header is what scrolls off.
