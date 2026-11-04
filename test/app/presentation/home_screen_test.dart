@@ -146,16 +146,14 @@ void main() {
     expect(find.byType(SettingsScreen), findsNothing);
   });
 
-  testWidgets('the floating button sits 20 px over the tab bar', (
+  testWidgets('the bar floats 16 px from the sides, with no floating button', (
     tester,
   ) async {
     await pump(tester);
 
     final screen = tester.getRect(find.byType(ChatListScreen));
     final bar = tester.getRect(find.byType(HomeTabBar));
-    final button = tester.getRect(find.byType(FloatingActionButton));
-    expect(bar.top - button.bottom, closeTo(20, 0.5));
-    expect(screen.right - button.right, closeTo(18, 0.5));
+    expect(find.byType(FloatingActionButton), findsNothing);
     expect(bar.left - screen.left, 16);
     // No system inset: 12 px from the edge, where the app ends.
     expect(screen.bottom - bar.bottom, 12);

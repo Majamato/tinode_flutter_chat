@@ -38,7 +38,7 @@ class TinodeChatIcons {
     this.search = PhosphorIconsRegular.magnifyingGlass,
     this.account = PhosphorIconsRegular.userCircle,
     this.avatarPlaceholder = PhosphorIconsFill.user,
-    this.newChat = PhosphorIconsRegular.notePencil,
+    this.newChat = PhosphorIconsRegular.plus,
     this.newGroup = PhosphorIconsRegular.usersThree,
     this.openChat = PhosphorIconsRegular.chatCircle,
     this.muted = PhosphorIconsRegular.bellSlash,
@@ -130,7 +130,7 @@ class TinodeChatIcons {
   /// Stands in for someone without a photo.
   final IconData avatarPlaceholder;
 
-  /// Starts a new chat: the chat list's header and floating button.
+  /// Starts a new chat: the plus in the chat list's header.
   final IconData newChat;
 
   /// The new group row when starting a chat.

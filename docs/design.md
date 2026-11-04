@@ -130,6 +130,11 @@ them.
   glass such as the tab bar casts it at twice the alpha, blur 34, 12 px down). A stadium,
   or round when square; the field and the recording panel take `composerRadius`. All the glass
   of a screen joins one `BackdropGroup`, so the blur reads the content behind it once.
+- **Tonal** (`GlassSurface(tonal: true)`, `GlassIconButton(tonal: true)`): a screen's main
+  action, solid `primaryContainer` with its icon in `onPrimaryContainer`, like the new group
+  row's circle; the same shape and shadow as glass but no blur or edge. Both come from the
+  palette (`soft` and `ink` in light, `night` and `onAction` in dark), so it follows the
+  appearance screen. Only the chat list's new chat button uses it.
 - **App bar** (`TinodeAppBar`): a 44 px row 6 px under the status bar, 8 px from the sides,
   its pieces 8 px apart: a leading capsule, the title (`titleLarge`, centred, or a capsule of
   its own), round 44 px buttons (`GlassIconButton`, 22 px icons in `onSurface`), then an
@@ -153,7 +158,7 @@ them.
 
 - The chats scroll under the glass app bar: the account menu (only without the tab bar:
   profile, appearance, log out) as a round button, "Chats" (`titleLarge`) centred and the
-  compose button in `linkColor`, then a 40 px search pill that opens the people search: filled
+  tonal new chat button (a plus), then a 40 px search pill that opens the people search: filled
   in `surfaceContainerHighest` like an input in light mode, where white glass would vanish on
   the white list, and glass in dark mode.
   No folder chips.
@@ -171,8 +176,8 @@ them.
 - Preview icons, 15 px in `linkColor`: a mic for voice, a doc for files, a phone or camera for
   calls (`missedCallColor` when missed); a photo shows its inline thumbnail (18 px, radius 4).
   In groups the sender comes first, in `onSurface` 600.
-- The first rows fade up 14 px over 420 ms, 40 ms apart, once per screen; the floating button
-  (`primary`, a new-message icon) pops in after 350 ms. Reduce motion shows both at once.
+- The first rows fade up 14 px over 420 ms, 40 ms apart, once per screen. Reduce motion shows
+  them at once. There is no floating button: a new chat starts from the header's plus.
 - Times: today the time of day, then "Yesterday", else the short date.
 
 ## Shell
@@ -195,8 +200,8 @@ them.
   count of chats that aren't muted (an 18 px `unreadBadgeColor` stadium, "99+" above 99). A
   pick ticks the haptics; screen readers hear the tabs as tabs, the current one selected, and the
   unread count.
-- The tabs see the bar's footprint as their bottom padding: lists scroll under it, the floating
-  button sits 20 px above it (18 px from the side), snack bars over it. A hidden tab keeps its
+- The tabs see the bar's footprint as their bottom padding: lists scroll under it, snack bars
+  over it. A hidden tab keeps its
   state, its tickers off. Back on another tab goes to the chats first.
 
 ## Calls history

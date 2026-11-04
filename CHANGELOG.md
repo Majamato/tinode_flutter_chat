@@ -1,5 +1,11 @@
 ## Unreleased
 
+- **Behaviour change:** the chat list has no floating new chat button any more; a new chat
+  starts from the header's button, now a plus on a tonal circle (`primaryContainer` under
+  `onPrimaryContainer`, like the new group row's, following the palette in light and dark)
+  instead of glass. `TinodeChatIcons.newChat` defaults to `PhosphorIconsRegular.plus`, was
+  `notePencil`. `TinodeChatStrings.newMessage`, the floating button's tooltip, is no longer
+  used.
 - **Behaviour change:** the reconnecting strip at the bottom of the chats is gone. While the link
   is down, the titles of the chat list and the calls history turn into a small spinner and
   "Reconnecting…", as in Telegram, and so does the line under a chat's name, ahead of typing and

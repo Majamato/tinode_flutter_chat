@@ -13,10 +13,10 @@ import 'package:tinode_flutter_chat/src/shared/presentation/glass_below.dart';
 ///
 /// A tab is built the first time it shows and then kept, its tickers and
 /// focus off while hidden. The tabs see the bar's footprint as the bottom
-/// padding, so lists and floating buttons clear it; lists scroll under it
-/// behind a light veil ([GlassBelow]). System back on another tab goes to the
-/// chats first. [tab] is the current tab; the navigator owns it, to show
-/// the chats when it opens one. Watches nothing.
+/// padding, so lists clear it and scroll under it behind a light veil
+/// ([GlassBelow]). System back on another tab goes to the chats first.
+/// [tab] is the current tab; the navigator owns it, to show the chats when
+/// it opens one. Watches nothing.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({required this.tab, super.key});
 

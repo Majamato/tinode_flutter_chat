@@ -21,7 +21,8 @@ const _saturate = <double>[
 /// A floating piece of glass: [child] on `glassColor` over a blur of what
 /// lies behind, with a hairline edge and a soft shadow, deeper when
 /// [raised]. A stadium (a circle when square) unless [radius] rounds it
-/// less.
+/// less. [tonal] glass is solid `primaryContainer`, as the palette has it
+/// in light and dark, with no blur or edge: a main action's button.
 ///
 /// The blur joins the nearest [BackdropGroup], so all the glass of a
 /// screen reads what is behind it once. Glass that overlaps other glass
@@ -31,6 +32,7 @@ class GlassSurface extends StatelessWidget {
     required this.child,
     this.radius,
     this.raised = false,
+    this.tonal = false,
     super.key,
   });
 
@@ -48,6 +50,10 @@ class GlassSurface extends StatelessWidget {
   /// A larger, darker shadow, for glass that floats high over the content
   /// (the tab bar).
   final bool raised;
+
+  /// Filled with `primaryContainer` rather than see-through, so a main
+  /// action stands out from the glass around it.
+  final bool tonal;
 
   @override
   Widget build(BuildContext context) {
@@ -79,17 +85,23 @@ class GlassSurface extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: corners,
-        child: BackdropFilter.grouped(
-          filter: filter,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.glassColor,
-              borderRadius: corners,
-              border: Border.all(color: theme.glassEdgeColor, width: 0.5),
-            ),
-            child: child,
-          ),
-        ),
+        child: tonal
+            // A Material, so the button's splash paints on it.
+            ? Material(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: child,
+              )
+            : BackdropFilter.grouped(
+                filter: filter,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.glassColor,
+                    borderRadius: corners,
+                    border: Border.all(color: theme.glassEdgeColor, width: 0.5),
+                  ),
+                  child: child,
+                ),
+              ),
       ),
     );
   }

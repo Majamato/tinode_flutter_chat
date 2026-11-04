@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
 
 /// A round [GlassSurface] button with an icon in [color] (`onSurface` by
-/// default), as in the app bar and the composer. [onPressed] null disables
-/// it. [onGlass] leaves out its own glass, for buttons sharing one island
-/// of glass (the chat's app bar actions). Watches nothing.
+/// default), as in the app bar and the composer. [tonal] makes it a solid
+/// `primaryContainer` circle with the icon in `onPrimaryContainer`, for a
+/// screen's main action. [onPressed] null disables it. [onGlass] leaves
+/// out its own glass, for buttons sharing one island of glass (the chat's
+/// app bar actions). Watches nothing.
 class GlassIconButton extends StatelessWidget {
   const GlassIconButton({
     required this.icon,
     required this.tooltip,
     required this.onPressed,
     this.color,
+    this.tonal = false,
     this.onGlass = false,
     super.key,
   });
@@ -27,16 +30,21 @@ class GlassIconButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final Color? color;
 
+  /// Whether it is a solid `primaryContainer` circle rather than glass:
+  /// the screen's main action, such as the chat list's new chat.
+  final bool tonal;
+
   /// Whether it already sits on glass, an island it shares with other
   /// buttons, and so draws none of its own.
   final bool onGlass;
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final button = IconButton(
       onPressed: onPressed,
       tooltip: tooltip,
-      color: color ?? Theme.of(context).colorScheme.onSurface,
+      color: color ?? (tonal ? colors.onPrimaryContainer : colors.onSurface),
       padding: EdgeInsets.zero,
       constraints: BoxConstraints.tightFor(
         width: onGlass ? islandWidth : size,
@@ -44,6 +52,6 @@ class GlassIconButton extends StatelessWidget {
       ),
       icon: Icon(icon, size: 22),
     );
-    return onGlass ? button : GlassSurface(child: button);
+    return onGlass ? button : GlassSurface(tonal: tonal, child: button);
   }
 }
