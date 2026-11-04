@@ -171,7 +171,7 @@ saved per device, for every user, so it lives outside the per-user container and
 ```
 TinodeChat                      owns the container
 └ UncontrolledProviderScope
-  └ TinodeChatStringsScope      host strings
+  └ TinodeChatStringsScope      host strings, or the locale's
     └ BubbleBuilderScope        host bubble builder
       └ LoginHeaderScope        host login header
         └ ShellScope            host tabBar

@@ -1,5 +1,13 @@
 ## Unreleased
 
+- Spanish and French. `TinodeChatStrings.es()` and `TinodeChatStrings.fr()` hold every text in
+  those languages (any left out keep that language's default, as with `TinodeChatStrings()`),
+  `TinodeChatStrings.forLocale` picks the built-in texts for a locale, and
+  `TinodeChatStrings.supportedLocales` lists the languages for `MaterialApp.supportedLocales`.
+- **Behaviour change:** `TinodeChat.strings` and `TinodeCalls.handlePush(strings:)` are now
+  nullable and default to null: the chat follows the app's locale, and the phone's call screens
+  the phone's. Pass `const TinodeChatStrings()` to keep English everywhere. The app's locale
+  resolves to Spanish or French only with `flutter_localizations` set up (see the README).
 - **Behaviour change:** the chat list has no floating new chat button any more; a new chat
   starts from the header's button, now a plus on a tonal circle (`primaryContainer` under
   `onPrimaryContainer`, like the new group row's, following the palette in light and dark)

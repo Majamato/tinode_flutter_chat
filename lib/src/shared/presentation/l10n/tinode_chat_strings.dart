@@ -1,14 +1,16 @@
 import 'package:flutter/widgets.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings_scope.dart';
 
-/// Every text `TinodeChat` shows, in English by default.
+/// Every text `TinodeChat` shows, in English, Spanish or French.
 ///
-/// Pass your own to `TinodeChat.strings` to translate or reword them:
+/// Left unset, `TinodeChat` picks the texts of the app's locale with
+/// [TinodeChatStrings.forLocale]. Pass your own to `TinodeChat.strings` to
+/// force a language, or to reword some texts:
 ///
 /// ```dart
 /// TinodeChat(
 ///   config: config,
-///   strings: const TinodeChatStrings(chatListTitle: 'Conversaciones'),
+///   strings: const TinodeChatStrings.es(chatListTitle: 'Conversaciones'),
 /// )
 /// ```
 ///
@@ -240,9 +242,488 @@ class TinodeChatStrings {
     this.unreadCount = _unreadCount,
   });
 
-  /// The texts of the nearest `TinodeChat`, or the defaults outside one.
+  /// Creates the texts in Spanish; any left out keep their Spanish default.
+  const TinodeChatStrings.es({
+    this.chatListTitle = 'Chats',
+    this.noChats = 'Aún no hay chats',
+    this.connecting = 'Conectando…',
+    this.loginTitle = 'Iniciar sesión',
+    this.loginField = 'Usuario',
+    this.passwordField = 'Contraseña',
+    this.signIn = 'Iniciar sesión',
+    this.retry = 'Reintentar',
+    this.reconnect = 'Reconectar',
+    this.reconnecting = 'Reconectando…',
+    this.messageHint = 'Mensaje',
+    this.send = 'Enviar',
+    this.recordVoiceMessage = 'Grabar mensaje de voz',
+    this.sendVoiceMessage = 'Enviar mensaje de voz',
+    this.deleteRecording = 'Eliminar grabación',
+    this.pauseRecording = 'Pausar',
+    this.resumeRecording = 'Reanudar',
+    this.recordingVoiceMessage = 'Grabando mensaje de voz',
+    this.playVoiceMessage = 'Reproducir mensaje de voz',
+    this.pauseVoiceMessage = 'Pausar mensaje de voz',
+    this.microphoneDeniedForVoice =
+        'Permite el acceso al micrófono para grabar mensajes de voz.',
+    this.voiceMessageTooShort =
+        'Demasiado corto para enviarlo. Toca el micrófono para grabar.',
+    this.cannotRecordDuringCall = 'No puedes grabar durante una llamada.',
+    this.cannotPlayVoiceMessage = 'No se puede reproducir este mensaje de voz.',
+    this.recorderFailed = 'No se pudo grabar el mensaje de voz.',
+    this.today = 'Hoy',
+    this.yesterday = 'Ayer',
+    this.backToChats = 'Volver a los chats',
+    this.readOnly = 'Solo los administradores pueden publicar aquí.',
+    this.unreachable = 'No se puede conectar con el servidor de chat.',
+    this.connectionLost = 'Se perdió la conexión con el servidor de chat.',
+    this.badCredentials = 'Usuario o contraseña incorrectos.',
+    this.timeout = 'El servidor de chat no respondió a tiempo.',
+    this.rejected = 'El servidor de chat rechazó la solicitud.',
+    this.unexpected = 'Algo salió mal.',
+    this.voiceCall = 'Llamada de voz',
+    this.videoCall = 'Videollamada',
+    this.outgoingVoiceCall = 'Llamada de voz saliente',
+    this.outgoingVideoCall = 'Videollamada saliente',
+    this.incomingVoiceCall = 'Llamada de voz entrante',
+    this.incomingVideoCall = 'Videollamada entrante',
+    this.callInProgress = 'En curso',
+    this.callMissed = 'Perdida',
+    this.callNoAnswer = 'Sin respuesta',
+    this.callDeclined = 'Rechazada',
+    this.callNotConnected = 'No conectada',
+    this.calling = 'Llamando…',
+    this.ringing = 'Sonando…',
+    this.callConnecting = 'Conectando…',
+    this.callEnded = 'Llamada finalizada',
+    this.acceptCall = 'Aceptar',
+    this.declineCall = 'Rechazar',
+    this.hangUp = 'Colgar',
+    this.muteMicrophone = 'Silenciar',
+    this.unmuteMicrophone = 'Activar micrófono',
+    this.turnCameraOff = 'Apagar cámara',
+    this.turnCameraOn = 'Encender cámara',
+    this.switchCamera = 'Cambiar cámara',
+    this.speakerOn = 'Activar altavoz',
+    this.speakerOff = 'Desactivar altavoz',
+    this.callSpeakerLabel = 'Altavoz',
+    this.callMuteLabel = 'Silenciar',
+    this.callEndLabel = 'Colgar',
+    this.minimizeCall = 'Volver al chat',
+    this.returnToCall = 'Volver a la llamada',
+    this.callReconnecting = 'Reconectando…',
+    this.cameraOff = 'Cámara apagada',
+    this.yourCamera = 'Tu cámara',
+    this.toggleCallControls = 'Mostrar u ocultar los controles de la llamada',
+    this.callBusy =
+        'Este chat sigue en una llamada. Inténtalo de nuevo en un momento.',
+    this.callUnavailable = 'Las llamadas no están disponibles en este chat.',
+    this.callPermissionDenied =
+        'Permite el acceso al micrófono y a la cámara para hacer llamadas.',
+    this.callFailed = 'No se pudo conectar la llamada.',
+    this.callLost = 'Se cortó la conexión. La llamada terminó.',
+    this.callOffline = 'No tienes conexión. La llamada terminó.',
+    this.callAgain = 'Volver a llamar',
+    this.closeCall = 'Cerrar',
+    this.unknownCaller = 'Desconocido',
+    this.ongoingCall = 'Llamada en curso',
+    this.missedVoiceCall = 'Llamada de voz perdida',
+    this.missedVideoCall = 'Videollamada perdida',
+    this.logOut = 'Cerrar sesión',
+    this.messageWaiting = 'Pendiente de envío',
+    this.messageSent = 'Enviado',
+    this.messageNotSent = 'No enviado',
+    this.discardMessage = 'Descartar',
+    this.deleteForMe = 'Eliminar para mí',
+    this.deleteForEveryone = 'Eliminar para todos',
+    this.newChat = 'Nuevo chat',
+    this.newMessage = 'Nuevo mensaje',
+    this.accountMenu = 'Cuenta',
+    this.searchChats = 'Buscar',
+    this.chatMuted = 'Silenciado',
+    this.newMessageArrived = 'Nuevo mensaje',
+    this.photoMessage = 'Foto',
+    this.voiceMessage = 'Mensaje de voz',
+    this.findHint = 'Busca por usuario, correo o teléfono',
+    this.nobodyFound = 'No se encontró a nadie',
+    this.groupLabel = 'Grupo',
+    this.channelLabel = 'Canal',
+    this.newGroup = 'Nuevo grupo',
+    this.groupNameField = 'Nombre del grupo',
+    this.addMembersHint = 'Añadir miembros',
+    this.createGroup = 'Crear',
+    this.membersNotAdded = 'No se pudo añadir a algunos miembros.',
+    this.messageDelivered = 'Entregado',
+    this.messageRead = 'Leído',
+    this.readBy = 'Leído por',
+    this.deliveredTo = 'Entregado a',
+    this.notReadYet = 'Nadie lo ha leído todavía',
+    this.unknownMember = 'Desconocido',
+    this.typingDirect = 'escribiendo…',
+    this.online = 'en línea',
+    this.typingOne = _typingOneEs,
+    this.typingTwo = _typingTwoEs,
+    this.typingMany = _typingManyEs,
+    this.attach = 'Adjuntar',
+    this.attachPhoto = 'Foto',
+    this.attachCamera = 'Cámara',
+    this.attachFile = 'Archivo',
+    this.captionHint = 'Añade una descripción',
+    this.uploading = 'Subiendo…',
+    this.cancelUpload = 'Cancelar',
+    this.fileTooLarge = 'El archivo es demasiado grande para enviarlo.',
+    this.fileTooLargeLimit = _fileTooLargeLimitEs,
+    this.downloadFailed = 'No se pudo descargar el archivo.',
+    this.cannotOpenFile =
+        'Ninguna app de este dispositivo puede abrir este archivo.',
+    this.openFile = 'Abrir',
+    this.imageLabel = 'Imagen',
+    this.fileLabel = 'Archivo',
+    this.signUpTab = 'Registrarse',
+    this.loginHeadline = 'Hola de nuevo',
+    this.loginSubtitle = 'Inicia sesión para seguir donde lo dejaste.',
+    this.signUpHeadline = 'Crea tu cuenta',
+    this.signUpSubtitle = 'Te llevará menos de un minuto.',
+    this.signUpTerms = '',
+    this.showPassword = 'Mostrar contraseña',
+    this.hidePassword = 'Ocultar contraseña',
+    this.loginBubbleHello = '¡Hola!',
+    this.loginBubbleLater = '¿Me llamas luego?',
+    this.displayNameField = 'Tu nombre',
+    this.signUp = 'Crear cuenta',
+    this.forgotPassword = '¿Olvidaste tu contraseña?',
+    this.resetPasswordTitle = 'Restablecer contraseña',
+    this.emailField = 'Correo electrónico',
+    this.sendResetCode = 'Enviar código',
+    this.resetCodeSent =
+        'Si hay una cuenta con este correo, el código ya va de camino.',
+    this.resetCodeField = 'Código del correo',
+    this.newPasswordField = 'Nueva contraseña',
+    this.setPassword = 'Guardar contraseña',
+    this.passwordResetDone = 'Contraseña cambiada. Inicia sesión con la nueva.',
+    this.profile = 'Perfil',
+    this.nameField = 'Nombre',
+    this.noteField = 'Sobre mí',
+    this.save = 'Guardar',
+    this.profileSaved = 'Perfil guardado.',
+    this.changePhoto = 'Cambiar foto',
+    this.changePassword = 'Cambiar contraseña',
+    this.newLoginField = 'Nuevo usuario (opcional)',
+    this.passwordChanged = 'Contraseña cambiada.',
+    this.deleteAccount = 'Eliminar cuenta',
+    this.deleteAccountConfirm =
+        '¿Eliminar tu cuenta, con tus chats y mensajes? No se puede deshacer.',
+    this.chatInfo = 'Info del chat',
+    this.members = 'Miembros',
+    this.ownerLabel = 'Propietario',
+    this.youLabel = 'Tú',
+    this.removeMember = 'Quitar',
+    this.deleteChat = 'Eliminar chat',
+    this.deleteChatConfirm = '¿Eliminar este chat y sus mensajes para ti?',
+    this.deleteGroup = 'Eliminar grupo',
+    this.deleteGroupConfirm = '¿Eliminar este grupo y sus mensajes para todos?',
+    this.leaveGroup = 'Salir del grupo',
+    this.leaveGroupConfirm = '¿Salir de este grupo? Ya no verás sus mensajes.',
+    this.cancel = 'Cancelar',
+    this.loginTaken = 'Este usuario ya existe.',
+    this.credentialsRefused =
+        'El servidor rechazó este usuario o contraseña. Puede que sea '
+        'demasiado corto.',
+    this.wrongResetCode = 'El código es incorrecto o ha caducado.',
+    this.chatGone = 'Este chat ya no está disponible.',
+    this.emailOptionalField = 'Correo electrónico (opcional)',
+    this.confirmEmailTitle = 'Confirma tu correo',
+    this.confirmEmailText =
+        'Escribe el código del correo que te envió el servidor.',
+    this.confirm = 'Confirmar',
+    this.emailTaken = 'Este correo pertenece a otra cuenta.',
+    this.invalidEmail = 'Esto no es una dirección de correo.',
+    this.confirmEmailFirst =
+        'Primero confirma tu correo: inicia sesión con tu contraseña.',
+    this.findPeople = 'Buscar personas y grupos',
+    this.searchInChat = 'Buscar en el chat',
+    this.messageSearchHint = 'Buscar en este chat',
+    this.messageSearchIdle =
+        'Busca en los mensajes guardados en este dispositivo.',
+    this.noMessagesFound = 'No se encontraron mensajes',
+    this.messageUnavailable = 'Este mensaje no está disponible ahora mismo.',
+    this.removeMemberConfirm = _removeMemberConfirmEs,
+    this.callsTitle = 'Llamadas',
+    this.settingsTitle = 'Ajustes',
+    this.noCalls = 'Aún no hay llamadas',
+    this.callBack = 'Devolver llamada',
+    this.openChat = 'Abrir chat',
+    this.profileSubtitle = 'Nombre, foto y contraseña',
+    this.appearance = 'Apariencia',
+    this.appearanceColor = 'Color',
+    this.appearanceColorHelp =
+        'Cambia tus burbujas, botones e iconos. Solo tú ves tu color.',
+    this.appearanceTheme = 'Tema',
+    this.themeLight = 'Claro',
+    this.themeDark = 'Oscuro',
+    this.themeSystem = 'Sistema',
+    this.appearancePreviewQuestion = '¿Qué color estamos usando?',
+    this.appearancePreviewAnswer = _appearancePreviewAnswerEs,
+    this.resetPalette = _resetPaletteEs,
+    this.unreadCount = _unreadCountEs,
+  });
+
+  /// Creates the texts in French; any left out keep their French default.
+  const TinodeChatStrings.fr({
+    this.chatListTitle = 'Discussions',
+    this.noChats = 'Aucune discussion pour le moment',
+    this.connecting = 'Connexion…',
+    this.loginTitle = 'Se connecter',
+    this.loginField = 'Identifiant',
+    this.passwordField = 'Mot de passe',
+    this.signIn = 'Se connecter',
+    this.retry = 'Réessayer',
+    this.reconnect = 'Se reconnecter',
+    this.reconnecting = 'Reconnexion…',
+    this.messageHint = 'Message',
+    this.send = 'Envoyer',
+    this.recordVoiceMessage = 'Enregistrer un message vocal',
+    this.sendVoiceMessage = 'Envoyer le message vocal',
+    this.deleteRecording = "Supprimer l'enregistrement",
+    this.pauseRecording = 'Pause',
+    this.resumeRecording = 'Reprendre',
+    this.recordingVoiceMessage = 'Enregistrement du message vocal',
+    this.playVoiceMessage = 'Lire le message vocal',
+    this.pauseVoiceMessage = 'Mettre en pause le message vocal',
+    this.microphoneDeniedForVoice =
+        "Autorisez l'accès au micro pour enregistrer des messages vocaux.",
+    this.voiceMessageTooShort =
+        'Trop court pour être envoyé. Touchez le micro pour enregistrer.',
+    this.cannotRecordDuringCall =
+        'Vous ne pouvez pas enregistrer pendant un appel.',
+    this.cannotPlayVoiceMessage = 'Impossible de lire ce message vocal.',
+    this.recorderFailed = "Impossible d'enregistrer le message vocal.",
+    this.today = "Aujourd'hui",
+    this.yesterday = 'Hier',
+    this.backToChats = 'Retour aux discussions',
+    this.readOnly = 'Seuls les administrateurs peuvent publier ici.',
+    this.unreachable = 'Impossible de joindre le serveur de discussion.',
+    this.connectionLost = 'La connexion au serveur de discussion a été perdue.',
+    this.badCredentials = 'Identifiant ou mot de passe incorrect.',
+    this.timeout = "Le serveur de discussion n'a pas répondu à temps.",
+    this.rejected = 'Le serveur de discussion a refusé la requête.',
+    this.unexpected = "Une erreur s'est produite.",
+    this.voiceCall = 'Appel vocal',
+    this.videoCall = 'Appel vidéo',
+    this.outgoingVoiceCall = 'Appel vocal sortant',
+    this.outgoingVideoCall = 'Appel vidéo sortant',
+    this.incomingVoiceCall = 'Appel vocal entrant',
+    this.incomingVideoCall = 'Appel vidéo entrant',
+    this.callInProgress = 'En cours',
+    this.callMissed = 'Manqué',
+    this.callNoAnswer = 'Sans réponse',
+    this.callDeclined = 'Refusé',
+    this.callNotConnected = 'Non connecté',
+    this.calling = 'Appel…',
+    this.ringing = 'Ça sonne…',
+    this.callConnecting = 'Connexion…',
+    this.callEnded = 'Appel terminé',
+    this.acceptCall = 'Accepter',
+    this.declineCall = 'Refuser',
+    this.hangUp = 'Raccrocher',
+    this.muteMicrophone = 'Couper le micro',
+    this.unmuteMicrophone = 'Réactiver le micro',
+    this.turnCameraOff = 'Désactiver la caméra',
+    this.turnCameraOn = 'Activer la caméra',
+    this.switchCamera = 'Changer de caméra',
+    this.speakerOn = 'Activer le haut-parleur',
+    this.speakerOff = 'Désactiver le haut-parleur',
+    this.callSpeakerLabel = 'Haut-parleur',
+    this.callMuteLabel = 'Muet',
+    this.callEndLabel = 'Fin',
+    this.minimizeCall = 'Retour à la discussion',
+    this.returnToCall = "Revenir à l'appel",
+    this.callReconnecting = 'Reconnexion…',
+    this.cameraOff = 'Caméra désactivée',
+    this.yourCamera = 'Votre caméra',
+    this.toggleCallControls = "Afficher ou masquer les commandes d'appel",
+    this.callBusy =
+        'Cette discussion est encore en appel. Réessayez dans un instant.',
+    this.callUnavailable =
+        'Les appels ne sont pas disponibles dans cette discussion.',
+    this.callPermissionDenied =
+        "Autorisez l'accès au micro et à la caméra pour passer des appels.",
+    this.callFailed = "L'appel n'a pas pu être établi.",
+    this.callLost = "La connexion a été coupée. L'appel est terminé.",
+    this.callOffline = "Vous êtes hors ligne. L'appel est terminé.",
+    this.callAgain = 'Rappeler',
+    this.closeCall = 'Fermer',
+    this.unknownCaller = 'Appelant inconnu',
+    this.ongoingCall = 'Appel en cours',
+    this.missedVoiceCall = 'Appel vocal manqué',
+    this.missedVideoCall = 'Appel vidéo manqué',
+    this.logOut = 'Se déconnecter',
+    this.messageWaiting = "En attente d'envoi",
+    this.messageSent = 'Envoyé',
+    this.messageNotSent = 'Non envoyé',
+    this.discardMessage = 'Abandonner',
+    this.deleteForMe = 'Supprimer pour moi',
+    this.deleteForEveryone = 'Supprimer pour tout le monde',
+    this.newChat = 'Nouvelle discussion',
+    this.newMessage = 'Nouveau message',
+    this.accountMenu = 'Compte',
+    this.searchChats = 'Rechercher',
+    this.chatMuted = 'En sourdine',
+    this.newMessageArrived = 'Nouveau message',
+    this.photoMessage = 'Photo',
+    this.voiceMessage = 'Message vocal',
+    this.findHint = 'Rechercher par identifiant, e-mail ou téléphone',
+    this.nobodyFound = 'Aucun résultat',
+    this.groupLabel = 'Groupe',
+    this.channelLabel = 'Canal',
+    this.newGroup = 'Nouveau groupe',
+    this.groupNameField = 'Nom du groupe',
+    this.addMembersHint = 'Ajouter des membres',
+    this.createGroup = 'Créer',
+    this.membersNotAdded = "Certains membres n'ont pas pu être ajoutés.",
+    this.messageDelivered = 'Distribué',
+    this.messageRead = 'Lu',
+    this.readBy = 'Lu par',
+    this.deliveredTo = 'Distribué à',
+    this.notReadYet = "Personne ne l'a encore lu",
+    this.unknownMember = 'Inconnu',
+    this.typingDirect = "en train d'écrire…",
+    this.online = 'en ligne',
+    this.typingOne = _typingOneFr,
+    this.typingTwo = _typingTwoFr,
+    this.typingMany = _typingManyFr,
+    this.attach = 'Joindre',
+    this.attachPhoto = 'Photo',
+    this.attachCamera = 'Appareil photo',
+    this.attachFile = 'Fichier',
+    this.captionHint = 'Ajouter une légende',
+    this.uploading = 'Envoi…',
+    this.cancelUpload = 'Annuler',
+    this.fileTooLarge = 'Le fichier est trop volumineux pour être envoyé.',
+    this.fileTooLargeLimit = _fileTooLargeLimitFr,
+    this.downloadFailed = "Le fichier n'a pas pu être téléchargé.",
+    this.cannotOpenFile =
+        'Aucune app de cet appareil ne peut ouvrir ce fichier.',
+    this.openFile = 'Ouvrir',
+    this.imageLabel = 'Image',
+    this.fileLabel = 'Fichier',
+    this.signUpTab = "S'inscrire",
+    this.loginHeadline = 'Bon retour',
+    this.loginSubtitle = 'Connectez-vous pour reprendre là où vous en étiez.',
+    this.signUpHeadline = 'Créez votre compte',
+    this.signUpSubtitle = "Cela prend moins d'une minute.",
+    this.signUpTerms = '',
+    this.showPassword = 'Afficher le mot de passe',
+    this.hidePassword = 'Masquer le mot de passe',
+    this.loginBubbleHello = 'Salut\u00A0!',
+    this.loginBubbleLater = "On s'appelle plus tard\u00A0?",
+    this.displayNameField = 'Votre nom',
+    this.signUp = 'Créer un compte',
+    this.forgotPassword = 'Mot de passe oublié\u00A0?',
+    this.resetPasswordTitle = 'Réinitialiser le mot de passe',
+    this.emailField = 'E-mail',
+    this.sendResetCode = 'Envoyer le code',
+    this.resetCodeSent =
+        'Si un compte utilise cet e-mail, un code est en route.',
+    this.resetCodeField = 'Code reçu par e-mail',
+    this.newPasswordField = 'Nouveau mot de passe',
+    this.setPassword = 'Enregistrer le mot de passe',
+    this.passwordResetDone =
+        'Mot de passe modifié. Connectez-vous avec le nouveau.',
+    this.profile = 'Profil',
+    this.nameField = 'Nom',
+    this.noteField = 'À propos',
+    this.save = 'Enregistrer',
+    this.profileSaved = 'Profil enregistré.',
+    this.changePhoto = 'Changer de photo',
+    this.changePassword = 'Changer de mot de passe',
+    this.newLoginField = 'Nouvel identifiant (facultatif)',
+    this.passwordChanged = 'Mot de passe modifié.',
+    this.deleteAccount = 'Supprimer le compte',
+    this.deleteAccountConfirm =
+        'Supprimer votre compte, avec vos discussions et vos messages\u00A0? '
+        'Cette action est irréversible.',
+    this.chatInfo = 'Infos de la discussion',
+    this.members = 'Membres',
+    this.ownerLabel = 'Propriétaire',
+    this.youLabel = 'Vous',
+    this.removeMember = 'Retirer',
+    this.deleteChat = 'Supprimer la discussion',
+    this.deleteChatConfirm =
+        'Supprimer cette discussion et ses messages pour vous\u00A0?',
+    this.deleteGroup = 'Supprimer le groupe',
+    this.deleteGroupConfirm =
+        'Supprimer ce groupe et ses messages pour tout le monde\u00A0?',
+    this.leaveGroup = 'Quitter le groupe',
+    this.leaveGroupConfirm =
+        'Quitter ce groupe\u00A0? Vous ne verrez plus ses messages.',
+    this.cancel = 'Annuler',
+    this.loginTaken = 'Cet identifiant est déjà pris.',
+    this.credentialsRefused =
+        'Le serveur a refusé cet identifiant ou ce mot de passe. Il est '
+        'peut-être trop court.',
+    this.wrongResetCode = 'Le code est incorrect ou a expiré.',
+    this.chatGone = "Cette discussion n'est plus disponible.",
+    this.emailOptionalField = 'E-mail (facultatif)',
+    this.confirmEmailTitle = 'Confirmez votre e-mail',
+    this.confirmEmailText =
+        "Saisissez le code de l'e-mail que le serveur vous a envoyé.",
+    this.confirm = 'Confirmer',
+    this.emailTaken = 'Cet e-mail appartient à un autre compte.',
+    this.invalidEmail = "Ce n'est pas une adresse e-mail.",
+    this.confirmEmailFirst =
+        "Confirmez d'abord votre e-mail\u00A0: connectez-vous avec votre mot "
+        'de passe.',
+    this.findPeople = 'Trouver des personnes et des groupes',
+    this.searchInChat = 'Rechercher dans la discussion',
+    this.messageSearchHint = 'Rechercher dans cette discussion',
+    this.messageSearchIdle =
+        'Recherche dans les messages conservés sur cet appareil.',
+    this.noMessagesFound = 'Aucun message trouvé',
+    this.messageUnavailable = "Ce message n'est pas disponible pour le moment.",
+    this.removeMemberConfirm = _removeMemberConfirmFr,
+    this.callsTitle = 'Appels',
+    this.settingsTitle = 'Paramètres',
+    this.noCalls = 'Aucun appel pour le moment',
+    this.callBack = 'Rappeler',
+    this.openChat = 'Ouvrir la discussion',
+    this.profileSubtitle = 'Nom, photo et mot de passe',
+    this.appearance = 'Apparence',
+    this.appearanceColor = 'Couleur',
+    this.appearanceColorHelp =
+        "Change vos bulles, vos boutons et vos icônes. Cette couleur n'est "
+        'visible que par vous.',
+    this.appearanceTheme = 'Thème',
+    this.themeLight = 'Clair',
+    this.themeDark = 'Sombre',
+    this.themeSystem = 'Système',
+    this.appearancePreviewQuestion = 'On utilise quelle couleur\u00A0?',
+    this.appearancePreviewAnswer = _appearancePreviewAnswerFr,
+    this.resetPalette = _resetPaletteFr,
+    this.unreadCount = _unreadCountFr,
+  });
+
+  /// The built-in texts for [locale]'s language: Spanish, French, or
+  /// English for any other.
+  factory TinodeChatStrings.forLocale(Locale locale) =>
+      switch (locale.languageCode) {
+        'es' => const TinodeChatStrings.es(),
+        'fr' => const TinodeChatStrings.fr(),
+        _ => const TinodeChatStrings(),
+      };
+
+  /// The texts of the nearest `TinodeChat`, or outside one those of the
+  /// app's locale.
   factory TinodeChatStrings.of(BuildContext context) =>
-      TinodeChatStringsScope.maybeOf(context) ?? const TinodeChatStrings();
+      TinodeChatStringsScope.maybeOf(context) ??
+      TinodeChatStrings.forLocale(
+        Localizations.maybeLocaleOf(context) ?? const Locale('en'),
+      );
+
+  /// The languages with built-in texts. Hand them to
+  /// `MaterialApp.supportedLocales`, so the app's locale can resolve to
+  /// them.
+  static const supportedLocales = [Locale('en'), Locale('es'), Locale('fr')];
 
   /// Title of the chat list screen.
   final String chatListTitle;
@@ -911,3 +1392,42 @@ String _appearancePreviewAnswer(String name) => '$name, obviously';
 String _resetPalette(String name) => 'Reset to $name';
 
 String _unreadCount(int count) => '$count unread';
+
+String _typingOneEs(String name) => '$name está escribiendo…';
+
+String _typingTwoEs(String first, String second) =>
+    '$first y $second están escribiendo…';
+
+String _typingManyEs(int count) => '$count personas están escribiendo…';
+
+String _fileTooLargeLimitEs(String limit) =>
+    'El archivo es demasiado grande para enviarlo: el límite es $limit.';
+
+String _removeMemberConfirmEs(String name) => '¿Quitar a $name del grupo?';
+
+String _appearancePreviewAnswerEs(String name) => '$name, obviamente';
+
+String _resetPaletteEs(String name) => 'Volver a $name';
+
+String _unreadCountEs(int count) => '$count sin leer';
+
+String _typingOneFr(String name) => '$name écrit…';
+
+String _typingTwoFr(String first, String second) =>
+    '$first et $second écrivent…';
+
+String _typingManyFr(int count) => '$count personnes écrivent…';
+
+String _fileTooLargeLimitFr(String limit) =>
+    'Le fichier est trop volumineux pour être envoyé\u00A0: la limite est '
+    'de $limit.';
+
+String _removeMemberConfirmFr(String name) => 'Retirer $name du groupe\u00A0?';
+
+String _appearancePreviewAnswerFr(String name) => '$name, évidemment';
+
+String _resetPaletteFr(String name) => 'Revenir à $name';
+
+/// French counts zero and one in the singular.
+String _unreadCountFr(int count) =>
+    count <= 1 ? '$count non lu' : '$count non lus';

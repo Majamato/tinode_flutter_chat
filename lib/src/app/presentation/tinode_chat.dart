@@ -71,7 +71,7 @@ class TinodeChat extends StatefulWidget {
     this.onLoggedOut,
     this.controller,
     this.pushToken,
-    this.strings = const TinodeChatStrings(),
+    this.strings,
     this.icons = const TinodeChatIcons(),
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
@@ -120,7 +120,7 @@ class TinodeChat extends StatefulWidget {
     this.onLoggedOut,
     this.controller,
     this.pushToken,
-    this.strings = const TinodeChatStrings(),
+    this.strings,
     this.icons = const TinodeChatIcons(),
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
@@ -163,8 +163,11 @@ class TinodeChat extends StatefulWidget {
   /// it is this device's (Android, iOS or web).
   final String? pushToken;
 
-  /// The texts the chat shows.
-  final TinodeChatStrings strings;
+  /// The texts the chat shows; null for the built-in ones of the app's
+  /// locale (English, Spanish or French), see
+  /// [TinodeChatStrings.forLocale]. The phone's call screens, shown by the
+  /// system, follow the phone's locale instead.
+  final TinodeChatStrings? strings;
 
   /// The icons the chat shows, Phosphor's by default.
   final TinodeChatIcons icons;
@@ -289,7 +292,12 @@ class _TinodeChatState extends State<TinodeChat> {
     network: widget.network,
     callMedia: widget.callMedia,
     systemCalls: widget.systemCalls,
-    systemCallTexts: systemCallTextsOf(widget.strings),
+    systemCallTexts: systemCallTextsOf(
+      widget.strings ??
+          TinodeChatStrings.forLocale(
+            WidgetsBinding.instance.platformDispatcher.locale,
+          ),
+    ),
     voiceRecorder: widget.voiceRecorder,
     voicePlayer: widget.voicePlayer,
   );
@@ -359,7 +367,12 @@ class _TinodeChatState extends State<TinodeChat> {
     return UncontrolledProviderScope(
       container: _container,
       child: TinodeChatStringsScope(
-        strings: widget.strings,
+        strings:
+            widget.strings ??
+            TinodeChatStrings.forLocale(
+              Localizations.maybeLocaleOf(context) ??
+                  WidgetsBinding.instance.platformDispatcher.locale,
+            ),
         child: TinodeChatIconsScope(
           icons: widget.icons,
           child: BubbleBuilderScope(

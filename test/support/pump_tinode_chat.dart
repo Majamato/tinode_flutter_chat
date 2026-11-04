@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
@@ -48,10 +49,18 @@ Future<void> pumpTinodeChat(
   TinodeAppearance? appearance,
   Widget? appearanceExtra,
   bool reduceMotion = true,
+  Locale? locale,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: theme,
+      locale: locale,
+      supportedLocales: locale == null
+          ? const [Locale('en', 'US')]
+          : TinodeChatStrings.supportedLocales,
+      localizationsDelegates: locale == null
+          ? null
+          : GlobalMaterialLocalizations.delegates,
       // The login screen's bubbles drift for as long as it shows, so
       // `pumpAndSettle` would never settle on it; Reduce motion stills them.
       builder: (context, child) => MediaQuery(

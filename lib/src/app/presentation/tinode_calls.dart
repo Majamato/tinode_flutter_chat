@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_push_handler.dart';
 import 'package:tinode_flutter_chat/src/calls/data/background_hang_up.dart';
@@ -40,7 +42,9 @@ abstract final class TinodeCalls {
   /// while the app is closed is hung up for the caller at once; the token
   /// stays with the ringing call until it ends. Without it, the caller
   /// hears it ring until the server gives up. Pass the [features] given to
-  /// `TinodeChat`: a call of a kind they turn off doesn't ring.
+  /// `TinodeChat`: a call of a kind they turn off doesn't ring. The ringing
+  /// screen shows [strings], by default the built-in ones of the phone's
+  /// locale.
   ///
   /// Returns whether [push] was about a call. Call pushes are all
   /// `silent`, so there is nothing more to show for them.
@@ -48,14 +52,19 @@ abstract final class TinodeCalls {
     TinodePush push, {
     required TinodeConfig config,
     String? token,
-    TinodeChatStrings strings = const TinodeChatStrings(),
+    TinodeChatStrings? strings,
     TinodeChatFeatures features = const TinodeChatFeatures(),
   }) => handleCallPush(
     push,
     config: config,
     token: token,
     features: features,
-    systemCalls: deviceSystemCalls(systemCallTextsOf(strings)),
+    systemCalls: deviceSystemCalls(
+      systemCallTextsOf(
+        strings ??
+            TinodeChatStrings.forLocale(PlatformDispatcher.instance.locale),
+      ),
+    ),
     storeOpener: DeviceChatStoreOpener(),
     registerHangUp: registerBackgroundHangUp,
   );

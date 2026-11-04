@@ -81,6 +81,7 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 - A floating tab bar with the chats, the calls history and the settings (turn it off with
   `TinodeChat(tabBar: false)`), and an Appearance screen where the user picks one of your
   palettes and light, dark or system (`TinodeAppearance`).
+- Speaks English, Spanish and French, following the app's locale (see [Languages](#languages)).
 - Restyle it with a `TinodeChatTheme` theme extension, translate or reword it with
   `TinodeChatStrings`, and swap its [Phosphor](https://phosphoricons.com) icons for your own
   with `TinodeChatIcons` (e.g. `TinodeChat(icons: const TinodeChatIcons(send: Icons.send))`).
@@ -139,6 +140,43 @@ runApp(
 
 `TinodeChat.appearanceExtra` adds a widget of your own to that screen, e.g. a look setting of
 your app's own such as its text size.
+
+
+## Languages
+
+The chat's texts are built in for English, Spanish and French, and follow the app's locale. For
+the app's locale to resolve to Spanish or French, and for dates and Material's own texts to be
+translated too, add `flutter_localizations` to your app:
+
+```yaml
+dependencies:
+  flutter_localizations:
+    sdk: flutter
+```
+
+```dart
+MaterialApp(
+  localizationsDelegates: GlobalMaterialLocalizations.delegates,
+  supportedLocales: TinodeChatStrings.supportedLocales, // or your own list
+  home: TinodeChat(config: config),
+)
+```
+
+Without them Flutter resolves the locale to English, and so does the chat. The phone's call
+screens, which the system shows, follow the phone's language.
+
+To force a language, or reword some texts, pass `strings`:
+
+```dart
+TinodeChat(
+  config: config,
+  strings: const TinodeChatStrings.es(chatListTitle: 'Mis chats'),
+)
+```
+
+`TinodeChatStrings()` is English, `.es()` Spanish and `.fr()` French; any text you leave out
+keeps that language's default. Pass the same `strings` to `TinodeCalls.handlePush`, which
+otherwise uses the phone's language.
 
 ## Accounts: what the server decides
 

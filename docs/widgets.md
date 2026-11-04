@@ -73,10 +73,13 @@ business logic in UI files. Flutter's own guidance is in
 
 ## Strings, theme, layout
 
-- No user-visible string literals in widgets: use `TinodeChatStrings.of(context)`. Add a field with
-  an English default for new text. (gen_l10n can back the same accessor later.) Text that names
-  someone or counts something is a function field (`typingOne(name)`) whose default is a private
-  top-level function, so `TinodeChatStrings` stays `const`. Choosing between such texts (one name,
+- No user-visible string literals in widgets: use `TinodeChatStrings.of(context)`. A new text is a
+  field with a default in all three constructors: English (`TinodeChatStrings()`), Spanish
+  (`.es()`, informal *tú*) and French (`.fr()`, *vous*, with a no-break space ` ` before
+  `? ! :`). Text that names someone or counts something is a function field (`typingOne(name)`)
+  whose defaults are private top-level functions, one per language (`_typingOne`,
+  `_typingOneEs`, `_typingOneFr`), so `TinodeChatStrings` stays `const`; mind each language's
+  plurals (French counts 0 and 1 in the singular). Choosing between such texts (one name,
   two, a count) is a plain function next to its widget, like `typingMessage`, not code in `build`.
 - No `Icons.*` in widgets: use `TinodeChatIcons.of(context)`. Add a field named for its role
   (`voiceCall`, not `phone`) with a Phosphor default for a new icon; an on or selected state gets
