@@ -153,7 +153,9 @@ them.
 
 - The chats scroll under the glass app bar: the account menu (only without the tab bar:
   profile, appearance, log out) as a round button, "Chats" (`titleLarge`) centred and the
-  compose button in `linkColor`, then a 40 px glass search pill that opens the people search.
+  compose button in `linkColor`, then a 40 px search pill that opens the people search: filled
+  in `surfaceContainerHighest` like an input in light mode, where white glass would vanish on
+  the white list, and glass in dark mode.
   No folder chips.
 - **Reconnecting title** (`ReconnectingTitle`), as in Telegram: once the link has been down for
   1 s (`networkSettle`, so a blip shows nothing), "Chats" turns into a 16 px spinner (stroke 2)

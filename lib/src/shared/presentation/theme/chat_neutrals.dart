@@ -34,8 +34,10 @@ final class ChatNeutrals {
     muted: Color(0xFF6B7079),
     line: Color(0xFFE7E5E0),
     glass: Color(0xD1FFFFFF),
-    glassEdge: Color(0x0F14161B),
-    glassShadow: Color(0x2414161B),
+    // Strong enough that white glass, the tab bar above all, still shows
+    // its edge on the white lists.
+    glassEdge: Color(0x1F14161B),
+    glassShadow: Color(0x3314161B),
     waveOff: Color(0xFFC9CCD2),
     dateChip: Color(0x5714161B),
     mutedBadge: Color(0xFF9BA1AB),
