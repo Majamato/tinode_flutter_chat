@@ -93,7 +93,7 @@ void main() {
   });
 
   testWidgets('my online status is shown by default; turning it off saves '
-      'the flag in my profile, and on removes it', (tester) async {
+      'the flag in my profile, and on overwrites it', (tester) async {
     session.profile = const Profile(name: 'Alice', note: 'hi');
     await openSettings(tester);
 
@@ -113,7 +113,9 @@ void main() {
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
     expect(toggle().value, isTrue);
-    expect(session.profile?.raw.containsKey('x-presence'), isFalse);
+    // Written, not left out: the server merges `public`, so a missing key
+    // would keep it hidden.
+    expect(session.profile?.raw['x-presence'], 'shown');
   });
 
   testWidgets('a hidden status reads as off; a failed save says why', (
