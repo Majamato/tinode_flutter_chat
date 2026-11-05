@@ -2,13 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tinode_flutter_chat/src/profile/application/change_password_controller.dart';
+import 'package:tinode_flutter_chat/src/account/application/change_password_controller.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/password_field.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_text.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/progress_button.dart';
 
-/// The new password and, if wanted, a new login. Closes its route with
-/// `true` once changed. Watches the change's progress.
+/// The new password, then the same again; the button sends it once both
+/// match. Closes its route with `true` once changed. Watches the change's
+/// progress.
 class ChangePasswordForm extends ConsumerStatefulWidget {
   const ChangePasswordForm({super.key});
 
@@ -18,20 +20,28 @@ class ChangePasswordForm extends ConsumerStatefulWidget {
 
 class _ChangePasswordFormState extends ConsumerState<ChangePasswordForm> {
   final _password = TextEditingController();
-  final _login = TextEditingController();
+  final _confirm = TextEditingController();
+  late final _fields = Listenable.merge([_password, _confirm]);
 
   @override
   void dispose() {
     _password.dispose();
-    _login.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
-  void _submit() => unawaited(
-    ref
-        .read(changePasswordControllerProvider.notifier)
-        .submit(password: _password.text, login: _login.text),
-  );
+  bool get _ready =>
+      _password.text.isNotEmpty && _password.text == _confirm.text;
+
+  void _submit() {
+    if (_ready) {
+      unawaited(
+        ref
+            .read(changePasswordControllerProvider.notifier)
+            .submit(password: _password.text),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,31 +61,35 @@ class _ChangePasswordFormState extends ConsumerState<ChangePasswordForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
+          PasswordField(
             controller: _password,
-            decoration: InputDecoration(labelText: strings.newPasswordField),
+            label: strings.newPasswordField,
             autofillHints: const [AutofillHints.newPassword],
-            obscureText: true,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _login,
-            decoration: InputDecoration(labelText: strings.newLoginField),
-            autofillHints: const [AutofillHints.newUsername],
-            autocorrect: false,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _submit(),
+          ListenableBuilder(
+            listenable: _fields,
+            builder: (_, _) => PasswordField(
+              controller: _confirm,
+              label: strings.confirmNewPasswordField,
+              autofillHints: const [AutofillHints.newPassword],
+              errorText:
+                  _confirm.text.isNotEmpty && _confirm.text != _password.text
+                  ? strings.passwordsDontMatch
+                  : null,
+              onSubmitted: (_) => _submit(),
+            ),
           ),
           const SizedBox(height: 8),
           FailureText(failure: ref.watch(changePasswordFailureProvider)),
           const SizedBox(height: 16),
           ListenableBuilder(
-            listenable: _password,
+            listenable: _fields,
             builder: (_, _) => ProgressButton(
               label: strings.changePassword,
               busy: busy,
-              onPressed: _password.text.isEmpty ? null : _submit,
+              onPressed: _ready ? _submit : null,
             ),
           ),
         ],

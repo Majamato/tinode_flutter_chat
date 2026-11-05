@@ -54,7 +54,7 @@ final class VoicePlaybackControllerProvider
 }
 
 String _$voicePlaybackControllerHash() =>
-    r'ced3afc5dcb70b63c6d4740fd862c46fd2bed1e6';
+    r'0b6736f770962698842901ab8d1289920e578636';
 
 /// The voice message playing, one at a time; null when none is. Starting
 /// another stops the first; a call or a recording stops it too, and one

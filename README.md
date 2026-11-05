@@ -9,8 +9,9 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
   long as the widget lives. The login screen also signs new users up (confirming their email
   with a mailed code where the server asks for one) and resets forgotten passwords with a code
   sent by email.
-- A profile screen, from the chat list's menu, edits the user's name, note and photo, changes the
-  password (and the login) and deletes the account.
+- A profile screen, from the settings (or the chat list's menu without the tab bar), edits the
+  user's name and photo. An account screen, next to it, changes the password (typed twice; the
+  login stays), logs out and deletes the account.
 - A chat's info screen, from its title, lists a group's members and removes them, and deletes a
   chat or a group, or leaves a group. Chats deleted elsewhere, or that the user was removed from,
   leave the list.
@@ -543,8 +544,8 @@ where it needs the protocol:
 3. ~~**Attachments**~~: done (send and show images and files, photos given by reference).
    Rich Drafty rendering (bold, links, mentions) is still to come: messages show their plain
    text.
-4. ~~**Account and profile**~~: done (sign up with email confirmation, password reset by email, edit name, note and
-   photo, change the password and login, delete the account, delete or leave chats, remove group
+4. ~~**Account and profile**~~: done (sign up with email confirmation, password reset by email, edit name and
+   photo, change the password, log out, delete the account, delete or leave chats, remove group
    members).
 5. ~~**Push**~~: done (the host's push token registered for whoever logs in and removed on log
    out, `TinodePush` to read pushes, `openChat` for tapped notifications).

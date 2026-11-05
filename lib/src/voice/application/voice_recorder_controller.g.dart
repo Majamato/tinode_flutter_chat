@@ -8,27 +8,39 @@ part of 'voice_recorder_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Recording a voice message in one chat's composer: [start], then [send]
-/// or [cancel]. Sending goes through the chat's `SendController`, so its
-/// failures show where a file's would. The recording is dropped when the
-/// composer goes and when a call starts; at `VoiceNote.maxDuration` it is
-/// sent.
+/// Recording a voice message in one chat's composer: [start], maybe
+/// [pause] and [resume], then [send] or [cancel]. Sending goes through the
+/// chat's `SendController`, so its failures show where a file's would. The
+/// recording is dropped when the composer goes and when a call starts; at
+/// `VoiceNote.maxDuration` of recorded time it is sent. The time counts
+/// only what was recorded, not the pauses.
+///
+/// The levels go to [liveLevels] as they come, outside the state, so only
+/// the live waveform repaints for them.
 
 @ProviderFor(VoiceRecorderController)
 final voiceRecorderControllerProvider = VoiceRecorderControllerFamily._();
 
-/// Recording a voice message in one chat's composer: [start], then [send]
-/// or [cancel]. Sending goes through the chat's `SendController`, so its
-/// failures show where a file's would. The recording is dropped when the
-/// composer goes and when a call starts; at `VoiceNote.maxDuration` it is
-/// sent.
+/// Recording a voice message in one chat's composer: [start], maybe
+/// [pause] and [resume], then [send] or [cancel]. Sending goes through the
+/// chat's `SendController`, so its failures show where a file's would. The
+/// recording is dropped when the composer goes and when a call starts; at
+/// `VoiceNote.maxDuration` of recorded time it is sent. The time counts
+/// only what was recorded, not the pauses.
+///
+/// The levels go to [liveLevels] as they come, outside the state, so only
+/// the live waveform repaints for them.
 final class VoiceRecorderControllerProvider
     extends $NotifierProvider<VoiceRecorderController, VoiceRecorderState> {
-  /// Recording a voice message in one chat's composer: [start], then [send]
-  /// or [cancel]. Sending goes through the chat's `SendController`, so its
-  /// failures show where a file's would. The recording is dropped when the
-  /// composer goes and when a call starts; at `VoiceNote.maxDuration` it is
-  /// sent.
+  /// Recording a voice message in one chat's composer: [start], maybe
+  /// [pause] and [resume], then [send] or [cancel]. Sending goes through the
+  /// chat's `SendController`, so its failures show where a file's would. The
+  /// recording is dropped when the composer goes and when a call starts; at
+  /// `VoiceNote.maxDuration` of recorded time it is sent. The time counts
+  /// only what was recorded, not the pauses.
+  ///
+  /// The levels go to [liveLevels] as they come, outside the state, so only
+  /// the live waveform repaints for them.
   VoiceRecorderControllerProvider._({
     required VoiceRecorderControllerFamily super.from,
     required String super.argument,
@@ -75,13 +87,17 @@ final class VoiceRecorderControllerProvider
 }
 
 String _$voiceRecorderControllerHash() =>
-    r'2f3b4bb5d6a70e8e9be837ebbfbfcd1a82d80f3a';
+    r'a9d46c35c135cde1f3f9ad279f9114e6d5da065f';
 
-/// Recording a voice message in one chat's composer: [start], then [send]
-/// or [cancel]. Sending goes through the chat's `SendController`, so its
-/// failures show where a file's would. The recording is dropped when the
-/// composer goes and when a call starts; at `VoiceNote.maxDuration` it is
-/// sent.
+/// Recording a voice message in one chat's composer: [start], maybe
+/// [pause] and [resume], then [send] or [cancel]. Sending goes through the
+/// chat's `SendController`, so its failures show where a file's would. The
+/// recording is dropped when the composer goes and when a call starts; at
+/// `VoiceNote.maxDuration` of recorded time it is sent. The time counts
+/// only what was recorded, not the pauses.
+///
+/// The levels go to [liveLevels] as they come, outside the state, so only
+/// the live waveform repaints for them.
 
 final class VoiceRecorderControllerFamily extends $Family
     with
@@ -101,11 +117,15 @@ final class VoiceRecorderControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Recording a voice message in one chat's composer: [start], then [send]
-  /// or [cancel]. Sending goes through the chat's `SendController`, so its
-  /// failures show where a file's would. The recording is dropped when the
-  /// composer goes and when a call starts; at `VoiceNote.maxDuration` it is
-  /// sent.
+  /// Recording a voice message in one chat's composer: [start], maybe
+  /// [pause] and [resume], then [send] or [cancel]. Sending goes through the
+  /// chat's `SendController`, so its failures show where a file's would. The
+  /// recording is dropped when the composer goes and when a call starts; at
+  /// `VoiceNote.maxDuration` of recorded time it is sent. The time counts
+  /// only what was recorded, not the pauses.
+  ///
+  /// The levels go to [liveLevels] as they come, outside the state, so only
+  /// the live waveform repaints for them.
 
   VoiceRecorderControllerProvider call(String topic) =>
       VoiceRecorderControllerProvider._(argument: topic, from: this);
@@ -114,11 +134,15 @@ final class VoiceRecorderControllerFamily extends $Family
   String toString() => r'voiceRecorderControllerProvider';
 }
 
-/// Recording a voice message in one chat's composer: [start], then [send]
-/// or [cancel]. Sending goes through the chat's `SendController`, so its
-/// failures show where a file's would. The recording is dropped when the
-/// composer goes and when a call starts; at `VoiceNote.maxDuration` it is
-/// sent.
+/// Recording a voice message in one chat's composer: [start], maybe
+/// [pause] and [resume], then [send] or [cancel]. Sending goes through the
+/// chat's `SendController`, so its failures show where a file's would. The
+/// recording is dropped when the composer goes and when a call starts; at
+/// `VoiceNote.maxDuration` of recorded time it is sent. The time counts
+/// only what was recorded, not the pauses.
+///
+/// The levels go to [liveLevels] as they come, outside the state, so only
+/// the live waveform repaints for them.
 
 abstract class _$VoiceRecorderController extends $Notifier<VoiceRecorderState> {
   late final _$args = ref.$arg as String;

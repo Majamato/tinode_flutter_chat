@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:tinode_flutter_chat/src/profile/presentation/change_password_screen.dart';
+import 'package:tinode_flutter_chat/src/account/presentation/change_password_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/settings_tile.dart';
 
-/// Opens the password change, and says so once it is done.
+/// Opens the password change, and says so once it is done. Watches
+/// nothing.
 class ChangePasswordTile extends StatelessWidget {
   const ChangePasswordTile({super.key});
 
@@ -19,9 +21,9 @@ class ChangePasswordTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(TinodeChatIcons.of(context).password),
-      title: Text(TinodeChatStrings.of(context).changePassword),
+    return SettingsTile(
+      icon: TinodeChatIcons.of(context).password,
+      title: TinodeChatStrings.of(context).changePassword,
       onTap: () => unawaited(_open(context)),
     );
   }

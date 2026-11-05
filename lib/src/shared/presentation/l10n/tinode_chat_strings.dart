@@ -175,17 +175,17 @@ class TinodeChatStrings {
     this.resetCodeSent = 'If an account has this email, a code is on its way.',
     this.resetCodeField = 'Code from the email',
     this.newPasswordField = 'New password',
+    this.confirmNewPasswordField = 'Confirm new password',
     this.setPassword = 'Set password',
     this.passwordResetDone = 'Password changed. Sign in with the new one.',
     this.profile = 'Profile',
     this.nameField = 'Name',
-    this.noteField = 'About',
     this.save = 'Save',
     this.profileSaved = 'Profile saved.',
     this.changePhoto = 'Change photo',
     this.changePassword = 'Change password',
-    this.newLoginField = 'New login (optional)',
     this.passwordChanged = 'Password changed.',
+    this.passwordsDontMatch = "The passwords don't match.",
     this.deleteAccount = 'Delete account',
     this.deleteAccountConfirm =
         'Delete your account, with your chats and messages? '
@@ -230,7 +230,9 @@ class TinodeChatStrings {
     this.noCalls = 'No calls yet',
     this.callBack = 'Call back',
     this.openChat = 'Open chat',
-    this.profileSubtitle = 'Name, photo and password',
+    this.profileSubtitle = 'Name and photo',
+    this.account = 'Account',
+    this.accountSubtitle = 'Password, log out and delete account',
     this.appearance = 'Appearance',
     this.showMyOnlineStatus = 'Show my online status',
     this.showMyOnlineStatusFooter =
@@ -409,17 +411,17 @@ class TinodeChatStrings {
         'Si hay una cuenta con este correo, el código ya va de camino.',
     this.resetCodeField = 'Código del correo',
     this.newPasswordField = 'Nueva contraseña',
+    this.confirmNewPasswordField = 'Confirma la nueva contraseña',
     this.setPassword = 'Guardar contraseña',
     this.passwordResetDone = 'Contraseña cambiada. Inicia sesión con la nueva.',
     this.profile = 'Perfil',
     this.nameField = 'Nombre',
-    this.noteField = 'Sobre mí',
     this.save = 'Guardar',
     this.profileSaved = 'Perfil guardado.',
     this.changePhoto = 'Cambiar foto',
     this.changePassword = 'Cambiar contraseña',
-    this.newLoginField = 'Nuevo usuario (opcional)',
     this.passwordChanged = 'Contraseña cambiada.',
+    this.passwordsDontMatch = 'Las contraseñas no coinciden.',
     this.deleteAccount = 'Eliminar cuenta',
     this.deleteAccountConfirm =
         '¿Eliminar tu cuenta, con tus chats y mensajes? No se puede deshacer.',
@@ -463,7 +465,9 @@ class TinodeChatStrings {
     this.noCalls = 'Aún no hay llamadas',
     this.callBack = 'Devolver llamada',
     this.openChat = 'Abrir chat',
-    this.profileSubtitle = 'Nombre, foto y contraseña',
+    this.profileSubtitle = 'Nombre y foto',
+    this.account = 'Cuenta',
+    this.accountSubtitle = 'Contraseña, cerrar sesión y eliminar cuenta',
     this.appearance = 'Apariencia',
     this.showMyOnlineStatus = 'Mostrar mi estado en línea',
     this.showMyOnlineStatusFooter =
@@ -644,18 +648,18 @@ class TinodeChatStrings {
         'Si un compte utilise cet e-mail, un code est en route.',
     this.resetCodeField = 'Code reçu par e-mail',
     this.newPasswordField = 'Nouveau mot de passe',
+    this.confirmNewPasswordField = 'Confirmez le nouveau mot de passe',
     this.setPassword = 'Enregistrer le mot de passe',
     this.passwordResetDone =
         'Mot de passe modifié. Connectez-vous avec le nouveau.',
     this.profile = 'Profil',
     this.nameField = 'Nom',
-    this.noteField = 'À propos',
     this.save = 'Enregistrer',
     this.profileSaved = 'Profil enregistré.',
     this.changePhoto = 'Changer de photo',
     this.changePassword = 'Changer de mot de passe',
-    this.newLoginField = 'Nouvel identifiant (facultatif)',
     this.passwordChanged = 'Mot de passe modifié.',
+    this.passwordsDontMatch = 'Les mots de passe ne correspondent pas.',
     this.deleteAccount = 'Supprimer le compte',
     this.deleteAccountConfirm =
         'Supprimer votre compte, avec vos discussions et vos messages\u00A0? '
@@ -704,7 +708,9 @@ class TinodeChatStrings {
     this.noCalls = 'Aucun appel pour le moment',
     this.callBack = 'Rappeler',
     this.openChat = 'Ouvrir la discussion',
-    this.profileSubtitle = 'Nom, photo et mot de passe',
+    this.profileSubtitle = 'Nom et photo',
+    this.account = 'Compte',
+    this.accountSubtitle = 'Mot de passe, déconnexion et suppression du compte',
     this.appearance = 'Apparence',
     this.showMyOnlineStatus = 'Afficher mon statut en ligne',
     this.showMyOnlineStatusFooter =
@@ -1225,6 +1231,9 @@ class TinodeChatStrings {
   /// Label of a new password field.
   final String newPasswordField;
 
+  /// Label of the field that repeats the new password.
+  final String confirmNewPasswordField;
+
   /// Submits a new password.
   final String setPassword;
 
@@ -1237,9 +1246,6 @@ class TinodeChatStrings {
   /// Label of the profile name field.
   final String nameField;
 
-  /// Label of the profile note field.
-  final String noteField;
-
   /// Saves changes.
   final String save;
 
@@ -1249,14 +1255,14 @@ class TinodeChatStrings {
   /// Picks a new profile photo.
   final String changePhoto;
 
-  /// Opens the password change, and titles it.
+  /// Opens the password change, titles it, and submits it.
   final String changePassword;
-
-  /// Label of the field that also changes the login.
-  final String newLoginField;
 
   /// Shown once the password was changed.
   final String passwordChanged;
+
+  /// Under the repeated password when it differs from the new one.
+  final String passwordsDontMatch;
 
   /// Deletes the user's account.
   final String deleteAccount;
@@ -1373,6 +1379,13 @@ class TinodeChatStrings {
 
   /// Under the user's name in settings: what the profile holds.
   final String profileSubtitle;
+
+  /// Title of the account screen, and its entry in settings and in the
+  /// chat list's menu.
+  final String account;
+
+  /// Under the account entry in settings: what the account screen holds.
+  final String accountSubtitle;
 
   /// Title of the appearance screen, and its entry in settings.
   final String appearance;

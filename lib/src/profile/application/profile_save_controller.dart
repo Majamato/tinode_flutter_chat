@@ -6,7 +6,7 @@ import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
 part 'profile_save_controller.g.dart';
 
-/// Saving the profile's name and note: loading while it runs, an error
+/// Saving the profile's name: loading while it runs, an error
 /// when it failed. Only the save button and the error text watch it.
 @riverpod
 class ProfileSaveController extends _$ProfileSaveController {
@@ -14,7 +14,7 @@ class ProfileSaveController extends _$ProfileSaveController {
   AsyncValue<void> build() => const AsyncData(null);
 
   /// Returns whether it was saved.
-  Future<bool> save({required String name, required String note}) async {
+  Future<bool> save({required String name}) async {
     if (state.isLoading) {
       return false;
     }
@@ -25,10 +25,8 @@ class ProfileSaveController extends _$ProfileSaveController {
         throw const ConnectionLostException();
       }
       final current = await ref.read(profileControllerProvider.future);
-      final updated = current.profile.copyWith(
-        name: name.trim(),
-        note: note.trim(),
-      );
+      // The rest of the profile, the note included, stays as it is.
+      final updated = current.profile.copyWith(name: name.trim());
       await session.updateProfile(updated);
       if (ref.mounted) {
         ref.read(profileControllerProvider.notifier).saved(updated);

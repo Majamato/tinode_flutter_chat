@@ -8,17 +8,17 @@ part of 'profile_save_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Saving the profile's name and note: loading while it runs, an error
+/// Saving the profile's name: loading while it runs, an error
 /// when it failed. Only the save button and the error text watch it.
 
 @ProviderFor(ProfileSaveController)
 final profileSaveControllerProvider = ProfileSaveControllerProvider._();
 
-/// Saving the profile's name and note: loading while it runs, an error
+/// Saving the profile's name: loading while it runs, an error
 /// when it failed. Only the save button and the error text watch it.
 final class ProfileSaveControllerProvider
     extends $NotifierProvider<ProfileSaveController, AsyncValue<void>> {
-  /// Saving the profile's name and note: loading while it runs, an error
+  /// Saving the profile's name: loading while it runs, an error
   /// when it failed. Only the save button and the error text watch it.
   ProfileSaveControllerProvider._()
     : super(
@@ -48,9 +48,9 @@ final class ProfileSaveControllerProvider
 }
 
 String _$profileSaveControllerHash() =>
-    r'b79b1b96964686174f22c1adccf18cbd17d0bb6c';
+    r'c0946349252c651bd300c03846e2d29c30bbdbca';
 
-/// Saving the profile's name and note: loading while it runs, an error
+/// Saving the profile's name: loading while it runs, an error
 /// when it failed. Only the save button and the error text watch it.
 
 abstract class _$ProfileSaveController extends $Notifier<AsyncValue<void>> {

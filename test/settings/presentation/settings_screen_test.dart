@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/account/presentation/account_screen.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/home/home_tab_bar.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_screen.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_screen.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
 import 'package:tinode_flutter_chat/src/settings/presentation/settings_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/settings_section.dart';
@@ -26,7 +26,6 @@ void main() {
   Future<void> openSettings(
     WidgetTester tester, {
     TinodeAppearance? appearance,
-    VoidCallback? onLoggedOut,
     TinodeChatFeatures features = const TinodeChatFeatures(),
   }) async {
     await pumpTinodeChat(
@@ -35,7 +34,6 @@ void main() {
       credentials: TinodeCredentials.token(session.token),
       tabBar: true,
       appearance: appearance,
-      onLoggedOut: onLoggedOut,
       features: features,
     );
     await tester.tap(
@@ -60,17 +58,19 @@ void main() {
     expect(find.byType(ProfileScreen), findsOneWidget);
   });
 
-  testWidgets('logging out shows the login screen and tells the host', (
-    tester,
-  ) async {
-    var loggedOut = 0;
-    await openSettings(tester, onLoggedOut: () => loggedOut++);
+  testWidgets('the account row opens the account screen, which holds '
+      'logging out', (tester) async {
+    await openSettings(tester);
 
-    await tester.tap(find.text(strings.logOut));
+    expect(find.text(strings.account), findsOneWidget);
+    expect(find.text(strings.accountSubtitle), findsOneWidget);
+    expect(find.text(strings.logOut), findsNothing);
+
+    await tester.tap(find.text(strings.account));
     await tester.pumpAndSettle();
 
-    expect(find.byType(LoginScreen), findsOneWidget);
-    expect(loggedOut, 1);
+    expect(find.byType(AccountScreen), findsOneWidget);
+    expect(find.text(strings.logOut), findsOneWidget);
   });
 
   testWidgets('the appearance names the palette in use and opens', (

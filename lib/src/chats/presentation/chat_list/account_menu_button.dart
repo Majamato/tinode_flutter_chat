@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinode_flutter_chat/src/account/presentation/account_screen.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scope.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_screen.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_screen.dart';
-import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_icon_button.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
@@ -13,13 +12,13 @@ import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_str
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// The chat list's menu without the tab bar, a round glass button: the
-/// user's profile, the appearance when the host offers one, and logging
-/// out, which also deletes the chats kept on the device.
-class AccountMenuButton extends ConsumerWidget {
+/// user's profile, their account (password, logging out, deleting it),
+/// and the appearance when the host offers one. Watches nothing.
+class AccountMenuButton extends StatelessWidget {
   const AccountMenuButton({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final strings = TinodeChatStrings.of(context);
     return GlassSurface(
       child: SizedBox.square(
@@ -36,6 +35,12 @@ class AccountMenuButton extends ConsumerWidget {
               onTap: () => unawaited(ProfileScreen.open(context)),
               child: Text(strings.profile),
             ),
+            PopupMenuItem(
+              onTap: () => unawaited(
+                AccountScreen.open(context, backLabel: strings.chatListTitle),
+              ),
+              child: Text(strings.account),
+            ),
             if (AppearanceScope.peek(context) != null)
               PopupMenuItem(
                 onTap: () => unawaited(
@@ -46,12 +51,6 @@ class AccountMenuButton extends ConsumerWidget {
                 ),
                 child: Text(strings.appearance),
               ),
-            PopupMenuItem(
-              onTap: () => unawaited(
-                ref.read(sessionControllerProvider.notifier).logout(),
-              ),
-              child: Text(strings.logOut),
-            ),
           ],
         ),
       ),

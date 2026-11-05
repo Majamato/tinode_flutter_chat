@@ -32,6 +32,7 @@ export 'src/session/domain/tinode_credentials.dart'
     show PasswordCredentials, TinodeCredentials, TokenCredentials;
 export 'src/shared/domain/tinode_screen.dart'
     show
+        TinodeAccountScreen,
         TinodeAppearanceScreen,
         TinodeCallsScreen,
         TinodeChatListScreen,

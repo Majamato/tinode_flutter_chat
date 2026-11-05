@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
-import 'package:tinode_flutter_chat/src/profile/presentation/change_password_screen.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_screen.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_attachment_picker.dart';
@@ -24,16 +22,12 @@ void main() {
 
   Finder field(String label) => find.widgetWithText(TextField, label);
 
-  Future<void> openProfile(
-    WidgetTester tester, {
-    VoidCallback? onLoggedOut,
-  }) async {
+  Future<void> openProfile(WidgetTester tester) async {
     await pumpTinodeChat(
       tester,
       session,
       credentials: TinodeCredentials.token(session.token),
       attachmentPicker: picker,
-      onLoggedOut: onLoggedOut,
     );
     await tester.tap(find.byType(PopupMenuButton<void>));
     await tester.pumpAndSettle();
@@ -42,18 +36,23 @@ void main() {
     expect(find.byType(ProfileScreen), findsOneWidget);
   }
 
-  testWidgets('edits the name and note', (tester) async {
+  testWidgets('edits only the name; the note stays as it was', (
+    tester,
+  ) async {
     await openProfile(tester);
     expect(find.text('Alice'), findsOneWidget);
-    expect(find.text('Hiking'), findsOneWidget);
+    // The photo and the name, nothing else to edit.
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('Hiking'), findsNothing);
+    expect(find.text(strings.changePassword), findsNothing);
+    expect(find.text(strings.deleteAccount), findsNothing);
 
     await tester.enterText(field(strings.nameField), 'Alicia');
-    await tester.enterText(field(strings.noteField), 'Climbing');
     await tester.tap(find.text(strings.save));
     await tester.pumpAndSettle();
 
     expect(session.profile?.name, 'Alicia');
-    expect(session.profile?.note, 'Climbing');
+    expect(session.profile?.note, 'Hiking');
     expect(find.text(strings.profileSaved), findsOneWidget);
   });
 
@@ -71,47 +70,5 @@ void main() {
 
     expect(session.profile?.photo?.ref, startsWith('/v0/file/s/'));
     expect(session.profile?.name, 'Alice');
-  });
-
-  testWidgets('changes the password', (tester) async {
-    await openProfile(tester);
-    await tester.tap(find.text(strings.changePassword));
-    await tester.pumpAndSettle();
-    expect(find.byType(ChangePasswordScreen), findsOneWidget);
-
-    await tester.enterText(field(strings.newPasswordField), 'new-pw');
-    await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, strings.changePassword));
-    await tester.pumpAndSettle();
-
-    expect(session.changedPassword, 'new-pw');
-    expect(find.byType(ChangePasswordScreen), findsNothing);
-    expect(find.text(strings.passwordChanged), findsOneWidget);
-  });
-
-  testWidgets('deletes the account after asking', (tester) async {
-    var loggedOut = false;
-    await openProfile(tester, onLoggedOut: () => loggedOut = true);
-
-    await tester.tap(find.text(strings.deleteAccount));
-    await tester.pumpAndSettle();
-    expect(find.text(strings.deleteAccountConfirm), findsOneWidget);
-    await tester.tap(find.text(strings.cancel));
-    await tester.pumpAndSettle();
-    expect(session.accountDeleted, isFalse);
-
-    await tester.tap(find.text(strings.deleteAccount));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.text(strings.deleteAccount),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(session.accountDeleted, isTrue);
-    expect(loggedOut, isTrue);
-    expect(find.byType(LoginScreen), findsOneWidget);
   });
 }

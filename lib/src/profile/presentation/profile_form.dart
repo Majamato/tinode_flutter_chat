@@ -4,16 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_controller.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_save_controller.dart';
-import 'package:tinode_flutter_chat/src/profile/presentation/change_password_tile.dart';
-import 'package:tinode_flutter_chat/src/profile/presentation/delete_account_tile.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_photo_button.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_save_button.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_save_error_text.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// The photo, the name and note fields with their save button, and the
-/// account's actions. The fields start from the profile as first read;
-/// it watches nothing after that.
+/// The photo, and the name field with its save button. The field starts
+/// from the profile as first read; it watches nothing after that. The
+/// account's actions live on the account screen.
 class ProfileForm extends ConsumerStatefulWidget {
   const ProfileForm({super.key});
 
@@ -23,20 +21,17 @@ class ProfileForm extends ConsumerStatefulWidget {
 
 class _ProfileFormState extends ConsumerState<ProfileForm> {
   late final TextEditingController _name;
-  late final TextEditingController _note;
 
   @override
   void initState() {
     super.initState();
     final profile = ref.read(profileControllerProvider).requireValue;
     _name = TextEditingController(text: profile.name);
-    _note = TextEditingController(text: profile.note);
   }
 
   @override
   void dispose() {
     _name.dispose();
-    _note.dispose();
     super.dispose();
   }
 
@@ -48,7 +43,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     final saved = TinodeChatStrings.of(context).profileSaved;
     final ok = await ref
         .read(profileSaveControllerProvider.notifier)
-        .save(name: _name.text, note: _note.text);
+        .save(name: _name.text);
     if (ok) {
       messenger.showSnackBar(SnackBar(content: Text(saved)));
     }
@@ -71,14 +66,8 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
                 controller: _name,
                 decoration: InputDecoration(labelText: strings.nameField),
                 textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _note,
-                decoration: InputDecoration(labelText: strings.noteField),
-                maxLines: null,
-                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => unawaited(_save()),
               ),
               const SizedBox(height: 8),
               const ProfileSaveErrorText(),
@@ -87,10 +76,6 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        const Divider(),
-        const ChangePasswordTile(),
-        const DeleteAccountTile(),
       ],
     );
   }

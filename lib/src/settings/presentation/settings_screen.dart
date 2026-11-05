@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/account/presentation/account_tile.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scope.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_tile.dart';
-import 'package:tinode_flutter_chat/src/settings/presentation/log_out_tile.dart';
 import 'package:tinode_flutter_chat/src/settings/presentation/presence_tile.dart';
 import 'package:tinode_flutter_chat/src/settings/presentation/settings_profile_tile.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
@@ -11,9 +11,10 @@ import 'package:tinode_flutter_chat/src/shared/presentation/settings_section.dar
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 
-/// The settings tab: the user's profile, the appearance when the host
-/// offers one, whether others see the user's online status, and logging
-/// out, in cards scrolling under the glass app bar. Watches nothing.
+/// The settings tab: the user's profile, their account (password, logging
+/// out, deleting it), the appearance when the host offers one, and whether
+/// others see the user's online status, in cards scrolling under the glass
+/// app bar. Watches nothing.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -36,6 +37,7 @@ class SettingsScreen extends StatelessWidget {
               spacing: 22,
               children: [
                 const SettingsSection(children: [SettingsProfileTile()]),
+                const SettingsSection(children: [AccountTile()]),
                 if (AppearanceScope.peek(context) != null)
                   const SettingsSection(children: [AppearanceTile()]),
                 SettingsSection(
@@ -44,7 +46,6 @@ class SettingsScreen extends StatelessWidget {
                   ).showMyOnlineStatusFooter,
                   children: const [PresenceTile()],
                 ),
-                const SettingsSection(children: [LogOutTile()]),
               ],
             ),
           ),

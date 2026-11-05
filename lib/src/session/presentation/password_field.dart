@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// A password field with an eye that shows or hides what was typed.
+/// A password field with an eye that shows or hides what was typed, and
+/// an optional [PasswordField.errorText] under it.
 class PasswordField extends StatefulWidget {
   const PasswordField({
     required this.controller,
@@ -10,6 +11,7 @@ class PasswordField extends StatefulWidget {
     required this.autofillHints,
     this.textInputAction = TextInputAction.done,
     this.onSubmitted,
+    this.errorText,
     super.key,
   });
 
@@ -18,6 +20,9 @@ class PasswordField extends StatefulWidget {
   final Iterable<String> autofillHints;
   final TextInputAction textInputAction;
   final ValueChanged<String>? onSubmitted;
+
+  /// Under the field, in the error colour, when set.
+  final String? errorText;
 
   @override
   State<PasswordField> createState() => _PasswordFieldState();
@@ -34,6 +39,7 @@ class _PasswordFieldState extends State<PasswordField> {
       controller: widget.controller,
       decoration: InputDecoration(
         labelText: widget.label,
+        errorText: widget.errorText,
         suffixIcon: IconButton(
           tooltip: _hidden ? strings.showPassword : strings.hidePassword,
           isSelected: !_hidden,

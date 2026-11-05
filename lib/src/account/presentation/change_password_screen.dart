@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:tinode_flutter_chat/src/profile/presentation/change_password_form.dart';
+import 'package:tinode_flutter_chat/src/account/presentation/change_password_form.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// A new password, and optionally a new login.
+/// A new password, typed twice. The login stays as it is.
 class ChangePasswordScreen extends StatelessWidget {
   const ChangePasswordScreen({super.key});
 

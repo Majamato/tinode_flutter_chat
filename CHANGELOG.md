@@ -1,5 +1,19 @@
 ## Unreleased
 
+- **Behaviour change:** an Account row in the settings, under the profile, opens a new account
+  screen with "Change password", "Log out" and "Delete account", in cards like the settings.
+  Log out is no longer on the settings tab itself, and the password change and account deletion
+  are no longer on the profile. Without the tab bar, the chat list's menu reads Profile, Account,
+  Appearance: "Account" opens the same screen and takes the place of "Log out".
+- **Behaviour change:** the profile edits only the photo and the name. The "About" field is gone;
+  saving keeps the note already on the account as it is.
+- **Behaviour change:** changing the password asks for the new password twice and sends it once
+  both match ("The passwords don't match." under the second field otherwise). It no longer
+  offers a new login: the login stays as it is.
+- **API:** `TinodeAccountScreen`, the account screen as `TinodeChat.appBarBuilder` sees it.
+  `TinodeChatStrings.account`, `accountSubtitle`, `confirmNewPasswordField` and
+  `passwordsDontMatch` hold the new texts; `profileSubtitle` now reads "Name and photo". Removed
+  `TinodeChatStrings.noteField` and `newLoginField`.
 - **API:** `TinodeChatFeatures.presence` (on by default): whether the chat shows others'
   presence. Off, there is no online dot, no "online" or last seen under a chat's name: the chat
   drops `online`, `seen` and `pres on` / `off` as they arrive, keeps none of it in memory or in

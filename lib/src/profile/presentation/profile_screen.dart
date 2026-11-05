@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_body.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// The user's own profile and account: photo, name and note, the password
-/// and deleting the account. Watches nothing itself.
+/// The user's own profile: photo and name. The password, logging out and
+/// deleting the account are on the account screen. Watches nothing itself.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 

@@ -40,6 +40,13 @@ final class TinodeAppearanceScreen extends TinodeScreen {
   const TinodeAppearanceScreen();
 }
 
+/// The account screen: changing the password, logging out and deleting
+/// the account.
+final class TinodeAccountScreen extends TinodeScreen {
+  /// The account screen.
+  const TinodeAccountScreen();
+}
+
 /// One open chat.
 final class TinodeChatScreen extends TinodeScreen {
   /// The screen of the chat named [topic].

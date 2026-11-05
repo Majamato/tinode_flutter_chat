@@ -8,21 +8,21 @@ part of 'change_password_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Changing the password, and maybe the login: loading while it runs, an
-/// error when it failed, data once done. Tokens already handed out stay
-/// valid, so the session goes on.
+/// Changing the password: loading while it runs, an error when it
+/// failed, data once done. The login stays as it is. Tokens already handed
+/// out stay valid, so the session goes on.
 
 @ProviderFor(ChangePasswordController)
 final changePasswordControllerProvider = ChangePasswordControllerProvider._();
 
-/// Changing the password, and maybe the login: loading while it runs, an
-/// error when it failed, data once done. Tokens already handed out stay
-/// valid, so the session goes on.
+/// Changing the password: loading while it runs, an error when it
+/// failed, data once done. The login stays as it is. Tokens already handed
+/// out stay valid, so the session goes on.
 final class ChangePasswordControllerProvider
     extends $NotifierProvider<ChangePasswordController, AsyncValue<bool>> {
-  /// Changing the password, and maybe the login: loading while it runs, an
-  /// error when it failed, data once done. Tokens already handed out stay
-  /// valid, so the session goes on.
+  /// Changing the password: loading while it runs, an error when it
+  /// failed, data once done. The login stays as it is. Tokens already handed
+  /// out stay valid, so the session goes on.
   ChangePasswordControllerProvider._()
     : super(
         from: null,
@@ -51,11 +51,11 @@ final class ChangePasswordControllerProvider
 }
 
 String _$changePasswordControllerHash() =>
-    r'569482bed907549e5e199ae2cfa72b9fe98ade93';
+    r'dd620a862670981b1616654a736dc334929b32d5';
 
-/// Changing the password, and maybe the login: loading while it runs, an
-/// error when it failed, data once done. Tokens already handed out stay
-/// valid, so the session goes on.
+/// Changing the password: loading while it runs, an error when it
+/// failed, data once done. The login stays as it is. Tokens already handed
+/// out stay valid, so the session goes on.
 
 abstract class _$ChangePasswordController extends $Notifier<AsyncValue<bool>> {
   AsyncValue<bool> build();

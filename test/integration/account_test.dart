@@ -10,7 +10,7 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_exit.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
-import 'package:tinode_flutter_chat/src/profile/application/change_password_controller.dart';
+import 'package:tinode_flutter_chat/src/account/application/change_password_controller.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_controller.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_save_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
@@ -76,12 +76,12 @@ void main() {
     expect(
       await user
           .read(profileSaveControllerProvider.notifier)
-          .save(name: 'Probe Renamed', note: 'From the tests'),
+          .save(name: 'Probe Renamed'),
       isTrue,
     );
     user.invalidate(profileControllerProvider);
     final profile = await user.read(profileControllerProvider.future);
-    expect((profile.name, profile.note), ('Probe Renamed', 'From the tests'));
+    expect(profile.name, 'Probe Renamed');
 
     await user
         .read(changePasswordControllerProvider.notifier)

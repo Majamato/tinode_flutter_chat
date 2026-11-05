@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tinode_flutter_chat/src/profile/application/delete_account_controller.dart';
+import 'package:tinode_flutter_chat/src/account/application/delete_account_controller.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/confirm_dialog.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/settings_tile.dart';
 
 /// Deletes the account, after asking. Success shows the login screen;
 /// a failure shows in a snack bar. Watches whether a deletion runs.
@@ -39,21 +40,17 @@ class DeleteAccountTile extends ConsumerWidget {
     final busy = ref.watch(
       deleteAccountControllerProvider.select((s) => s.isLoading),
     );
-    final error = Theme.of(context).colorScheme.error;
-    return ListTile(
-      leading: Icon(TinodeChatIcons.of(context).deleteForever, color: error),
-      title: Text(
-        TinodeChatStrings.of(context).deleteAccount,
-        style: TextStyle(color: error),
-      ),
+    return SettingsTile(
+      icon: TinodeChatIcons.of(context).deleteForever,
+      title: TinodeChatStrings.of(context).deleteAccount,
+      destructive: true,
       trailing: busy
           ? const SizedBox.square(
               dimension: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : null,
-      enabled: !busy,
-      onTap: () => unawaited(_delete(context, ref)),
+      onTap: busy ? null : () => unawaited(_delete(context, ref)),
     );
   }
 }

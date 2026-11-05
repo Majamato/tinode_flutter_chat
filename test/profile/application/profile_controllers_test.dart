@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
-import 'package:tinode_flutter_chat/src/profile/application/change_password_controller.dart';
-import 'package:tinode_flutter_chat/src/profile/application/delete_account_controller.dart';
+import 'package:tinode_flutter_chat/src/account/application/change_password_controller.dart';
+import 'package:tinode_flutter_chat/src/account/application/delete_account_controller.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_controller.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_photo_controller.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_save_controller.dart';
@@ -58,17 +58,17 @@ void main() {
     );
   });
 
-  test('saving keeps the profile fields it does not edit', () async {
+  test('saving the name keeps the rest of the profile, the note included', () async {
     await container.read(profileControllerProvider.future);
 
     final saved = await container
         .read(profileSaveControllerProvider.notifier)
-        .save(name: ' Alicia ', note: '');
+        .save(name: ' Alicia ');
 
     expect(saved, isTrue);
     expect(session.profile?.toJson(), {
       'fn': 'Alicia',
-      'note': '',
+      'note': 'Hi',
       'org': {'fn': 'Acme'},
     });
     expect(container.read(profileControllerProvider).value?.name, 'Alicia');
@@ -80,7 +80,7 @@ void main() {
 
     final saved = await container
         .read(profileSaveControllerProvider.notifier)
-        .save(name: 'Alicia', note: '');
+        .save(name: 'Alicia');
 
     expect(saved, isFalse);
     expect(container.read(profileSaveFailureProvider), ChatFailure.rejected);
@@ -121,27 +121,27 @@ void main() {
     expect(container.read(profilePhotoControllerProvider).hasError, isFalse);
   });
 
-  test('changing the password, and the login with it', () async {
-    final controller = container.read(
-      changePasswordControllerProvider.notifier,
-    );
-
-    await controller.submit(password: 'new-pw');
-    expect((session.changedPassword, session.changedLogin), ('new-pw', null));
-    expect(container.read(changePasswordControllerProvider).value, isTrue);
-
-    await controller.submit(password: 'newer-pw', login: ' alicia ');
-    expect(session.changedLogin, 'alicia');
-  });
-
-  test('a taken login says so', () async {
+  test('changing the password keeps the login', () async {
     await container
         .read(changePasswordControllerProvider.notifier)
-        .submit(password: 'pw', login: 'alice');
+        .submit(password: 'new-pw');
 
+    expect((session.changedPassword, session.changedLogin), ('new-pw', null));
+    expect(session.calls, contains('changePassword'));
+    expect(container.read(changePasswordControllerProvider).value, isTrue);
+  });
+
+  test('a failed password change shows why', () async {
+    session.failChangePassword = const ConnectionLostException();
+
+    await container
+        .read(changePasswordControllerProvider.notifier)
+        .submit(password: 'new-pw');
+
+    expect(session.changedPassword, isNull);
     expect(
       container.read(changePasswordFailureProvider),
-      ChatFailure.loginTaken,
+      ChatFailure.connectionLost,
     );
   });
 

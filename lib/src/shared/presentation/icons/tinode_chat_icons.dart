@@ -125,7 +125,8 @@ class TinodeChatIcons {
   /// The search fields and the message search button.
   final IconData search;
 
-  /// The account menu above the chat list, without the tab bar.
+  /// The account menu above the chat list, without the tab bar, and the
+  /// account entry in settings.
   final IconData account;
 
   /// Stands in for someone without a photo.
