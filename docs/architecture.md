@@ -405,15 +405,23 @@ ChatPreview>>`):
 
 1. Tinode sends no message content in the chat list, and `pres msg` only a seq. So the preview is
    the cache's: `ChatStore.latestMessages` gives, per chat, the newest message that is no update
-   (`head.replace`), the updates of it (a call's later state), and the newest seq cached.
+   (`head.replace`), the updates of it (a call's later state), and the newest seq cached. The
+   cache follows the server through the **latest catch-up** of `CachedTinodeSession`: after each
+   chat list sync, and 1 s after a `pres msg` (a burst fetches once; a call check of a direct
+   chat lands first), it attaches each chat whose `lastSeq` is past its covered seqs and that
+   this session hasn't caught up that far, `catchUp`s 32 messages and detaches, four chats at a
+   time, newest first. A group with no cached members fetches them first, so the first preview
+   names the sender; after the catch-up, members are fetched when the cached ones can't name the
+   newest sender of a group or give the receipt of the user's own message. Offline, the queue
+   waits for `Connected`.
 2. It reads them all on build, then reads a chat again when `ChatSession.storedChanges` names it:
    the cached session fires it after it stores a live message, a fetched page or the members,
    deletes messages, or a member reads further. Changes in one turn are read once.
 3. A group's cached members name the sender; any chat's members give the receipt of the user's
-   own message (`ChatMembers.receiptOf`).
+   own message (`ChatMembers.receiptOf`), which the line heads with "You" in any chat.
 4. `chatPreviewBehind(topic)` is true while the chat's `lastSeq` is past the newest seq cached: the
-   tile then says "New message" if unread, else nothing. Opening the chat catches up, which fills
-   the cache and the preview.
+   tile then says "New message" if unread, else nothing, until the latest catch-up (or opening
+   the chat) fills the cache and the preview.
 
 **Calls history** (`CallHistoryController`, keepAlive, sync `Notifier<CallHistory>`):
 
@@ -421,12 +429,8 @@ ChatPreview>>`):
    updates (`head.replace`), in one query on schema v3. `CallHistoryEntry.of` applies the updates
    as a bubble does. Direct chats only.
 2. Like the previews, it reads them all on build, then a chat again when `storedChanges` names it.
-3. The cache holds only what this device fetched, so `refresh()` (each time the calls tab shows,
-   and on pull) fetches the direct chats whose `lastSeq` is past their newest cached seq: attach,
-   `catchUp` 24 messages, detach, three chats at a time, at most 30, newest first. A chat is
-   fetched once per session unless it falls behind again (or the pull forces it). Offline or
-   before the chat list loads, the refresh waits for `Connected` or the list. History pages never
-   ring: only live `data` packets do.
+3. The session's latest catch-up fills the cache (see chat list previews); the history only
+   reads it. History pages never ring: only live `data` packets do.
 
 **Chat** (`ChatController(topic)`, autoDispose, sync `Notifier<ChatState>`):
 

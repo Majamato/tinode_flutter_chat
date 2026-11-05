@@ -53,8 +53,14 @@ void main() {
       ..emitStatus(const Connected());
     await settle();
 
-    // Carol's message reached this device while it was away.
-    expect(session.calls, ['chatList', 'markReceived $carol 1']);
+    // Carol's message reached this device while it was away; then the
+    // latest catch-up fetches it.
+    expect(session.calls.take(2), ['chatList', 'markReceived $carol 1']);
+    await settle();
+    expect(
+      session.calls,
+      containsAllInOrder(['attach $carol', 'detach $carol']),
+    );
     expect(container.read(chatListControllerProvider).order.first, carol);
   });
 

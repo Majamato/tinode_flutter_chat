@@ -35,6 +35,35 @@ void main() {
   ChatPreview? bobPreview() => container.read(chatPreviewProvider(bob));
   bool bobBehind() => container.read(chatPreviewBehindProvider(bob));
 
+  test('with nothing cached, the previews come from the server', () async {
+    final server = FakeTinodeSession(
+      chats: [
+        chat(bob, name: 'Bob', lastSeq: 1, lastMessageAt: at(1)),
+        chat(friends, name: 'Friends', lastSeq: 2, lastMessageAt: at(2)),
+      ],
+      histories: {
+        bob: [message(bob, 1, text: 'hi there')],
+        friends: [message(friends, 2, from: carol, text: 'hello all')],
+      },
+    );
+    server.memberLists[friends] = [member(carol, name: 'Carol')];
+    final fresh = (await loggedInContainer(server))
+      ..listen(chatListControllerProvider, (_, _) {})
+      ..listen(chatPreviewControllerProvider, (_, _) {});
+    ChatPreview? preview(String topic) =>
+        fresh.read(chatPreviewProvider(topic));
+
+    for (var i = 0; i < 200 && preview(friends)?.senderName == null; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+
+    expect(preview(bob)?.text, 'hi there');
+    expect(preview(friends)?.text, 'hello all');
+    expect(preview(friends)?.senderName, 'Carol');
+    expect(fresh.read(chatPreviewBehindProvider(bob)), isFalse);
+    expect(fresh.read(chatPreviewBehindProvider(friends)), isFalse);
+  });
+
   test('nothing cached: no preview, behind once the chat has messages', () {
     expect(bobPreview(), isNull);
     expect(bobBehind(), isTrue);

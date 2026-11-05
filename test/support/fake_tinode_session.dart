@@ -131,6 +131,9 @@ final class FakeTinodeSession implements TinodeSession {
   /// Users that `addMember` refuses to add, as a server would without `S`.
   final refuseMembers = <String>{};
 
+  /// Topics that `attach` refuses with a 403, as a server would.
+  final refuseAttach = <String>{};
+
   /// The members `addMember` added, by group.
   final addedMembers = <String, List<String>>{};
 
@@ -449,6 +452,9 @@ final class FakeTinodeSession implements TinodeSession {
   Future<String> attach(String topic) async {
     calls.add('attach $topic');
     _requireConnected();
+    if (refuseAttach.contains(topic)) {
+      throw const ServerException(403, 'denied');
+    }
     _holds.update(topic, (holds) => holds + 1, ifAbsent: () => 1);
     return topic;
   }

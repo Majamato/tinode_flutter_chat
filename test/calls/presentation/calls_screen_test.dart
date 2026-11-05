@@ -69,12 +69,9 @@ void main() {
     matching: find.byType(CallHistoryTile),
   );
 
-  testWidgets('opening the tab fetches the calls, newest first', (
-    tester,
-  ) async {
+  testWidgets('the calls show, newest first', (tester) async {
     await openCalls(tester);
 
-    expect(session.calls, containsAll(['attach $bob', 'attach $carol']));
     final rows = tester.widgetList<CallHistoryTile>(
       find.byType(CallHistoryTile),
     );
@@ -157,23 +154,10 @@ void main() {
     expect(find.byType(ChatScreen), findsOneWidget);
   });
 
-  testWidgets('pulling down fetches again what failed', (tester) async {
-    // The newest chat is fetched first, and fails.
-    session.failHistory = const ConnectionClosedException('dropped');
+  testWidgets('has no pull to refresh', (tester) async {
     await openCalls(tester);
-    expect(find.text('Carol'), findsNothing);
-    int fetches() => session.calls.where((c) => c == 'attach $carol').length;
-    final before = fetches();
 
-    await tester.fling(
-      find.byType(Scrollable).last,
-      const Offset(0, 400),
-      1000,
-    );
-    await tester.pumpAndSettle();
-
-    expect(fetches(), greaterThan(before));
-    expect(find.text('Carol'), findsOneWidget);
+    expect(find.byType(RefreshIndicator), findsNothing);
   });
 
   testWidgets('without calls it says so', (tester) async {

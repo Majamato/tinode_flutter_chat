@@ -14,27 +14,17 @@ typedef CallId = ({String topic, int seq});
 final class CallHistory {
   const CallHistory()
     : loaded = false,
-      refreshing = false,
       byTopic = const {},
       ids = const [],
       _byId = const {};
 
-  const CallHistory._(
-    this.loaded,
-    this.refreshing,
-    this.byTopic,
-    this.ids,
-    this._byId,
-  );
+  const CallHistory._(this.loaded, this.byTopic, this.ids, this._byId);
 
   /// The most calls the history shows.
   static const limit = 200;
 
   /// The cache was read.
   final bool loaded;
-
-  /// Chats behind in the cache are being fetched.
-  final bool refreshing;
 
   final Map<String, List<CallHistoryEntry>> byTopic;
 
@@ -68,7 +58,6 @@ final class CallHistory {
     ];
     return CallHistory._(
       true,
-      refreshing,
       byTopic,
       const ListEquality<CallId>().equals(ids, this.ids)
           ? this.ids
@@ -76,9 +65,4 @@ final class CallHistory {
       {for (final entry in shown) (topic: entry.topic, seq: entry.seq): entry},
     );
   }
-
-  CallHistory withRefreshing({required bool refreshing}) =>
-      refreshing == this.refreshing
-      ? this
-      : CallHistory._(loaded, refreshing, byTopic, ids, _byId);
 }

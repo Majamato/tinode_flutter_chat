@@ -30,7 +30,10 @@ abstract interface class ChatSession implements TinodeSession {
   Future<HistoryPage> storedPage(String topic, {required int limit});
 
   /// The newest message of each cached chat, or only of [topic], for the
-  /// chat list's preview. Never asks the server.
+  /// chat list's preview. Never asks the server: the session catches up in
+  /// the background the chats the cache is behind on, after each [chatList]
+  /// sync and on `pres msg`, with the members a preview needs, and
+  /// [storedChanges] then names them.
   Future<Map<String, LatestMessage>> storedLatestMessages({String? topic});
 
   /// The call messages in the cache, or only [topic]'s, each with its

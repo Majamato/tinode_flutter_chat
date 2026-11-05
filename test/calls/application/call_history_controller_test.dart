@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
@@ -34,13 +32,15 @@ void main() {
   }
 
   CallHistory history() => container.read(callHistoryControllerProvider);
-  CallHistoryController controller() =>
-      container.read(callHistoryControllerProvider.notifier);
-  Iterable<String> fetched() => session.calls.where(
-    (call) => call.startsWith('attach ') && call != 'attach me',
-  );
 
-  test('fetches the direct chats behind, never groups', () async {
+  Future<void> until(bool Function() done) async {
+    for (var i = 0; i < 200 && !done(); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    expect(done(), isTrue, reason: 'timed out');
+  }
+
+  test('the latest catch-up fills it, never from groups', () async {
     await start(
       [
         chat(bob, lastSeq: 2, lastMessageAt: at(2)),
@@ -63,16 +63,11 @@ void main() {
         friends: [callMessage(friends, 1)],
       },
     );
-    expect(history().loaded, isTrue);
-    expect(history().ids, isEmpty);
+    await until(() => history().ids.length == 2);
 
-    await controller().refresh();
-    await later();
-
-    expect(fetched(), unorderedEquals(['attach $bob', 'attach $carol']));
+    expect(history().ids, [(topic: carol, seq: 3), (topic: bob, seq: 1)]);
     expect(session.attachCount(bob), 0);
     expect(session.attachCount(carol), 0);
-    expect(history().ids, [(topic: carol, seq: 3), (topic: bob, seq: 1)]);
     final carolCall = history()[(topic: carol, seq: 3)]!;
     expect(carolCall.outgoing, isTrue);
     expect(carolCall.call.duration, const Duration(minutes: 4));
@@ -91,65 +86,32 @@ void main() {
     expect(history()[(topic: bob, seq: 1)]!.call.state, CallState.declined);
   });
 
-  test('fetches a few chats at a time', () async {
-    final users = [for (var i = 0; i < 5; i++) 'usr$i'];
-    await start(
-      [for (final user in users) chat(user, lastSeq: 1, lastMessageAt: at(1))],
-      {
-        for (final user in users) user: [callMessage(user, 1)],
-      },
-    );
-    final hold = session.holdHistory = Completer<void>();
+  test(
+    'a call in a chat that is not attached shows after its pres msg',
+    () async {
+      await start(
+        [chat(bob, lastSeq: 1, lastMessageAt: at(1))],
+        {
+          bob: [message(bob, 1)],
+        },
+      );
+      await until(() => session.calls.contains('detach $bob'));
+      expect(history().ids, isEmpty);
 
-    final refreshing = controller().refresh();
-    await later();
-    expect(fetched(), hasLength(CallHistoryController.fetchConcurrency));
-    expect(history().refreshing, isTrue);
+      session
+        ..histories[bob]!.add(callMessage(bob, 2))
+        ..emitPresence(
+          const PresMessage(
+            topic: 'me',
+            event: PresenceEvent.message,
+            source: bob,
+            seq: 2,
+          ),
+        );
 
-    hold.complete();
-    await refreshing;
-    await later();
-    expect(fetched(), hasLength(5));
-    expect(history().ids, hasLength(5));
-    expect(history().refreshing, isFalse);
-  });
-
-  test('fetches a chat once per session, unless forced', () async {
-    await start(
-      [chat(bob, lastSeq: 1, lastMessageAt: at(1))],
-      {
-        bob: [callMessage(bob, 1)],
-      },
-    );
-    session.failHistory = const ConnectionClosedException('dropped');
-
-    await controller().refresh();
-    await later();
-    await controller().refresh();
-    expect(fetched(), hasLength(1));
-    expect(session.attachCount(bob), 0);
-
-    await controller().refresh(force: true);
-    await later();
-    expect(fetched(), hasLength(2));
-    expect(history().ids, [(topic: bob, seq: 1)]);
-  });
-
-  test('offline it waits, then fetches once connected', () async {
-    await start(
-      [chat(bob, lastSeq: 1, lastMessageAt: at(1))],
-      {
-        bob: [callMessage(bob, 1)],
-      },
-    );
-    session.emitStatus(const Suspended());
-    await later();
-
-    await controller().refresh();
-    expect(fetched(), isEmpty);
-
-    session.emitStatus(const Connected());
-    await later();
-    expect(fetched(), ['attach $bob']);
-  });
+      // After the session's `latestDelay`.
+      await until(() => history().ids.isNotEmpty);
+      expect(history().ids, [(topic: bob, seq: 2)]);
+    },
+  );
 }

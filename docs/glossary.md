@@ -61,9 +61,11 @@ One row of the chat list. *In code:* `ChatListTile`.
 
 **Preview**
 The tile's second line: the chat's newest cached message (its text, or an icon and label for a
-photo, file, voice message or call; the sender first in a group), or who is typing. Read from the
-cache only. When the chat has messages past it (**behind**), the line says "New message" if
-unread, else nothing. *In code:* `ChatPreview`, `ChatPreviewController`, `ChatPreviewLine`.
+photo, file, voice message or call; "You" first for the user's own message in any chat, the
+sender first in a group), or who is typing. Read from the cache, which the **latest catch-up**
+fills from the server. When the chat has messages past it (**behind**), until then or while
+offline, the line says "New message" if unread, else nothing. *In code:* `ChatPreview`,
+`ChatPreviewController`, `ChatPreviewLine`.
 
 **Bubble**
 One message on the chat screen. *In code:* `MessageBubble`, `OutgoingBubble`, `BubbleFrame`.
@@ -170,6 +172,13 @@ Seqs of a chat the cache has fetched from the server. A covered seq that is not 
 or never existed; an uncovered one may be on the server. Live messages extend the coverage only
 when they follow it, so a gap never hides.
 *In code:* `SeqRanges`, `ChatStore.coverage`.
+
+**Latest catch-up**
+Keeping the end of each chat in the cache as the server has it, for the previews: after each chat
+list sync, and a moment after a `pres msg`, the session attaches each chat whose `lastSeq` is past
+what the cache covers, catches it up and detaches, newest chats first, a few at a time. It fetches
+the members a preview needs too: a group's sender, the counters for the user's own message.
+*In code:* `CachedTinodeSession` (`_queueLatest`, `latestDelay`).
 
 **Gap**
 Uncovered seqs between covered ones. Older pages come from the cache where it covers them and

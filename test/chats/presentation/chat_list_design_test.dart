@@ -143,6 +143,21 @@ void main() {
     expect(find.text(strings.missedVoiceCall), findsOneWidget);
   });
 
+  testWidgets("the user's own newest message reads You, in any chat", (
+    tester,
+  ) async {
+    await pumpList(tester);
+
+    session
+      ..emitMessage(message(bob, 3, from: alice, text: 'on my way'))
+      ..emitMessage(message(friends, 6, from: alice, text: 'hi all'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('on my way'), findsOneWidget);
+    expect(find.text('hi all'), findsOneWidget);
+    expect(find.text('${strings.youLabel}:'), findsNWidgets(2));
+  });
+
   testWidgets('the search field opens the people search', (tester) async {
     await pumpList(tester);
 

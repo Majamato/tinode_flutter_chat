@@ -36,6 +36,13 @@ const _reconcilePage = 64;
 /// How many delete-log pages one sync reads at most.
 const _maxDeleteLogPages = 20;
 
+/// Messages the latest catch-up fetches per chat: a chat's first page, as
+/// `historyPageSize`, so opening it afterwards shows a full page at once.
+const _latestPage = 32;
+
+/// Chats the latest catch-up fetches at once.
+const _latestConcurrency = 4;
+
 /// A [ChatSession] over a remote [TinodeSession], a [ChatStore] and a
 /// [FileStore] (in memory unless given).
 ///
@@ -48,6 +55,13 @@ const _maxDeleteLogPages = 20;
 /// While [keepsPresence] is off it drops presence as it arrives: `pres on` /
 /// `off` never reach [presence]'s listeners, and chats and descriptions
 /// come without `online` or `seen`, which the store doesn't keep either.
+///
+/// The latest catch-up keeps the end of each chat as the server has it, for
+/// the chat list's previews: after each chat list sync, and [latestDelay]
+/// after a `pres msg` for a chat that isn't attached, it attaches each chat
+/// the cache is behind on, newest first, a few at a time, catches it up
+/// ([catchUp]) and detaches. It also fetches the members a preview needs: a
+/// group's sender's name, and the counters for the user's own message.
 final class CachedTinodeSession implements ChatSession {
   CachedTinodeSession(
     this._remote,
@@ -56,6 +70,7 @@ final class CachedTinodeSession implements ChatSession {
     FileStore? files,
     TinodeCacheLimits limits = const TinodeCacheLimits(),
     this.keepsPresence = true,
+    this.latestDelay = const Duration(seconds: 1),
   }) : _files = files ?? MemoryFileStore() {
     unawaited(_prune(limits));
     _subscriptions = [
@@ -104,6 +119,30 @@ final class CachedTinodeSession implements ChatSession {
   /// The message whose attachment is being uploaded, and how to stop it.
   String? _uploading;
   Completer<void>? _uploadAbort;
+
+  // Latest catch-up state: the chats to catch up, in order, and those
+  // being caught up now.
+  final _latestQueue = <String>{};
+  final _latestRunning = <String>{};
+
+  /// Queued again while running: they run once more afterwards.
+  final _latestAgain = <String>{};
+  var _latestWorkers = 0;
+
+  /// The attaches the app holds, by topic, those under way included: an
+  /// open chat or a call catches its chat up itself, and gets its messages
+  /// live, so the latest catch-up leaves it alone.
+  final _held = <String, int>{};
+
+  /// The `lastSeq` each chat was caught up to in this session, so a chat
+  /// whose newest messages were deleted isn't fetched on every sync.
+  final _latestFetchedAt = <String, int>{};
+
+  /// A `pres msg` waits this long before its chat is caught up: a burst
+  /// fetches once, and a fetch already under way (a call check) lands
+  /// first.
+  final Duration latestDelay;
+  final _latestTimers = <String, Timer>{};
 
   // Passed through.
 
@@ -176,11 +215,33 @@ final class CachedTinodeSession implements ChatSession {
   @override
   Future<LoginResult> loginToken(String token) => _remote.loginToken(token);
 
+  /// Counted in [_held] too, from the moment it is asked.
   @override
-  Future<String> attach(String topic) => _remote.attach(topic);
+  Future<String> attach(String topic) async {
+    _hold(topic);
+    try {
+      return await _remote.attach(topic);
+    } on Object {
+      _release(topic);
+      rethrow;
+    }
+  }
 
   @override
-  Future<void> detach(String topic) => _remote.detach(topic);
+  Future<void> detach(String topic) {
+    _release(topic);
+    return _remote.detach(topic);
+  }
+
+  void _hold(String topic) =>
+      _held.update(topic, (holds) => holds + 1, ifAbsent: () => 1);
+
+  void _release(String topic) {
+    final holds = _held.remove(topic) ?? 0;
+    if (holds > 1) {
+      _held[topic] = holds - 1;
+    }
+  }
 
   @override
   void sendTyping(String topic) => _remote.sendTyping(topic);
@@ -190,8 +251,11 @@ final class CachedTinodeSession implements ChatSession {
 
   /// The group reaches the cache with the next chat list sync.
   @override
-  Future<String> createGroup({required Profile public}) =>
-      _remote.createGroup(public: public);
+  Future<String> createGroup({required Profile public}) async {
+    final name = await _remote.createGroup(public: public);
+    _hold(name);
+    return name;
+  }
 
   @override
   Future<void> addMember(String topic, String userId) =>
@@ -207,12 +271,14 @@ final class CachedTinodeSession implements ChatSession {
   @override
   Future<void> deleteChat(String topic) async {
     await _remote.deleteChat(topic);
+    _held.remove(topic);
     await _write(() => _forgetChat(topic));
   }
 
   @override
   Future<void> leaveChat(String topic) async {
     await _remote.leaveChat(topic);
+    _held.remove(topic);
     await _write(() => _forgetChat(topic));
   }
 
@@ -375,6 +441,9 @@ final class CachedTinodeSession implements ChatSession {
   /// a full list, and with "if modified since" a stub (`{topic, online,
   /// acs: {}}`) for each unchanged chat that is online, so the chats it
   /// fetched online are exactly the ones that are.
+  ///
+  /// Then the latest catch-up fetches, in the background, the chats the
+  /// cache is behind on.
   @override
   Future<List<Subscription>> chatList({DateTime? ifModifiedSince}) =>
       _chatListSync ??= _syncChatList().whenComplete(
@@ -397,9 +466,24 @@ final class CachedTinodeSession implements ChatSession {
       for (final chat in fetched)
         if (chat.online) chat.topic,
     };
+    final chats = await _store.chats();
+    _queueLatest(_newestFirst(chats));
     return [
-      for (final chat in await _store.chats())
+      for (final chat in chats)
         withPresence(chat, online: online.contains(chat.topic)),
+    ];
+  }
+
+  /// The topics of [chats] with messages, the newest message first.
+  static List<String> _newestFirst(List<Subscription> chats) {
+    final epoch = DateTime.utc(0);
+    return [
+      for (final chat
+          in chats.where((c) => c.lastSeq > 0).toList()..sort(
+            (a, b) =>
+                (b.lastMessageAt ?? epoch).compareTo(a.lastMessageAt ?? epoch),
+          ))
+        chat.topic!,
     ];
   }
 
@@ -1153,6 +1237,149 @@ final class CachedTinodeSession implements ChatSession {
     return max(chat?.lastSeq ?? 0, (top?.high ?? 1) - 1);
   }
 
+  // Latest catch-up.
+
+  /// The chat's `lastSeq` when the cache is behind it and this session
+  /// hasn't caught it up that far yet; else null.
+  Future<int?> _behindAt(String topic) async {
+    final lastSeq = (await _store.chat(topic))?.lastSeq ?? 0;
+    final top = (await _store.coverage(topic)).top;
+    final covered = (top?.high ?? 1) - 1;
+    return lastSeq > covered && lastSeq > (_latestFetchedAt[topic] ?? 0)
+        ? lastSeq
+        : null;
+  }
+
+  /// Queues [topics], in order, for the latest catch-up, and starts
+  /// workers for them; with none, resumes what is queued.
+  void _queueLatest(Iterable<String> topics) {
+    if (_closed) {
+      return;
+    }
+    for (final topic in topics) {
+      if (_latestRunning.contains(topic)) {
+        _latestAgain.add(topic);
+      } else {
+        _latestQueue.add(topic);
+      }
+    }
+    if (_remote.status is! Connected) {
+      // Resumed by the next connect.
+      return;
+    }
+    final starts = min(
+      _latestConcurrency - _latestWorkers,
+      _latestQueue.length,
+    );
+    for (var i = 0; i < starts; i++) {
+      _latestWorkers++;
+      unawaited(_latestWorker());
+    }
+  }
+
+  /// [topic] got a `pres msg`: caught up after [latestDelay], once for a
+  /// burst.
+  void _queueLatestSoon(String topic) {
+    if (_closed || _latestTimers.containsKey(topic)) {
+      return;
+    }
+    _latestTimers[topic] = Timer(latestDelay, () {
+      _latestTimers.remove(topic);
+      _queueLatest([topic]);
+    });
+  }
+
+  Future<void> _latestWorker() async {
+    try {
+      while (!_closed &&
+          _remote.status is Connected &&
+          _latestQueue.isNotEmpty) {
+        final topic = _latestQueue.first;
+        _latestQueue.remove(topic);
+        _latestRunning.add(topic);
+        final bool linkUp;
+        try {
+          linkUp = await _catchUpLatest(topic);
+        } finally {
+          _latestRunning.remove(topic);
+          if (_latestAgain.remove(topic)) {
+            _latestQueue.add(topic);
+          }
+        }
+        if (!linkUp) {
+          // It and the rest wait for the next connect.
+          _latestQueue.add(topic);
+          return;
+        }
+      }
+    } on Object catch (e, stackTrace) {
+      _log('The latest catch-up stopped', e, stackTrace);
+    } finally {
+      _latestWorkers--;
+    }
+  }
+
+  /// Catches [topic] up if the cache is behind it, with the members its
+  /// preview needs. False when the link went down.
+  Future<bool> _catchUpLatest(String topic) async {
+    await _writes;
+    final lastSeq = await _behindAt(topic);
+    if (lastSeq == null || _closed || _held.containsKey(topic)) {
+      return true;
+    }
+    try {
+      await _remote.attach(topic);
+    } on ConnectionClosedException {
+      return false;
+    } on Object catch (e, stackTrace) {
+      _log('Could not attach $topic to catch it up', e, stackTrace);
+      // Not again before it has news.
+      _latestFetchedAt[topic] = lastSeq;
+      return true;
+    }
+    try {
+      final kind = TopicKind.of(topic);
+      if (kind == TopicKind.group && (await _store.members(topic)).isEmpty) {
+        // First, so the preview has the sender's name when it shows.
+        await members(topic);
+      }
+      await catchUp(topic, limit: _latestPage);
+      if (await _previewNeedsMembers(topic, kind)) {
+        await members(topic);
+      }
+      _latestFetchedAt[topic] = lastSeq;
+      return true;
+    } on ConnectionClosedException {
+      return false;
+    } on Object catch (e, stackTrace) {
+      _log('Could not catch up $topic', e, stackTrace);
+      _latestFetchedAt[topic] = lastSeq;
+      return true;
+    } finally {
+      unawaited(_remote.detach(topic).then((_) {}, onError: (_) {}));
+    }
+  }
+
+  /// Whether the cached members can't name the sender of [topic]'s newest
+  /// message in a group, or tell how far the user's own got; as
+  /// `ChatPreviewController` reads them.
+  Future<bool> _previewNeedsMembers(String topic, TopicKind kind) async {
+    if (kind == TopicKind.channel) {
+      return false;
+    }
+    final from = (await _store.latestMessages(
+      topic: topic,
+    ))[topic]?.message?.from;
+    if (from == null) {
+      return false;
+    }
+    final cached = await _store.members(topic);
+    if (from == userId) {
+      return cached.isEmpty;
+    }
+    return kind == TopicKind.group && !cached.any((m) => m.userId == from);
+  }
+
   // Arriving events.
 
   void _onMessage(DataMessage message) => unawaited(
@@ -1198,6 +1425,7 @@ final class CachedTinodeSession implements ChatSession {
             ),
           ),
         );
+        _queueLatestSoon(source);
       case PresMessage(topic: 'me', event: PresenceEvent.read, :final seq?)
           when source != null:
         unawaited(_write(() => _store.advanceChat(source, read: seq)));
@@ -1309,6 +1537,7 @@ final class CachedTinodeSession implements ChatSession {
       _retryRound = 0;
       _uploadRetry?.cancel();
       _kick();
+      _queueLatest(const []);
     } else {
       // Started over on the next connect.
       _abortUpload();
@@ -1375,6 +1604,10 @@ final class CachedTinodeSession implements ChatSession {
     _retry?.cancel();
     _uploadRetry?.cancel();
     _abortUpload();
+    for (final timer in _latestTimers.values) {
+      timer.cancel();
+    }
+    _latestTimers.clear();
     for (final subscription in _subscriptions) {
       unawaited(subscription.cancel());
     }

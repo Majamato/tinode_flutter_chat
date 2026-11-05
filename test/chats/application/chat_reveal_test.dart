@@ -66,7 +66,8 @@ void main() {
   test('waits for the chat to load', () async {
     final hold = session.holdHistory = Completer();
     final chat = openChat();
-    unawaited(chat.reveal(80));
+    // Older than what the latest catch-up cached.
+    unawaited(chat.reveal(10));
     await settle();
     expect(chatState().reveal?.status, RevealStatus.loading);
 
@@ -90,7 +91,8 @@ void main() {
   });
 
   test('a deleted message is unavailable', () async {
-    session.histories[bob]!.removeWhere((m) => m.seq == 95);
+    // On another device, after the latest catch-up cached it.
+    session.recordDeletion(bob, const [SeqRange.single(95)]);
     final chat = openChat();
     await settle();
 

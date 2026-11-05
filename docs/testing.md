@@ -46,8 +46,9 @@ expect(session.calls, contains('markRead $bob 3'));   // what the app sent
   turn that off).
 - `startCall` publishes a call message like `publish`; `sendCallEvent` logs `call <topic> <seq>
   <event>` (payloads in `callPayloads`) and throws while not connected. `emitInfo` pushes call
-  events, `serverInfo` sets the ICE servers (one fake STUN server by default), and
-  `attachCount(topic)` shows how many attaches hold a topic.
+  events, `serverInfo` sets the ICE servers (one fake STUN server by default),
+  `attachCount(topic)` shows how many attaches hold a topic, and `refuseAttach` lists the topics
+  `attach` refuses with a 403.
 - `deleteMessages` deletes from the history and logs `delete <topic> <low>-<high>[ hard]`;
   `recordDeletion` does the same as another device would, and `deleteLog` answers from it.
   `failDelete` refuses the next one. `publishHeads` keeps each `publish` head; `loseNextAck`

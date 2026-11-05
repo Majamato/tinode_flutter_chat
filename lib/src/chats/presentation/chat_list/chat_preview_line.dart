@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_preview_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/message_runs.dart';
@@ -11,9 +10,10 @@ import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_str
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// The line under a chat's name: who is typing, in the link colour; else
-/// the newest message, with its sender in a group and an icon for what it
-/// is. When the newest isn't on this device yet: "New message" if it is
-/// unread, else nothing (a new device has no messages of chats long read).
+/// the newest message, after "You" when the user sent it, in any chat, or
+/// its sender in a group, and with an icon for what it is. When the newest
+/// isn't on this device yet: "New message" if it is unread, else nothing (a
+/// new device has no messages of chats long read).
 ///
 /// Rebuilds when the cached newest message changes or falls behind, or the
 /// chat turns read or unread, not with every `pres msg`.
@@ -48,8 +48,7 @@ class ChatPreviewLine extends ConsumerWidget {
 
     final theme = TinodeChatTheme.of(context);
     final sender = switch (preview) {
-      ChatPreview(isOwn: true) when TopicKind.of(topic) == TopicKind.group =>
-        strings.youLabel,
+      ChatPreview(isOwn: true) => strings.youLabel,
       ChatPreview(:final senderName?) => senderName,
       _ => null,
     };

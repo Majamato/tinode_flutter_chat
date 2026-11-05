@@ -18,9 +18,11 @@ part 'chat_preview_controller.g.dart';
 /// or members change (`ChatSession.storedChanges`), changes in one turn
 /// read once.
 ///
-/// It never asks the server: a chat this device isn't attached to gets no
-/// message content, only `pres msg`, so its preview falls behind until the
-/// chat is opened (see `chatPreviewBehindProvider`).
+/// It never asks the server itself: a chat this device isn't attached to
+/// gets no message content, only `pres msg`, and the session's latest
+/// catch-up fetches the newest messages (and the members a preview needs)
+/// into the cache. Until then, or while offline, the preview is behind
+/// (see `chatPreviewBehindProvider`).
 @Riverpod(keepAlive: true)
 class ChatPreviewController extends _$ChatPreviewController {
   final _changed = <String>{};

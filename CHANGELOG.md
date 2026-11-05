@@ -1,5 +1,15 @@
 ## Unreleased
 
+- **Fix:** the chat list's previews come from the server, not only from the cache: after logging
+  in again (the cache is gone), after an offline start or a reconnect, and when a message arrives
+  in a chat that isn't open, the session fetches the newest messages of each chat behind it, in
+  the background. Groups show their sender's name, the members fetched along. Before, a group
+  said "New message" until opened, and after a log out every tile was empty.
+- **Behaviour change:** the user's own newest message reads "You: …" in every chat, not only in
+  groups.
+- **Behaviour change:** the Calls tab no longer fetches when it shows, and has no pull to refresh:
+  its calls come from the same background catch-up as the chat list's previews, right after
+  logging in.
 - **Behaviour change:** an Account row in the settings, under the profile, opens a new account
   screen with "Change password", "Log out" and "Delete account", in cards like the settings.
   Log out is no longer on the settings tab itself, and the password change and account deletion

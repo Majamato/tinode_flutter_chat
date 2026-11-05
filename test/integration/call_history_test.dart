@@ -23,14 +23,12 @@ void main() {
     final elsewhere = await User.login('bob');
     final container = elsewhere.container
       ..listen(callHistoryControllerProvider, (_, _) {});
-    CallHistoryController history() =>
-        container.read(callHistoryControllerProvider.notifier);
     await eventually(
       'the history reads the cache',
       () => container.read(callHistoryControllerProvider).loaded,
     );
 
-    await history().refresh();
+    // The session's latest catch-up fetches the chat after its list sync.
     await eventually('the declined call shows', () {
       final entry = container.read(callHistoryEntryProvider(alice.id, seq));
       return entry?.call.state == CallState.declined;

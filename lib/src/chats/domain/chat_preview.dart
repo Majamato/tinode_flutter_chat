@@ -13,7 +13,8 @@ import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 enum ChatPreviewKind { text, photo, file, voice, call }
 
 /// The newest cached message of a chat, as its tile's preview line shows
-/// it. Built from the cache only: Tinode sends no message in the chat list.
+/// it. Built from the cache, which the session fills from the server: Tinode
+/// sends no message in the chat list.
 final class ChatPreview with ValueObject {
   const ChatPreview({
     required this.seq,

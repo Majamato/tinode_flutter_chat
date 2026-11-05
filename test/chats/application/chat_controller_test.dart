@@ -185,34 +185,44 @@ void main() {
     expect(chatState().seqs, [1, 2, 3]);
   });
 
+  // The latest catch-up has cached Bob's chat: these open Carol's, which
+  // this device hasn't seen yet.
   test('a history failure can be retried', () async {
-    session.failHistory = const ServerException(403, 'denied');
-    openChat();
+    session
+      ..chats.add(chat(carol, name: 'Carol', lastSeq: 1, lastMessageAt: at(9)))
+      ..histories[carol] = [message(carol, 1)]
+      ..failHistory = const ServerException(403, 'denied');
+    openChat(carol);
     await settle();
 
-    expect(chatState().status, LoadStatus.failed);
-    expect(chatState().failure, ChatFailure.rejected);
+    expect(chatState(carol).status, LoadStatus.failed);
+    expect(chatState(carol).failure, ChatFailure.rejected);
 
-    container.read(chatControllerProvider(bob).notifier).reload();
+    container.read(chatControllerProvider(carol).notifier).reload();
     await settle();
-    expect(chatState().status, LoadStatus.ready);
+    expect(chatState(carol).status, LoadStatus.ready);
   });
 
   test('loads older pages before the first message', () async {
-    session.histories[bob] = [
-      for (var seq = 1; seq <= historyPageSize + 5; seq++) message(bob, seq),
-    ];
-    openChat();
+    const last = historyPageSize + 5;
+    session
+      ..chats.add(
+        chat(carol, name: 'Carol', lastSeq: last, lastMessageAt: at(last)),
+      )
+      ..histories[carol] = [
+        for (var seq = 1; seq <= last; seq++) message(carol, seq),
+      ];
+    openChat(carol);
     await settle();
-    expect(chatState().hasOlder, isTrue);
-    expect(chatState().firstSeq, 6);
+    expect(chatState(carol).hasOlder, isTrue);
+    expect(chatState(carol).firstSeq, 6);
 
-    await container.read(chatControllerProvider(bob).notifier).loadOlder();
+    await container.read(chatControllerProvider(carol).notifier).loadOlder();
 
-    expect(chatState().firstSeq, 1);
-    expect(chatState().hasOlder, isFalse);
-    expect(chatState().loadingOlder, isFalse);
-    expect(session.calls, contains('history $bob before 6'));
+    expect(chatState(carol).firstSeq, 1);
+    expect(chatState(carol).hasOlder, isFalse);
+    expect(chatState(carol).loadingOlder, isFalse);
+    expect(session.calls, contains('history $carol before 6'));
   });
 
   test('opening a chat the list lacks syncs the list', () async {
