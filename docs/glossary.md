@@ -45,7 +45,8 @@ Online and last seen together. Two separate switches:
   drops it as it arrives (`CachedTinodeSession.keepsPresence`).
 - **Show my online status**, the user's: whether others see theirs. Off, their profile's
   `public` carries `"x-presence": "hidden"` and this package shows no presence for them
-  (`ChatSummary.presenceHidden`). A request only: their presence still reaches others, and
+  (`ChatSummary.presenceHidden`); on, `"shown"`, since the server merges `public` and keeps a
+  key left out. A request only: their presence still reaches others, and
   other Tinode apps may show it. *In code:* `PresenceVisibility` (`hidesPresence`,
   `withPresenceHidden`), `PresenceVisibilityController`, `myPresenceShownProvider`,
   `PresenceTile`.

@@ -33,8 +33,10 @@ void main() {
     });
     expect(hidden.hidesPresence, isTrue);
 
+    // Written, not left out: the server merges `public`, so a missing key
+    // would stay hidden.
     final shown = hidden.withPresenceHidden(hidden: false);
-    expect(shown.toJson(), profile.toJson());
+    expect(shown.toJson(), {...profile.toJson(), 'x-presence': 'shown'});
     expect(shown.hidesPresence, isFalse);
   });
 

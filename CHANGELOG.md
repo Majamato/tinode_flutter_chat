@@ -11,7 +11,8 @@
   `TinodeChatStrings.lastSeenToday`, `lastSeenYesterday` and `lastSeenOn` hold the texts.
 - "Show my online status" in the settings, on by default: off, the user's profile (`public`)
   carries `"x-presence": "hidden"`, and apps built on this package show no online dot,
-  "online" or last seen for them. It is saved on the account, so it follows the user to every
+  "online" or last seen for them. On again, it carries `"x-presence": "shown"`: the server
+  merges `public`, so leaving the key out kept the user hidden. It is saved on the account, so it follows the user to every
   device. Only a request: their presence still reaches others' devices, and other Tinode apps
   may show it (Tinode has no way to hide it but never attaching `me`, which would stop the chat
   list's live updates). A `pres upd` (a peer changed their profile) now syncs the chat list.

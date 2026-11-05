@@ -390,7 +390,9 @@ cache. `CachedTinodeSession` decorates the server session:
    can't be told to stop sending presence.
    **A user hides theirs** ("Show my online status", `PresenceVisibilityController`): their
    `public` gets `"x-presence": "hidden"` (`PresenceVisibility`); the server keeps custom keys
-   and sends them in the chat list, and peers get `pres upd`, which syncs their list.
+   and sends them in the chat list, and peers get `pres upd`, which syncs their list. Showing
+   it again writes `"x-presence": "shown"`: the server merges `public` key by key, so a key
+   left out would stay `hidden` (only `"␡"` deletes one).
    `ChatSummary.fromSubscription` then keeps `online` false and `lastSeen` null, and
    `withOnline` / `withLastSeen` change nothing. Observed on the server: removing `P` from one's
    own `want` hides nothing (and mutes pushes); only a session that never attaches `me` is

@@ -216,7 +216,7 @@ push either.
   keeps none of it in memory or in the cache. The server still sends it.
 - **What others see of me**: each user's "Show my online status" in the settings, on by default.
   Off, their profile carries `"x-presence": "hidden"`, and apps built on this package don't show
-  them online or with a last seen. It follows the account to every device. It is a request,
+  them online or with a last seen; on again, `"x-presence": "shown"`. It follows the account to every device. It is a request,
   not a guarantee: the server still sends their presence, and other Tinode apps may show it.
   Tinode can only truly hide a user who never attaches `me`, which would stop the chat list's
   live updates.

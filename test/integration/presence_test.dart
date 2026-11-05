@@ -118,5 +118,21 @@ void main() {
     final hidden = watcher.read(chatSummaryProvider(hiderId))!;
     expect(hidden.online, isFalse);
     expect(hidden.lastSeen, isNull);
+
+    // Shown again: the server merges `public`, so this must overwrite the
+    // flag, not leave it out.
+    expect(
+      await hider
+          .read(presenceVisibilityControllerProvider.notifier)
+          .set(shown: true),
+      isTrue,
+    );
+    await eventually(
+      'the hider online again for the watcher',
+      () => switch (watcher.read(chatSummaryProvider(hiderId))) {
+        final chat? => !chat.presenceHidden && chat.online,
+        null => false,
+      },
+    );
   });
 }
