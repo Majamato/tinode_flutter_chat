@@ -106,13 +106,15 @@ final class ChatStore {
     )..where((t) => t.topic.equals(topic))).go();
   }
 
-  /// Raises the counters of a stored chat; unknown chats are left alone.
+  /// Raises the counters of a stored chat, and its last seen; unknown
+  /// chats are left alone.
   Future<void> advanceChat(
     String topic, {
     int? lastSeq,
     int? read,
     int? received,
     DateTime? lastMessageAt,
+    DateTime? seen,
   }) => _db.transaction(() async {
     if (await chat(topic) case final stored?) {
       final updated = merge.advanceChat(
@@ -121,9 +123,21 @@ final class ChatStore {
         read: read,
         received: received,
         lastMessageAt: lastMessageAt,
+        seen: seen,
       );
       if (updated != stored) {
         await _db.into(_db.chats).insertOnConflictUpdate(_chatRow(updated));
+      }
+    }
+  });
+
+  /// Drops the last seen of every stored chat, once presence is off.
+  Future<void> forgetLastSeen() => _db.transaction(() async {
+    for (final stored in await chats()) {
+      if (stored.seen != null) {
+        await _db
+            .into(_db.chats)
+            .insertOnConflictUpdate(_chatRow(merge.withoutPresence(stored)));
       }
     }
   });

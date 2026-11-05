@@ -4,8 +4,9 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_th
 
 /// One row of a `SettingsSection`: [leading] (or an [icon] in the link
 /// colour), the [title] and an optional [subtitle], and a chevron when it
-/// opens a screen. A [destructive] row is in the error colour, without a
-/// chevron. Watches nothing.
+/// opens a screen, or a [trailing] widget, such as a switch, in its place.
+/// A [destructive] row is in the error colour, without a chevron. Watches
+/// nothing.
 class SettingsTile extends StatelessWidget {
   const SettingsTile({
     required this.title,
@@ -13,6 +14,7 @@ class SettingsTile extends StatelessWidget {
     this.icon,
     this.leading,
     this.subtitle,
+    this.trailing,
     this.destructive = false,
     this.minHeight = 52,
     super.key,
@@ -20,6 +22,9 @@ class SettingsTile extends StatelessWidget {
 
   final String title;
   final String? subtitle;
+
+  /// At the end of the row instead of the chevron.
+  final Widget? trailing;
   final IconData? icon;
   final Widget? leading;
   final VoidCallback? onTap;
@@ -69,7 +74,9 @@ class SettingsTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!destructive && onTap != null)
+              if (trailing case final trailing?)
+                trailing
+              else if (!destructive && onTap != null)
                 Icon(
                   TinodeChatIcons.of(context).disclosure,
                   color: colors.outline,

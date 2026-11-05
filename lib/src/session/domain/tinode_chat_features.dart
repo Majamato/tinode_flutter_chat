@@ -20,7 +20,8 @@ enum PasswordResetMode {
 final class TinodeChatFeatures with ValueObject {
   /// Creates the switches; by default users can sign up, reset their
   /// password where the server sends email, make voice and video calls,
-  /// record voice messages, and calls use the phone's own call screens.
+  /// record voice messages, see who is online and when they were last
+  /// seen, and calls use the phone's own call screens.
   const TinodeChatFeatures({
     this.signUp = true,
     this.passwordReset = PasswordResetMode.automatic,
@@ -28,6 +29,7 @@ final class TinodeChatFeatures with ValueObject {
     this.videoCalls = true,
     this.systemCalls = true,
     this.voiceMessages = true,
+    this.presence = true,
   });
 
   /// Whether the login screen offers to create an account.
@@ -56,6 +58,13 @@ final class TinodeChatFeatures with ValueObject {
   /// either way.
   final bool voiceMessages;
 
+  /// Whether the chat shows who is online and when they were last seen.
+  /// When off, presence from the server (`online`, `seen`, `pres on` /
+  /// `off`) is dropped as it arrives and never kept. The server still sends
+  /// it. It doesn't change what others see of this user: that is the
+  /// user's own "Show my online status", in the settings.
+  final bool presence;
+
   /// Whether calls of this kind, voice when [audioOnly], are on.
   bool allowsCall({required bool audioOnly}) =>
       audioOnly ? voiceCalls : videoCalls;
@@ -77,5 +86,6 @@ final class TinodeChatFeatures with ValueObject {
     videoCalls,
     systemCalls,
     voiceMessages,
+    presence,
   ];
 }

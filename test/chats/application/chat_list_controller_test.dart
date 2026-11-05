@@ -157,6 +157,104 @@ void main() {
     expect(container.read(chatSummaryProvider(bob))?.online, isFalse);
   });
 
+  test('pres off sets the last seen to now', () async {
+    await loadList();
+    final before = DateTime.now();
+
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.offline, source: bob),
+    );
+
+    expect(
+      container.read(chatSummaryProvider(bob))?.lastSeen?.isBefore(before),
+      isFalse,
+    );
+  });
+
+  test('the last seen comes from the sync, and only moves forward', () async {
+    session.chats[0] = chat(
+      bob,
+      name: 'Bob',
+      lastSeq: 3,
+      read: 1,
+      lastMessageAt: at(3),
+      seen: at(5),
+    );
+    await loadList();
+    expect(container.read(chatSummaryProvider(bob))?.lastSeen, at(5));
+
+    final controller = container.read(chatListControllerProvider.notifier)
+      ..markSeen(bob, at(4));
+    expect(container.read(chatSummaryProvider(bob))?.lastSeen, at(5));
+    controller.markSeen(bob, at(6));
+    expect(container.read(chatSummaryProvider(bob))?.lastSeen, at(6));
+  });
+
+  test(
+    'a peer who hides their presence is never online or last seen',
+    () async {
+      session.chats[0] = Subscription(
+        topic: bob,
+        lastSeq: 3,
+        read: 1,
+        lastMessageAt: at(3),
+        online: true,
+        seen: LastSeen(when: at(5)),
+        public: const Profile(name: 'Bob', raw: {'x-presence': 'hidden'}),
+        access: chat(bob).access,
+      );
+      final list = await loadList();
+      final hidden = list.byTopic[bob]!;
+      expect(hidden.presenceHidden, isTrue);
+      expect(hidden.online, isFalse);
+      expect(hidden.lastSeen, isNull);
+
+      session
+        ..emitPresence(
+          const PresMessage(
+            topic: 'me',
+            event: PresenceEvent.online,
+            source: bob,
+          ),
+        )
+        ..emitPresence(
+          const PresMessage(
+            topic: 'me',
+            event: PresenceEvent.offline,
+            source: bob,
+          ),
+        );
+      final after = container.read(chatSummaryProvider(bob))!;
+      expect(after.online, isFalse);
+      expect(after.lastSeen, isNull);
+    },
+  );
+
+  test("pres upd syncs the list: a peer's profile changed", () async {
+    await loadList();
+    session
+      ..calls.clear()
+      ..chats[0] = Subscription(
+        topic: bob,
+        lastSeq: 3,
+        read: 1,
+        lastMessageAt: at(3),
+        public: const Profile(name: 'Bob', raw: {'x-presence': 'hidden'}),
+        access: chat(bob).access,
+      )
+      ..emitPresence(
+        const PresMessage(
+          topic: 'me',
+          event: PresenceEvent.updated,
+          source: bob,
+        ),
+      );
+    await settle();
+
+    expect(session.calls, ['chatList']);
+    expect(container.read(chatSummaryProvider(bob))?.presenceHidden, isTrue);
+  });
+
   test('messages from others are marked received as they arrive', () async {
     await loadList();
     session.calls.clear();

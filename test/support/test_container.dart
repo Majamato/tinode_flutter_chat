@@ -10,6 +10,7 @@ import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
@@ -49,9 +50,11 @@ ProviderContainer createTestContainer({
   SystemCalls? systemCalls,
   VoiceRecorderFactory? voiceRecorder,
   VoicePlayerFactory? voicePlayer,
+  TinodeChatFeatures features = const TinodeChatFeatures(),
 }) {
   final container = createTinodeContainer(
     config: testConfig,
+    features: features,
     credentials: credentials,
     connector: connector,
     restorer:
@@ -85,6 +88,8 @@ Future<ProviderContainer> loggedInContainer(
   AttachmentPicker? attachmentPicker,
   VoiceRecorderFactory? voiceRecorder,
   VoicePlayerFactory? voicePlayer,
+  TinodeChatFeatures features = const TinodeChatFeatures(),
+  ChatStoreOpener? storeOpener,
 }) async {
   final container = createTestContainer(
     connector: connectTo(session),
@@ -96,6 +101,8 @@ Future<ProviderContainer> loggedInContainer(
     attachmentPicker: attachmentPicker,
     voiceRecorder: voiceRecorder,
     voicePlayer: voicePlayer,
+    features: features,
+    storeOpener: storeOpener,
   )..listen(sessionControllerProvider, (_, _) {});
   await container.read(sessionControllerProvider.future);
   return container;

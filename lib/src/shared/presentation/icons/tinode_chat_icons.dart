@@ -84,6 +84,7 @@ class TinodeChatIcons {
     this.hidePassword = PhosphorIconsRegular.eyeSlash,
     this.password = PhosphorIconsRegular.password,
     this.appearance = PhosphorIconsRegular.palette,
+    this.onlineStatus = PhosphorIconsRegular.eye,
     this.logOut = PhosphorIconsRegular.signOut,
   });
 
@@ -269,6 +270,9 @@ class TinodeChatIcons {
   /// Opens the appearance screen.
   final IconData appearance;
 
+  /// The settings' switch for showing others when the user is online.
+  final IconData onlineStatus;
+
   /// Logs out.
   final IconData logOut;
 
@@ -332,6 +336,7 @@ class TinodeChatIcons {
     hidePassword,
     password,
     appearance,
+    onlineStatus,
     logOut,
   ];
 

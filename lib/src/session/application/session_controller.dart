@@ -4,9 +4,11 @@ import 'dart:developer';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/application/attachment_inputs.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/io_file_store.dart';
 import 'package:tinode_flutter_chat/src/offline/application/offline_inputs.dart';
 import 'package:tinode_flutter_chat/src/offline/data/cached_tinode_session.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/credentials_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
@@ -58,12 +60,11 @@ class SessionController extends _$SessionController {
           config.server,
           userId,
         );
-        final session = CachedTinodeSession(
+        final session = _cached(
           await restore(config, token),
           store,
           userId: userId,
           files: files,
-          limits: ref.read(tinodeCacheLimitsProvider),
         );
         open.session = session;
         if (lifetime.isActive) {
@@ -277,6 +278,29 @@ class SessionController extends _$SessionController {
     ref.invalidateSelf();
   }
 
+  /// [session] over the user's [store] and [files], keeping presence only
+  /// when the host allows it; otherwise what the store held is forgotten.
+  CachedTinodeSession _cached(
+    TinodeSession session,
+    ChatStore store, {
+    required String userId,
+    required FileStore files,
+  }) {
+    final presence = ref.read(tinodeChatFeaturesProvider).presence;
+    final cached = CachedTinodeSession(
+      session,
+      store,
+      userId: userId,
+      files: files,
+      limits: ref.read(tinodeCacheLimitsProvider),
+      keepsPresence: presence,
+    );
+    if (!presence) {
+      cached.forgetLastSeen();
+    }
+    return cached;
+  }
+
   /// Wraps a logged-in [session] with the user's cache.
   Future<SessionLoggedIn> _loggedIn(
     TinodeSession session,
@@ -291,13 +315,7 @@ class SessionController extends _$SessionController {
       login.userId,
     );
     await _quietly(() => opener.rememberUser(server, login.userId));
-    final cached = CachedTinodeSession(
-      session,
-      store,
-      userId: login.userId,
-      files: files,
-      limits: ref.read(tinodeCacheLimitsProvider),
-    );
+    final cached = _cached(session, store, userId: login.userId, files: files);
     _open.session = cached;
     return SessionLoggedIn(cached, userId: login.userId, login: login);
   }

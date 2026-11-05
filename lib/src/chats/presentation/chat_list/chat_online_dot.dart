@@ -5,7 +5,8 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.d
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// The dot on a direct chat's avatar while the peer is online: the online
-/// colour with a ring in the list's background. Nothing otherwise.
+/// colour with a ring in the list's background. Nothing otherwise, nor
+/// while presence is off: the list then has none.
 class ChatOnlineDot extends ConsumerWidget {
   const ChatOnlineDot({required this.topic, super.key});
 

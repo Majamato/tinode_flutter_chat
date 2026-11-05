@@ -171,6 +171,21 @@ void main() {
       expect(stored.lastMessageAt, at(4));
       expect(await store.chat(carol), isNull);
     });
+
+    test('forgetLastSeen drops every stored last seen', () async {
+      await store.replaceChats([
+        chat(bob, name: 'Bob', seen: at(2)),
+        chat(carol, name: 'Carol'),
+      ]);
+      await store.forgetLastSeen();
+
+      final chats = await store.chats();
+      expect(chats.map((c) => c.seen), [null, null]);
+      expect(
+        chats.map((c) => c.public?.name),
+        unorderedEquals(['Bob', 'Carol']),
+      );
+    });
   });
 
   group('messages', () {

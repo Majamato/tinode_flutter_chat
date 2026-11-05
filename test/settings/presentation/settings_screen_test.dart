@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scree
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_screen.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
 import 'package:tinode_flutter_chat/src/settings/presentation/settings_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/settings_section.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
@@ -26,6 +27,7 @@ void main() {
     WidgetTester tester, {
     TinodeAppearance? appearance,
     VoidCallback? onLoggedOut,
+    TinodeChatFeatures features = const TinodeChatFeatures(),
   }) async {
     await pumpTinodeChat(
       tester,
@@ -34,6 +36,7 @@ void main() {
       tabBar: true,
       appearance: appearance,
       onLoggedOut: onLoggedOut,
+      features: features,
     );
     await tester.tap(
       find.descendant(
@@ -87,6 +90,61 @@ void main() {
 
     expect(find.byType(AppearanceScreen), findsOneWidget);
     expect(find.text(strings.settingsTitle), findsWidgets);
+  });
+
+  testWidgets('my online status is shown by default; turning it off saves '
+      'the flag in my profile, and on removes it', (tester) async {
+    session.profile = const Profile(name: 'Alice', note: 'hi');
+    await openSettings(tester);
+
+    expect(find.text(strings.showMyOnlineStatus), findsOneWidget);
+    expect(find.text(strings.showMyOnlineStatusFooter), findsOneWidget);
+    Switch toggle() => tester.widget<Switch>(find.byType(Switch));
+    expect(toggle().value, isTrue);
+
+    await tester.tap(find.text(strings.showMyOnlineStatus));
+    await tester.pumpAndSettle();
+    expect(toggle().value, isFalse);
+    expect(session.profile?.raw['x-presence'], 'hidden');
+    // The rest of the profile stays.
+    expect(session.profile?.name, 'Alice');
+    expect(session.profile?.note, 'hi');
+
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    expect(toggle().value, isTrue);
+    expect(session.profile?.raw.containsKey('x-presence'), isFalse);
+  });
+
+  testWidgets('a hidden status reads as off; a failed save says why', (
+    tester,
+  ) async {
+    session.profile = const Profile(
+      name: 'Alice',
+      raw: {'x-presence': 'hidden'},
+    );
+    await openSettings(tester);
+    Switch toggle() => tester.widget<Switch>(find.byType(Switch));
+    expect(toggle().value, isFalse);
+
+    session.failUpdateProfile = const ConnectionLostException();
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    expect(toggle().value, isFalse);
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(session.profile?.raw['x-presence'], 'hidden');
+  });
+
+  testWidgets('my online status is offered even when the host shows no '
+      "one's presence", (tester) async {
+    await openSettings(
+      tester,
+      features: const TinodeChatFeatures(presence: false),
+    );
+
+    expect(find.text(strings.showMyOnlineStatus), findsOneWidget);
+    expect(find.byType(Switch), findsOneWidget);
   });
 
   testWidgets('the cards start under the header from the first frame', (

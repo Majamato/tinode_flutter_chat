@@ -21,14 +21,16 @@ Subscription mergeChat(Subscription stored, Subscription patch) => Subscription(
   seen: patch.seen ?? stored.seen,
 );
 
-/// [chat] with news that arrived live: a new message, or a read or
-/// received marker. Also raises a member's counters.
+/// [chat] with news that arrived live: a new message, a read or received
+/// marker, or the peer going offline at [seen]. Also raises a member's
+/// counters. Nothing moves back.
 Subscription advanceChat(
   Subscription chat, {
   int? lastSeq,
   int? read,
   int? received,
   DateTime? lastMessageAt,
+  DateTime? seen,
 }) => Subscription(
   topic: chat.topic,
   userId: chat.userId,
@@ -42,7 +44,16 @@ Subscription advanceChat(
   lastDeleteId: chat.lastDeleteId,
   public: chat.public,
   private: chat.private,
-  seen: chat.seen,
+  seen: switch ((chat.seen, seen)) {
+    (final stored, null) => stored,
+    (final stored?, final time?)
+        when stored.when != null && !time.isAfter(stored.when!) =>
+      stored,
+    (final stored, final time?) => LastSeen(
+      when: time,
+      userAgent: stored?.userAgent,
+    ),
+  },
 );
 
 /// [chat] with its presence set to [online].
@@ -63,6 +74,43 @@ Subscription withPresence(Subscription chat, {required bool online}) =>
         public: chat.public,
         private: chat.private,
         seen: chat.seen,
+      );
+
+/// [chat] without presence: offline, and no last seen.
+Subscription withoutPresence(Subscription chat) =>
+    !chat.online && chat.seen == null
+    ? chat
+    : Subscription(
+        topic: chat.topic,
+        userId: chat.userId,
+        updated: chat.updated,
+        deleted: chat.deleted,
+        lastMessageAt: chat.lastMessageAt,
+        access: chat.access,
+        lastSeq: chat.lastSeq,
+        read: chat.read,
+        received: chat.received,
+        lastDeleteId: chat.lastDeleteId,
+        public: chat.public,
+        private: chat.private,
+      );
+
+/// [description] without the peer's last seen.
+TopicDescription descriptionWithoutPresence(TopicDescription description) =>
+    description.seen == null
+    ? description
+    : TopicDescription(
+        created: description.created,
+        updated: description.updated,
+        lastMessageAt: description.lastMessageAt,
+        defaultAccess: description.defaultAccess,
+        access: description.access,
+        lastSeq: description.lastSeq,
+        read: description.read,
+        received: description.received,
+        lastDeleteId: description.lastDeleteId,
+        public: description.public,
+        private: description.private,
       );
 
 /// The "if modified since" for the next chat list sync: the newest change

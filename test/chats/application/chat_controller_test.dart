@@ -10,6 +10,7 @@ import 'package:tinode_flutter_chat/src/chats/domain/chat_state.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -39,6 +40,50 @@ void main() {
 
   ChatState chatState([String topic = bob]) =>
       container.read(chatControllerProvider(topic));
+
+  group('last seen', () {
+    setUp(() {
+      session.descriptions[bob] = TopicDescription(seen: LastSeen(when: at(9)));
+    });
+
+    test('a direct chat takes it from its description', () async {
+      openChat();
+      await settle();
+
+      expect(session.calls, contains('description $bob'));
+      expect(container.read(chatSummaryProvider(bob))?.lastSeen, at(9));
+    });
+
+    test('nothing is asked while the host turns presence off', () async {
+      final offline = FakeTinodeSession(
+        chats: [chat(bob, name: 'Bob', lastSeq: 1, lastMessageAt: at(1))],
+        histories: {
+          bob: [message(bob, 1)],
+        },
+      );
+      offline.descriptions[bob] = TopicDescription(seen: LastSeen(when: at(9)));
+      final off = await loggedInContainer(
+        offline,
+        features: const TinodeChatFeatures(presence: false),
+      );
+      off.listen(chatListControllerProvider, (_, _) {});
+      await settle();
+      off.listen(chatControllerProvider(bob), (_, _) {});
+      await settle();
+
+      expect(offline.calls, contains('attach $bob'));
+      expect(offline.calls, isNot(contains('description $bob')));
+      expect(off.read(chatSummaryProvider(bob))?.lastSeen, isNull);
+    });
+
+    test('nor for a group', () async {
+      session.histories[friends] = [message(friends, 1)];
+      openChat(friends);
+      await settle();
+
+      expect(session.calls, isNot(contains('description $friends')));
+    });
+  });
 
   test('attaches, loads history and marks it read', () async {
     openChat();

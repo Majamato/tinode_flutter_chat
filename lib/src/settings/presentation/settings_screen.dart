@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scope.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_tile.dart';
 import 'package:tinode_flutter_chat/src/settings/presentation/log_out_tile.dart';
+import 'package:tinode_flutter_chat/src/settings/presentation/presence_tile.dart';
 import 'package:tinode_flutter_chat/src/settings/presentation/settings_profile_tile.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
@@ -11,8 +12,8 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_th
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 
 /// The settings tab: the user's profile, the appearance when the host
-/// offers one, and logging out, in cards scrolling under the glass app
-/// bar. Watches nothing.
+/// offers one, whether others see the user's online status, and logging
+/// out, in cards scrolling under the glass app bar. Watches nothing.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -37,6 +38,12 @@ class SettingsScreen extends StatelessWidget {
                 const SettingsSection(children: [SettingsProfileTile()]),
                 if (AppearanceScope.peek(context) != null)
                   const SettingsSection(children: [AppearanceTile()]),
+                SettingsSection(
+                  footer: TinodeChatStrings.of(
+                    context,
+                  ).showMyOnlineStatusFooter,
+                  children: const [PresenceTile()],
+                ),
                 const SettingsSection(children: [LogOutTile()]),
               ],
             ),

@@ -57,6 +57,9 @@ final class FakeTinodeSession implements TinodeSession {
   /// The user's own profile, the `public` of `me`.
   Profile? profile = const Profile(name: 'Alice');
 
+  /// What `description` returns for topics other than `me`.
+  final descriptions = <String, TopicDescription>{};
+
   /// Logins taken by `createAccount`, with their passwords; [passwords]
   /// count as taken too.
   final accounts = <String, String>{};
@@ -425,7 +428,9 @@ final class FakeTinodeSession implements TinodeSession {
       failProfile = null;
       throw error;
     }
-    return topic == 'me' ? TopicDescription(public: profile) : null;
+    return topic == 'me'
+        ? TopicDescription(public: profile)
+        : descriptions[topic];
   }
 
   @override

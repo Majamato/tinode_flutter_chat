@@ -219,8 +219,11 @@ them.
 
 - Cards (`cardColor`, `cardRadius`) on `pageColor`, 22 px apart, scrolling under a
   "Settings" glass app bar fading from `pageColor`: the user's photo (56 px) and name over "Name, photo and password", opening the
-  profile; Appearance with the palette in use, when the host offers one; Log out in
-  `colorScheme.error`. Rows are at least 52 px, with a `linkColor` icon and a chevron.
+  profile; Appearance with the palette in use, when the host offers one; "Show my online
+  status" with an adaptive switch (disabled while the profile can't be read or the change
+  saves; a failed save shows a snack bar) and a footer (`bodySmall` in `outline`) saying that
+  other Tinode apps may still show it; Log out in `colorScheme.error`. Rows are at least 52 px,
+  with a `linkColor` icon and a chevron, or a trailing switch instead.
 - Section labels are `labelMedium`, upper case, in `outline` (`SettingsLabel`).
 
 ## Appearance
@@ -257,12 +260,13 @@ them.
 
 - The messages scroll under the glass app bar, fading from `wallpaperColor`: a back pill
   (the chevron, and the other chats' unread count in a badge), a pill with the chat's 34 px
-  photo (or initials), then the name (15/700) over who is typing or "online" in `linkColor`,
+  photo (or initials), then the name (15/700) over who is typing, "online" in `linkColor`, or
+  "last seen …" in `outline` (`bodySmall`),
   which opens the chat's info, then search, video and voice call buttons (only the calls
   offered) on one island of glass; search alone is a round button.
 - While the link is down (after the same 1 s as the chat list's reconnecting title), the line
   under the name is a 10 px spinner (stroke 1.5) and "Reconnecting…" in `bodySmall`, both in
-  `outline`. It outranks typing and "online", which are stale meanwhile.
+  `outline`. It outranks typing, "online" and last seen, which are stale meanwhile.
 - The composer has no bar: three pieces of glass float 8 px above the keyboard, or above the
   home indicator, over a fade of the wallpaper: the round attach button, the field
   (`composerRadius`, transparent inside, 44 px for one line, up to five) and the round send
@@ -371,7 +375,10 @@ The call screens are always dark, whatever the brightness: text, icons and rings
 
 Only direct chats show presence: an `onlineColor` dot with a 3 px ring in the list's background
 on the avatar, and "online" in `linkColor` under the title in the chat header when the peer isn't
-typing (typing wins). Presence is live only, never cached.
+typing (typing wins). Offline, the header says when they were last seen, in `outline`: "last seen
+today at 14:05", "last seen yesterday at 14:05", "last seen Mar 3". Online is live only, never
+cached; last seen is cached. None of it shows while the host turns presence off
+(`TinodeChatFeatures.presence`), nor for a peer who hides theirs ("Show my online status").
 
 ## Motion
 

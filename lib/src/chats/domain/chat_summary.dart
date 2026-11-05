@@ -1,6 +1,7 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/avatar_image.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/initials.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/presence_visibility.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 
 /// One entry of the chat list, as the list tile shows it.
@@ -18,12 +19,15 @@ final class ChatSummary with ValueObject {
     this.isOwner = false,
     this.canManageMembers = false,
     this.online = false,
+    this.lastSeen,
+    this.presenceHidden = false,
     this.muted = false,
   });
 
   factory ChatSummary.fromSubscription(Subscription subscription) {
     final topic = subscription.topic!;
     final name = subscription.public?.name?.trim();
+    final hidden = subscription.public?.hidesPresence ?? false;
     return ChatSummary(
       topic: topic,
       kind: TopicKind.of(topic),
@@ -38,7 +42,9 @@ final class ChatSummary with ValueObject {
       isOwner: subscription.access?.mode.has(Permission.owner) ?? false,
       canManageMembers:
           subscription.access?.mode.has(Permission.approve) ?? false,
-      online: subscription.online,
+      online: !hidden && subscription.online,
+      lastSeen: hidden ? null : subscription.seen?.when,
+      presenceHidden: hidden,
       muted: !(subscription.access?.want.has(Permission.presence) ?? true),
     );
   }
@@ -75,6 +81,14 @@ final class ChatSummary with ValueObject {
   /// doesn't show.
   final bool online;
 
+  /// When the other user of a direct chat was last online, if the server
+  /// said or this device saw them go.
+  final DateTime? lastSeen;
+
+  /// The other user asked not to be shown online or with a last seen (see
+  /// `PresenceVisibility`): [online] stays false and [lastSeen] null.
+  final bool presenceHidden;
+
   /// The user turned off notifications for the chat: its `want` lacks
   /// presence (`P`), so the server sends no push for it.
   final bool muted;
@@ -97,15 +111,28 @@ final class ChatSummary with ValueObject {
   /// The user read up to [seq]. A read marker never moves back.
   ChatSummary withRead(int seq) => seq <= read ? this : _copy(read: seq);
 
-  /// The chat came online or went offline (`pres on` / `off`).
-  ChatSummary withOnline({required bool online}) =>
-      online == this.online ? this : _copy(online: online);
+  /// The chat came online or went offline (`pres on` / `off`), the peer
+  /// last seen at [lastSeen] when given.
+  ChatSummary withOnline({required bool online, DateTime? lastSeen}) {
+    if (presenceHidden) {
+      return this;
+    }
+    final updated = online == this.online ? this : _copy(online: online);
+    return lastSeen == null ? updated : updated.withLastSeen(lastSeen);
+  }
+
+  /// The peer was last seen at [time]. Last seen never moves back.
+  ChatSummary withLastSeen(DateTime time) =>
+      presenceHidden || (lastSeen != null && !time.isAfter(lastSeen!))
+      ? this
+      : _copy(lastSeen: time);
 
   ChatSummary _copy({
     int? lastSeq,
     DateTime? lastMessageAt,
     int? read,
     bool? online,
+    DateTime? lastSeen,
   }) => ChatSummary(
     topic: topic,
     kind: kind,
@@ -119,6 +146,8 @@ final class ChatSummary with ValueObject {
     isOwner: isOwner,
     canManageMembers: canManageMembers,
     online: online ?? this.online,
+    lastSeen: lastSeen ?? this.lastSeen,
+    presenceHidden: presenceHidden,
     muted: muted,
   );
 
@@ -136,6 +165,8 @@ final class ChatSummary with ValueObject {
     isOwner,
     canManageMembers,
     online,
+    lastSeen,
+    presenceHidden,
     muted,
   ];
 }

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/typing_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_tail.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_status.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/date_chip.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_bubble.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_bubble.dart';
@@ -201,6 +202,108 @@ void main() {
     await tester.pump();
     expect(find.text(strings.typingDirect), findsNothing);
     expect(find.text(strings.online), findsNothing);
+  });
+
+  testWidgets('the header says when an offline peer was last seen', (
+    tester,
+  ) async {
+    const strings = TinodeChatStrings();
+    final seen = DateTime.now().subtract(const Duration(days: 3));
+    session.chats.add(chat(bob, name: 'Bob', lastSeq: 1, read: 1, seen: seen));
+    session.histories[bob] = [message(bob, 1, text: 'hi')];
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+    );
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+
+    final lastSeen = find.descendant(
+      of: find.byType(ChatStatus),
+      matching: find.textContaining(strings.lastSeenOn('')),
+    );
+    expect(lastSeen, findsOneWidget);
+    expect(
+      tester.widget<Text>(lastSeen).style?.color,
+      Theme.of(tester.element(lastSeen)).colorScheme.outline,
+    );
+
+    // Online outranks it, and going offline makes it today.
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.online, source: bob),
+    );
+    await tester.pump();
+    expect(find.text(strings.online), findsOneWidget);
+    expect(lastSeen, findsNothing);
+
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.offline, source: bob),
+    );
+    await tester.pump();
+    expect(find.text(strings.online), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(ChatStatus),
+        matching: find.textContaining(strings.lastSeenToday('')),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('no online or last seen while the host turns presence off', (
+    tester,
+  ) async {
+    session.chats.add(
+      chat(bob, name: 'Bob', lastSeq: 1, read: 1, online: true, seen: at(1)),
+    );
+    session.histories[bob] = [message(bob, 1, text: 'hi')];
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+      features: const TinodeChatFeatures(presence: false),
+    );
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+
+    final status = find.descendant(
+      of: find.byType(ChatStatus),
+      matching: find.byType(Text),
+    );
+    expect(status, findsNothing);
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.offline, source: bob),
+    );
+    await tester.pump();
+    expect(status, findsNothing);
+  });
+
+  group('last seen reads', () {
+    const strings = TinodeChatStrings();
+    const localizations = DefaultMaterialLocalizations();
+    final now = DateTime(2026, 3, 5, 18);
+
+    String lastSeen(DateTime time) =>
+        ChatStatus.lastSeenText(strings, localizations, time, now: now);
+
+    test('today at the time', () {
+      expect(
+        lastSeen(DateTime(2026, 3, 5, 14, 5)),
+        'last seen today at 2:05 PM',
+      );
+    });
+
+    test('yesterday at the time', () {
+      expect(
+        lastSeen(DateTime(2026, 3, 4, 9, 30)),
+        'last seen yesterday at 9:30 AM',
+      );
+    });
+
+    test('the date before that', () {
+      expect(lastSeen(DateTime(2026, 3, 3, 23)), 'last seen Mar 3');
+    });
   });
 
   testWidgets('a lost link says reconnecting under the name, over typing '

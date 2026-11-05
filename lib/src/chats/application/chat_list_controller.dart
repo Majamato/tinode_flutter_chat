@@ -18,7 +18,10 @@ part 'chat_list_controller.g.dart';
 /// messages of attached chats, and synced again after a reconnect.
 ///
 /// Who is online comes from the sync and then from `pres on` / `off`; the
-/// cached list shows everyone offline until the sync.
+/// cached list shows everyone offline until the sync. Last seen comes from
+/// the cache and the sync, and is now when `pres off` arrives. The session
+/// drops all of it while the host turns presence off, and a peer who hides
+/// theirs shows none (`ChatSummary.presenceHidden`).
 ///
 /// It also tells the senders their messages reached this device (`note
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
@@ -79,6 +82,11 @@ class ChatListController extends _$ChatListController {
 
   /// The chat [topic] is gone for this user: deleted, or left.
   void remove(String topic) => state = state.without(topic);
+
+  /// The peer of the direct chat [topic] was last online at [when], e.g. as
+  /// the chat's description says.
+  void markSeen(String topic, DateTime when) =>
+      state = state.update(topic, (chat) => chat.withLastSeen(when));
 
   /// The user read [topic] up to [seq] on this device.
   void markRead(String topic, int seq) =>
@@ -155,9 +163,15 @@ class ChatListController extends _$ChatListController {
       case (PresenceEvent.online || PresenceEvent.offline, _):
         state = state.update(
           topic,
-          (chat) =>
-              chat.withOnline(online: presence.event == PresenceEvent.online),
+          (chat) => presence.event == PresenceEvent.online
+              ? chat.withOnline(online: true)
+              // `off` comes a few seconds late; close enough for last seen.
+              : chat.withOnline(online: false, lastSeen: DateTime.now()),
         );
+      case (PresenceEvent.updated, _):
+        // The peer changed their profile: name, photo, or whether they
+        // hide their presence.
+        unawaited(_sync(session, _lifetime));
       case (PresenceEvent.access, _):
         // The user's access changed, maybe muted on another device: `acs`
         // doesn't say how, so the list is synced.

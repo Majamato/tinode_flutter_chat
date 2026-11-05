@@ -30,7 +30,7 @@ lib/
       presentation/               AppearanceScope, the appearance screen: preview, swatches,
                                   theme switch, reset
     settings/                     the settings tab
-      presentation/               settings screen, profile and log-out tiles
+      presentation/               settings screen, profile, online status and log-out tiles
     session/                      connecting and logging in
       data/                       TinodeSession interface + ClientTinodeSession
       domain/                     TinodeCredentials, TinodeChatFeatures (public),
@@ -379,6 +379,22 @@ cache. `CachedTinodeSession` decorates the server session:
    a sync the chats fetched online are exactly the ones that are. Then `pres on` / `off` keep it
    current (`off` comes a few seconds after the peer leaves). The client reads an empty `acs` as
    no `access`, so a stub changes nothing else.
+   **Last seen** is cached: a full `get sub` carries `seen {when, ua}` for each offline direct
+   chat, but "if modified since" never resends a changed one (observed). So `pres off` stores now
+   as the chat's `seen` (`ChatStore.advanceChat(seen:)`, never moving back), and opening a direct
+   chat reads its `get desc`, whose `seen` is current, into `ChatListController.markSeen`.
+   **The host turns presence off** (`TinodeChatFeatures.presence`): `CachedTinodeSession` is made
+   with `keepsPresence: false`, so it drops `pres on` / `off` from its `presence` stream and
+   strips `online` and `seen` from chats (before they are stored) and from descriptions, and it
+   forgets the stored `seen` (`ChatStore.forgetLastSeen`), since a merge keeps it. The server
+   can't be told to stop sending presence.
+   **A user hides theirs** ("Show my online status", `PresenceVisibilityController`): their
+   `public` gets `"x-presence": "hidden"` (`PresenceVisibility`); the server keeps custom keys
+   and sends them in the chat list, and peers get `pres upd`, which syncs their list.
+   `ChatSummary.fromSubscription` then keeps `online` false and `lastSeen` null, and
+   `withOnline` / `withLastSeen` change nothing. Observed on the server: removing `P` from one's
+   own `want` hides nothing (and mutes pushes); only a session that never attaches `me` is
+   neither online nor updates its `seen`, which would cost the list its live updates.
 6. `pres acs` for a known chat syncs the list: the user's access changed, maybe muted on another
    device, and `acs` doesn't say how. A chat is **muted** when the user's `want` lacks `P`.
 

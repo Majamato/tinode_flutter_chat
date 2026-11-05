@@ -19,12 +19,14 @@ Subscription chat(
   String mode = 'JRWPS',
   String? want,
   bool online = false,
+  DateTime? seen,
 }) => Subscription(
   topic: topic,
   lastSeq: lastSeq,
   read: read,
   lastMessageAt: lastMessageAt,
   online: online,
+  seen: seen == null ? null : LastSeen(when: seen, userAgent: 'test'),
   public: Profile(name: name ?? topic),
   access: Access(
     want: AccessMode.parse(want ?? mode),

@@ -13,7 +13,10 @@ part of 'chat_list_controller.dart';
 /// messages of attached chats, and synced again after a reconnect.
 ///
 /// Who is online comes from the sync and then from `pres on` / `off`; the
-/// cached list shows everyone offline until the sync.
+/// cached list shows everyone offline until the sync. Last seen comes from
+/// the cache and the sync, and is now when `pres off` arrives. The session
+/// drops all of it while the host turns presence off, and a peer who hides
+/// theirs shows none (`ChatSummary.presenceHidden`).
 ///
 /// It also tells the senders their messages reached this device (`note
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
@@ -30,7 +33,10 @@ final chatListControllerProvider = ChatListControllerProvider._();
 /// messages of attached chats, and synced again after a reconnect.
 ///
 /// Who is online comes from the sync and then from `pres on` / `off`; the
-/// cached list shows everyone offline until the sync.
+/// cached list shows everyone offline until the sync. Last seen comes from
+/// the cache and the sync, and is now when `pres off` arrives. The session
+/// drops all of it while the host turns presence off, and a peer who hides
+/// theirs shows none (`ChatSummary.presenceHidden`).
 ///
 /// It also tells the senders their messages reached this device (`note
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
@@ -45,7 +51,10 @@ final class ChatListControllerProvider
   /// messages of attached chats, and synced again after a reconnect.
   ///
   /// Who is online comes from the sync and then from `pres on` / `off`; the
-  /// cached list shows everyone offline until the sync.
+  /// cached list shows everyone offline until the sync. Last seen comes from
+  /// the cache and the sync, and is now when `pres off` arrives. The session
+  /// drops all of it while the host turns presence off, and a peer who hides
+  /// theirs shows none (`ChatSummary.presenceHidden`).
   ///
   /// It also tells the senders their messages reached this device (`note
   /// recv`): as they arrive, live or as `pres msg`, and after each sync for
@@ -81,14 +90,17 @@ final class ChatListControllerProvider
 }
 
 String _$chatListControllerHash() =>
-    r'e37ec61efc7ec2396077590bbd12216af651ed00';
+    r'778e31e5d9468c3bf7ce06736ac86700e5b1e807';
 
 /// The chat list of the logged-in user: shown from the cache first, then
 /// synced with the server, kept current from `me` presence and from the
 /// messages of attached chats, and synced again after a reconnect.
 ///
 /// Who is online comes from the sync and then from `pres on` / `off`; the
-/// cached list shows everyone offline until the sync.
+/// cached list shows everyone offline until the sync. Last seen comes from
+/// the cache and the sync, and is now when `pres off` arrives. The session
+/// drops all of it while the host turns presence off, and a peer who hides
+/// theirs shows none (`ChatSummary.presenceHidden`).
 ///
 /// It also tells the senders their messages reached this device (`note
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for

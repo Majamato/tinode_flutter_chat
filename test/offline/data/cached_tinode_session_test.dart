@@ -97,6 +97,122 @@ void main() {
     });
   });
 
+  group('presence', () {
+    final seenAt = DateTime.utc(2026, 3, 3, 14, 5);
+
+    void serveBob({bool online = false, DateTime? seen}) => remote.chats
+      ..clear()
+      ..add(
+        chat(
+          bob,
+          name: 'Bob',
+          lastSeq: 100,
+          lastMessageAt: at(100),
+          online: online,
+          seen: seen,
+        ),
+      );
+
+    test('keeps the last seen the server sends', () async {
+      serveBob(seen: seenAt);
+      expect((await session.chatList()).single.seen?.when, seenAt);
+      expect((await session.storedChatList()).single.seen?.when, seenAt);
+    });
+
+    test('pres off on me stores now as the last seen', () async {
+      serveBob(seen: seenAt);
+      await session.chatList();
+      final before = DateTime.now().toUtc();
+
+      remote.emitPresence(
+        const PresMessage(
+          topic: 'me',
+          event: PresenceEvent.offline,
+          source: bob,
+        ),
+      );
+      final seen = (await session.storedChatList()).single.seen;
+
+      expect(seen?.when?.isBefore(before), isFalse);
+      expect(seen?.userAgent, 'test');
+    });
+
+    group('while the host turns it off', () {
+      setUp(() async {
+        await session.close();
+        remote = FakeTinodeSession(chats: []);
+        store = ChatStore(ChatDatabase(NativeDatabase.memory()));
+        session = CachedTinodeSession(
+          remote,
+          store,
+          userId: alice,
+          keepsPresence: false,
+        );
+        addTearDown(session.close);
+      });
+
+      test('no online or last seen comes through', () async {
+        serveBob(online: true, seen: seenAt);
+        final events = <PresenceEvent>[];
+        session.presence.listen((p) => events.add(p.event));
+
+        final chats = await session.chatList();
+        expect(chats.single.online, isFalse);
+        expect(chats.single.seen, isNull);
+        expect((await store.chats()).single.seen, isNull);
+
+        remote
+          ..emitPresence(
+            const PresMessage(
+              topic: 'me',
+              event: PresenceEvent.online,
+              source: bob,
+            ),
+          )
+          ..emitPresence(
+            const PresMessage(
+              topic: 'me',
+              event: PresenceEvent.offline,
+              source: bob,
+            ),
+          )
+          ..emitPresence(
+            const PresMessage(
+              topic: 'me',
+              event: PresenceEvent.read,
+              source: bob,
+            ),
+          );
+        await settle();
+
+        expect(events, [PresenceEvent.read]);
+        expect((await store.chats()).single.seen, isNull);
+      });
+
+      test('a description has no last seen', () async {
+        remote.descriptions[bob] = TopicDescription(
+          lastSeq: 100,
+          seen: LastSeen(when: seenAt),
+        );
+        final description = await session.description(bob);
+        expect(description?.seen, isNull);
+        expect(description?.lastSeq, 100);
+      });
+
+      test('forgetLastSeen drops what the cache held before', () async {
+        await store.replaceChats([chat(bob, name: 'Bob', seen: seenAt)]);
+        expect((await session.storedChatList()).single.seen, isNull);
+
+        session.forgetLastSeen();
+        // Synced again: the merge would keep a stored `seen`.
+        serveBob();
+        await session.chatList();
+
+        expect((await store.chats()).single.seen, isNull);
+      });
+    });
+  });
+
   group('history', () {
     test('older pages come from the cache and only gaps are fetched', () async {
       // The newest page, and an older page fetched separately: 1-32 and

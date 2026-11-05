@@ -136,6 +136,9 @@ class TinodeChatStrings {
     this.unknownMember = 'Unknown',
     this.typingDirect = 'typing…',
     this.online = 'online',
+    this.lastSeenToday = _lastSeenToday,
+    this.lastSeenYesterday = _lastSeenYesterday,
+    this.lastSeenOn = _lastSeenOn,
     this.typingOne = _typingOne,
     this.typingTwo = _typingTwo,
     this.typingMany = _typingMany,
@@ -229,6 +232,10 @@ class TinodeChatStrings {
     this.openChat = 'Open chat',
     this.profileSubtitle = 'Name, photo and password',
     this.appearance = 'Appearance',
+    this.showMyOnlineStatus = 'Show my online status',
+    this.showMyOnlineStatusFooter =
+        "When off, others in this app don't see when you're online or when "
+        'you were last seen.',
     this.appearanceColor = 'Color',
     this.appearanceColorHelp =
         'Changes your bubbles, buttons and icons. Only you see your color.',
@@ -361,6 +368,9 @@ class TinodeChatStrings {
     this.unknownMember = 'Desconocido',
     this.typingDirect = 'escribiendo…',
     this.online = 'en línea',
+    this.lastSeenToday = _lastSeenTodayEs,
+    this.lastSeenYesterday = _lastSeenYesterdayEs,
+    this.lastSeenOn = _lastSeenOnEs,
     this.typingOne = _typingOneEs,
     this.typingTwo = _typingTwoEs,
     this.typingMany = _typingManyEs,
@@ -455,6 +465,10 @@ class TinodeChatStrings {
     this.openChat = 'Abrir chat',
     this.profileSubtitle = 'Nombre, foto y contraseña',
     this.appearance = 'Apariencia',
+    this.showMyOnlineStatus = 'Mostrar mi estado en línea',
+    this.showMyOnlineStatusFooter =
+        'Si lo desactivas, los demás en esta app no verán cuándo estás en '
+        'línea ni tu última conexión.',
     this.appearanceColor = 'Color',
     this.appearanceColorHelp =
         'Cambia tus burbujas, botones e iconos. Solo tú ves tu color.',
@@ -589,6 +603,9 @@ class TinodeChatStrings {
     this.unknownMember = 'Inconnu',
     this.typingDirect = "en train d'écrire…",
     this.online = 'en ligne',
+    this.lastSeenToday = _lastSeenTodayFr,
+    this.lastSeenYesterday = _lastSeenYesterdayFr,
+    this.lastSeenOn = _lastSeenOnFr,
     this.typingOne = _typingOneFr,
     this.typingTwo = _typingTwoFr,
     this.typingMany = _typingManyFr,
@@ -689,6 +706,10 @@ class TinodeChatStrings {
     this.openChat = 'Ouvrir la discussion',
     this.profileSubtitle = 'Nom, photo et mot de passe',
     this.appearance = 'Apparence',
+    this.showMyOnlineStatus = 'Afficher mon statut en ligne',
+    this.showMyOnlineStatusFooter =
+        'Désactivé, les autres dans cette app ne voient pas quand vous êtes '
+        'en ligne ni votre dernière connexion.',
     this.appearanceColor = 'Couleur',
     this.appearanceColorHelp =
         "Change vos bulles, vos boutons et vos icônes. Cette couleur n'est "
@@ -1081,6 +1102,18 @@ class TinodeChatStrings {
   /// Under a direct chat's title while the peer is online and not typing.
   final String online;
 
+  /// Under a direct chat's title while the peer is offline, last seen
+  /// today at `time`, e.g. `14:05`.
+  final String Function(String time) lastSeenToday;
+
+  /// Under a direct chat's title while the peer is offline, last seen
+  /// yesterday at `time`.
+  final String Function(String time) lastSeenYesterday;
+
+  /// Under a direct chat's title while the peer is offline, last seen
+  /// before yesterday, on `date`, e.g. `Mar 3`.
+  final String Function(String date) lastSeenOn;
+
   /// Under a group's title while one member types.
   final String Function(String name) typingOne;
 
@@ -1344,6 +1377,13 @@ class TinodeChatStrings {
   /// Title of the appearance screen, and its entry in settings.
   final String appearance;
 
+  /// The settings' switch for letting others see when the user is online
+  /// and was last seen.
+  final String showMyOnlineStatus;
+
+  /// Under that switch: what turning it off does, and what it can't.
+  final String showMyOnlineStatusFooter;
+
   /// The palette section of the appearance screen.
   final String appearanceColor;
 
@@ -1375,6 +1415,12 @@ class TinodeChatStrings {
   final String Function(int count) unreadCount;
 }
 
+String _lastSeenToday(String time) => 'last seen today at $time';
+
+String _lastSeenYesterday(String time) => 'last seen yesterday at $time';
+
+String _lastSeenOn(String date) => 'last seen $date';
+
 String _typingOne(String name) => '$name is typing…';
 
 String _typingTwo(String first, String second) =>
@@ -1393,6 +1439,12 @@ String _resetPalette(String name) => 'Reset to $name';
 
 String _unreadCount(int count) => '$count unread';
 
+String _lastSeenTodayEs(String time) => 'últ. vez hoy a las $time';
+
+String _lastSeenYesterdayEs(String time) => 'últ. vez ayer a las $time';
+
+String _lastSeenOnEs(String date) => 'últ. vez el $date';
+
 String _typingOneEs(String name) => '$name está escribiendo…';
 
 String _typingTwoEs(String first, String second) =>
@@ -1410,6 +1462,12 @@ String _appearancePreviewAnswerEs(String name) => '$name, obviamente';
 String _resetPaletteEs(String name) => 'Volver a $name';
 
 String _unreadCountEs(int count) => '$count sin leer';
+
+String _lastSeenTodayFr(String time) => "vu aujourd'hui à $time";
+
+String _lastSeenYesterdayFr(String time) => 'vu hier à $time';
+
+String _lastSeenOnFr(String date) => 'vu le $date';
 
 String _typingOneFr(String name) => '$name écrit…';
 

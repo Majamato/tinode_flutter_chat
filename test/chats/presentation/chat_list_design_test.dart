@@ -68,6 +68,38 @@ void main() {
     expect(dotOf(bob), findsNothing);
   });
 
+  testWidgets('no dot while the host turns presence off', (tester) async {
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+      features: const TinodeChatFeatures(presence: false),
+    );
+    expect(find.text('Bob'), findsOneWidget);
+    expect(dotOf(bob), findsNothing);
+
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.online, source: bob),
+    );
+    await tester.pump();
+    expect(dotOf(bob), findsNothing);
+  });
+
+  testWidgets('no dot for a peer who hides their presence', (tester) async {
+    session.chats[0] = Subscription(
+      topic: bob,
+      lastSeq: 2,
+      read: 2,
+      lastMessageAt: at(2),
+      online: true,
+      public: const Profile(name: 'Bob', raw: {'x-presence': 'hidden'}),
+      access: chat(bob).access,
+    );
+    await pumpList(tester);
+    expect(find.text('Bob'), findsOneWidget);
+    expect(dotOf(bob), findsNothing);
+  });
+
   testWidgets('a muted chat has the icon and a grey badge', (tester) async {
     await pumpList(tester);
 

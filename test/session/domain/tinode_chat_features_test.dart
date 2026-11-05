@@ -16,4 +16,12 @@ void main() {
     expect(always.offersPasswordReset(const []), isTrue);
     expect(never.offersPasswordReset(const ['email']), isFalse);
   });
+
+  test('presence is on by default', () {
+    expect(const TinodeChatFeatures().presence, isTrue);
+    expect(
+      const TinodeChatFeatures(presence: false),
+      isNot(const TinodeChatFeatures()),
+    );
+  });
 }

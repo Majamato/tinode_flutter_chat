@@ -209,6 +209,18 @@ A kind of call that is off has no button and doesn't ring in this app; pass the 
 `TinodeCalls.handlePush(push, config: config, features: features)` so it doesn't ring from a
 push either.
 
+**Presence** (who is online, and when they were last seen) has two switches:
+
+- **What the app shows**: `TinodeChatFeatures(presence: false)` shows no one's presence. It is
+  not only hidden: the chat drops `online`, last seen and `pres on` / `off` as they arrive, and
+  keeps none of it in memory or in the cache. The server still sends it.
+- **What others see of me**: each user's "Show my online status" in the settings, on by default.
+  Off, their profile carries `"x-presence": "hidden"`, and apps built on this package don't show
+  them online or with a last seen. It follows the account to every device. It is a request,
+  not a guarantee: the server still sends their presence, and other Tinode apps may show it.
+  Tinode can only truly hide a user who never attaches `me`, which would stop the chat list's
+  live updates.
+
 Rules such as the shortest login or password, or how long codes last, are the server's
 (`tinode.conf`); the chat shows its refusals.
 
@@ -546,7 +558,7 @@ where it needs the protocol:
 8. ~~**Design**~~: done ([`docs/design.md`](docs/design.md): the palette, the theme's tokens
    and `TinodeChatTheme.materialTheme`; the chat screen with bubble tails, runs, date chips,
    the wallpaper, the glass app bar and composer, the send button's morph and the bubble
-   builder; online presence; the chat list; login with a `loginHeader` slot; the call screens
+   builder; online presence and last seen; the chat list; login with a `loginHeader` slot; the call screens
    and the call bar; the app shell with the floating tab bar, the calls history, the settings
    and the Appearance screen; and voice messages).
 

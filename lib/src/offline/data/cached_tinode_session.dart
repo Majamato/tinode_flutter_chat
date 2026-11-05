@@ -44,6 +44,10 @@ const _maxDeleteLogPages = 20;
 ///
 /// It prunes the cache to its `TinodeCacheLimits` once, when it starts:
 /// reads wait for the messages, the files go after.
+///
+/// While [keepsPresence] is off it drops presence as it arrives: `pres on` /
+/// `off` never reach [presence]'s listeners, and chats and descriptions
+/// come without `online` or `seen`, which the store doesn't keep either.
 final class CachedTinodeSession implements ChatSession {
   CachedTinodeSession(
     this._remote,
@@ -51,6 +55,7 @@ final class CachedTinodeSession implements ChatSession {
     required this.userId,
     FileStore? files,
     TinodeCacheLimits limits = const TinodeCacheLimits(),
+    this.keepsPresence = true,
   }) : _files = files ?? MemoryFileStore() {
     unawaited(_prune(limits));
     _subscriptions = [
@@ -105,8 +110,25 @@ final class CachedTinodeSession implements ChatSession {
   @override
   Stream<DataMessage> get messages => _remote.messages;
 
+  /// The presence events, less who came online or went offline while
+  /// [keepsPresence] is off.
   @override
-  Stream<PresMessage> get presence => _remote.presence;
+  Stream<PresMessage> get presence => _remote.presence.where(
+    (p) =>
+        keepsPresence ||
+        (p.event != PresenceEvent.online && p.event != PresenceEvent.offline),
+  );
+
+  /// Whether to keep presence: who is online and when they were last seen.
+  final bool keepsPresence;
+
+  /// Forgets the last seen the store holds, e.g. kept before the host
+  /// turned presence off: what a sync merges in keeps the stored `seen`.
+  void forgetLastSeen() {
+    if (!_closed) {
+      unawaited(_write(_store.forgetLastSeen));
+    }
+  }
 
   @override
   Stream<InfoMessage> get info => _remote.info;
@@ -233,8 +255,12 @@ final class CachedTinodeSession implements ChatSession {
   Future<void> setDeviceToken(String? token) => _remote.setDeviceToken(token);
 
   @override
-  Future<TopicDescription?> description(String topic) =>
-      _remote.description(topic);
+  Future<TopicDescription?> description(String topic) async {
+    final description = await _remote.description(topic);
+    return description == null || keepsPresence
+        ? description
+        : descriptionWithoutPresence(description);
+  }
 
   @override
   Future<void> updateProfile(Profile public) => _remote.updateProfile(public);
@@ -338,7 +364,8 @@ final class CachedTinodeSession implements ChatSession {
   @override
   Future<List<Subscription>> storedChatList() async {
     await _writes;
-    return _store.chats();
+    final chats = await _store.chats();
+    return keepsPresence ? chats : chats.map(withoutPresence).toList();
   }
 
   /// Syncs the cached list with the server ("if modified since" the newest
@@ -357,7 +384,10 @@ final class CachedTinodeSession implements ChatSession {
   Future<List<Subscription>> _syncChatList() async {
     await _writes;
     final since = chatListWatermark(await _store.chats());
-    final fetched = await _remote.chatList(ifModifiedSince: since);
+    var fetched = await _remote.chatList(ifModifiedSince: since);
+    if (!keepsPresence) {
+      fetched = fetched.map(withoutPresence).toList();
+    }
     if (since == null) {
       await _store.replaceChats(fetched);
     } else {
@@ -1181,6 +1211,13 @@ final class CachedTinodeSession implements ChatSession {
       case PresMessage(topic: 'me', event: PresenceEvent.gone)
           when source != null:
         unawaited(_write(() => _forgetChat(source)));
+      case PresMessage(topic: 'me', event: PresenceEvent.offline)
+          when source != null && keepsPresence:
+        // `off` carries no time and comes a few seconds late: close enough.
+        // A full sync replaces it with the server's own `seen`.
+        unawaited(
+          _write(() => _store.advanceChat(source, seen: clock.now().toUtc())),
+        );
       case _:
         break;
     }

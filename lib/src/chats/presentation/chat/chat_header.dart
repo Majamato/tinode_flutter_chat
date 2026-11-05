@@ -10,9 +10,10 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_th
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 
 /// The glass app bar over a chat: back (with the other chats' unread
-/// count), a pill with the chat's photo, name and status (typing, online)
-/// that opens the chat's info, then message search and the call buttons on
-/// one island, over a fade of the wallpaper. Watches nothing itself.
+/// count), a pill with the chat's photo, name and status (typing, online,
+/// last seen) that opens the chat's info, then message search and the call
+/// buttons on one island, over a fade of the wallpaper. Watches nothing
+/// itself.
 class ChatHeader extends StatelessWidget implements PreferredSizeWidget {
   const ChatHeader({required this.topic, super.key});
 

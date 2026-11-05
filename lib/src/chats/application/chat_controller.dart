@@ -13,6 +13,7 @@ import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
+import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/shared/application/build_lifetime.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
@@ -199,6 +200,7 @@ class ChatController extends _$ChatController {
         if (!ref.read(chatListControllerProvider).contains(topic)) {
           ref.read(chatListControllerProvider.notifier).refresh();
         }
+        unawaited(_refreshLastSeen(lifetime));
       }
       // After the first attach, and after each reconnect, which attaches
       // again: members' counters may have moved meanwhile.
@@ -232,6 +234,24 @@ class ChatController extends _$ChatController {
       if (lifetime.isActive && state.status != LoadStatus.ready) {
         state = state.failed(ChatFailure.of(e));
       }
+    }
+  }
+
+  /// Takes the peer's last seen from the direct chat's description: the
+  /// list's may be older, since a sync "if modified since" leaves it out.
+  /// Nothing is asked while the host turns presence off.
+  Future<void> _refreshLastSeen(BuildLifetime lifetime) async {
+    if (TopicKind.of(topic) != TopicKind.direct ||
+        !ref.read(tinodeChatFeaturesProvider).presence) {
+      return;
+    }
+    try {
+      final seen = (await _session.description(topic))?.seen?.when;
+      if (seen != null && lifetime.isActive) {
+        ref.read(chatListControllerProvider.notifier).markSeen(topic, seen);
+      }
+    } on Object {
+      // Last seen is a nicety: the list's stays.
     }
   }
 

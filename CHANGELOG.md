@@ -1,5 +1,22 @@
 ## Unreleased
 
+- **API:** `TinodeChatFeatures.presence` (on by default): whether the chat shows others'
+  presence. Off, there is no online dot, no "online" or last seen under a chat's name: the chat
+  drops `online`, `seen` and `pres on` / `off` as they arrive, keeps none of it in memory or in
+  the cache, and forgets the last seen the cache held. The server still sends presence. It
+  doesn't change what others see of the user (see "Show my online status").
+- Last seen: under a direct chat's name while the peer is offline, in `outline`: "last seen
+  today at 14:05", "last seen yesterday at 14:05" or "last seen Mar 3". It comes from the
+  server's `seen`, from `pres off`, and from the chat's description when it opens.
+  `TinodeChatStrings.lastSeenToday`, `lastSeenYesterday` and `lastSeenOn` hold the texts.
+- "Show my online status" in the settings, on by default: off, the user's profile (`public`)
+  carries `"x-presence": "hidden"`, and apps built on this package show no online dot,
+  "online" or last seen for them. It is saved on the account, so it follows the user to every
+  device. Only a request: their presence still reaches others' devices, and other Tinode apps
+  may show it (Tinode has no way to hide it but never attaching `me`, which would stop the chat
+  list's live updates). A `pres upd` (a peer changed their profile) now syncs the chat list.
+  **API:** `TinodeChatStrings.showMyOnlineStatus` and `showMyOnlineStatusFooter`, and
+  `TinodeChatIcons.onlineStatus` (`PhosphorIconsRegular.eye`).
 - Spanish and French. `TinodeChatStrings.es()` and `TinodeChatStrings.fr()` hold every text in
   those languages (any left out keep that language's default, as with `TinodeChatStrings()`),
   `TinodeChatStrings.forLocale` picks the built-in texts for a locale, and

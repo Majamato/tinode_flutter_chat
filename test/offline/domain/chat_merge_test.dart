@@ -60,6 +60,55 @@ void main() {
     expect(advanceChat(stored, read: 2), stored);
   });
 
+  test('advanceChat moves last seen forward only, keeping the client', () {
+    final seen = advanceChat(
+      Subscription(
+        topic: 'usrBob',
+        seen: LastSeen(when: DateTime.utc(2026, 10, 5), userAgent: 'web'),
+      ),
+      seen: DateTime.utc(2026, 10, 6),
+    );
+    expect(
+      seen.seen,
+      LastSeen(when: DateTime.utc(2026, 10, 6), userAgent: 'web'),
+    );
+    expect(advanceChat(seen, seen: DateTime.utc(2026, 10, 4)), seen);
+    expect(
+      advanceChat(stored, seen: DateTime.utc(2026, 10, 4)).seen?.when,
+      DateTime.utc(2026, 10, 4),
+    );
+  });
+
+  test('withoutPresence drops online and last seen only', () {
+    final present = Subscription(
+      topic: 'usrBob',
+      lastSeq: 10,
+      online: true,
+      public: const Profile(name: 'Bob'),
+      seen: LastSeen(when: DateTime.utc(2026, 10, 5)),
+    );
+    expect(
+      withoutPresence(present),
+      const Subscription(
+        topic: 'usrBob',
+        lastSeq: 10,
+        public: Profile(name: 'Bob'),
+      ),
+    );
+    expect(withoutPresence(stored), same(stored));
+  });
+
+  test('descriptionWithoutPresence drops the last seen only', () {
+    final description = TopicDescription(
+      lastSeq: 4,
+      seen: LastSeen(when: DateTime.utc(2026, 10, 5)),
+    );
+    expect(
+      descriptionWithoutPresence(description),
+      const TopicDescription(lastSeq: 4),
+    );
+  });
+
   test('the watermark is the newest change, less a millisecond', () {
     expect(chatListWatermark(const []), isNull);
     expect(
