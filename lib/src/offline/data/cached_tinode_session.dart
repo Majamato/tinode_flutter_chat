@@ -4,6 +4,7 @@ import 'dart:math' show max, min;
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
+import 'package:drift/native.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
@@ -13,6 +14,8 @@ import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.da
 import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/progress_throttle.dart';
+import 'package:tinode_flutter_chat/src/offline/data/call_log.dart';
+import 'package:tinode_flutter_chat/src/offline/data/call_log_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
@@ -43,8 +46,8 @@ const _latestPage = 32;
 /// Chats the latest catch-up fetches at once.
 const _latestConcurrency = 4;
 
-/// A [ChatSession] over a remote [TinodeSession], a [ChatStore] and a
-/// [FileStore] (in memory unless given).
+/// A [ChatSession] over a remote [TinodeSession], a [ChatStore], a [FileStore]
+/// and a [CallLog] (those two in memory unless given).
 ///
 /// What the server sends is written to the store in arrival order; reads
 /// wait for those writes, so they see everything that arrived before.
@@ -62,16 +65,26 @@ const _latestConcurrency = 4;
 /// the cache is behind on, newest first, a few at a time, catches it up
 /// ([catchUp]) and detaches. It also fetches the members a preview needs: a
 /// group's sender's name, and the counters for the user's own message.
+///
+/// The call log keeps every call message that passes through [history] or
+/// arrives live, apart from the cache: what happens to the one can't cost
+/// the other. It starts from the calls already cached. Deletions reach it
+/// like they reach the cache, and a full chat list drops the calls of the
+/// chats no longer in it.
 final class CachedTinodeSession implements ChatSession {
   CachedTinodeSession(
     this._remote,
     this._store, {
     required this.userId,
     FileStore? files,
+    CallLog? calls,
     TinodeCacheLimits limits = const TinodeCacheLimits(),
     this.keepsPresence = true,
     this.latestDelay = const Duration(seconds: 1),
-  }) : _files = files ?? MemoryFileStore() {
+  }) : _files = files ?? MemoryFileStore(),
+       _calls = calls ?? CallLog(CallLogDatabase(NativeDatabase.memory())) {
+    // Before the pruning, which drops the oldest cached calls.
+    unawaited(_write(_seedCallLog));
     unawaited(_prune(limits));
     _subscriptions = [
       _remote.messages.listen(_onMessage),
@@ -87,6 +100,12 @@ final class CachedTinodeSession implements ChatSession {
   final TinodeSession _remote;
   final ChatStore _store;
   final FileStore _files;
+  final CallLog _calls;
+
+  /// How many times each chat was forgotten, so that a page asked for
+  /// before that doesn't put its calls back: unlike the cache, the log
+  /// doesn't prune chats that are gone.
+  final _forgotten = <String, int>{};
 
   /// Downloads under way, by URL, shared by everyone asking.
   final _fetches = <String, _Fetch>{};
@@ -453,12 +472,15 @@ final class CachedTinodeSession implements ChatSession {
   Future<List<Subscription>> _syncChatList() async {
     await _writes;
     final since = chatListWatermark(await _store.chats());
+    // Read first: a call of a new chat may land while the list is fetched.
+    final logged = since == null ? await _loggedTopics() : const <String>{};
     var fetched = await _remote.chatList(ifModifiedSince: since);
     if (!keepsPresence) {
       fetched = fetched.map(withoutPresence).toList();
     }
     if (since == null) {
       await _store.replaceChats(fetched);
+      await _write(() => _forgetCallsOfChatsGone(logged, fetched));
     } else {
       await _store.mergeChats(fetched);
     }
@@ -472,6 +494,23 @@ final class CachedTinodeSession implements ChatSession {
       for (final chat in chats)
         withPresence(chat, online: online.contains(chat.topic)),
     ];
+  }
+
+  /// Drops the calls of the [logged] chats that a full list, [fetched], no
+  /// longer has: they went while this log wasn't listening. An empty list
+  /// proves nothing, and the log can't be fetched again.
+  Future<void> _forgetCallsOfChatsGone(
+    Set<String> logged,
+    List<Subscription> fetched,
+  ) async {
+    if (fetched.isEmpty) {
+      return;
+    }
+    final listed = {for (final chat in fetched) chat.topic};
+    for (final topic in logged.difference(listed)) {
+      await _calls.deleteChat(topic);
+      _changed(topic);
+    }
   }
 
   /// The topics of [chats] with messages, the newest message first.
@@ -528,19 +567,28 @@ final class CachedTinodeSession implements ChatSession {
     int? since,
     int? before,
   }) async {
+    final forgotten = _forgotten[topic];
     final page = await _remote.history(
       topic,
       limit: limit,
       since: since,
       before: before,
     );
-    await _write(
-      () => _store.putMessages(
-        topic,
-        page,
-        covering: _covered(page, since: since, before: before, limit: limit),
+    // Queued together: a deletion must not land between the two.
+    unawaited(
+      _write(
+        () => _store.putMessages(
+          topic,
+          page,
+          covering: _covered(page, since: since, before: before, limit: limit),
+        ),
       ),
     );
+    await _write(() async {
+      if (_forgotten[topic] == forgotten) {
+        await _calls.put(page);
+      }
+    });
     _changed(topic);
     return page;
   }
@@ -556,7 +604,7 @@ final class CachedTinodeSession implements ChatSession {
   @override
   Future<List<CachedCall>> storedCalls({String? topic}) async {
     await _writes;
-    return _store.calls(topic: topic);
+    return _calls.calls(topic: topic);
   }
 
   @override
@@ -640,10 +688,17 @@ final class CachedTinodeSession implements ChatSession {
     await _writes;
     final top = (await _store.coverage(topic)).top;
     if (top == null) {
+      // Read first: the page may log calls of its own.
+      final logged = (await _loggedTopics()).contains(topic);
       final page = await history(topic, limit: limit);
-      // Nothing cached to delete: deletions so far are already applied.
-      final chat = await _store.chat(topic);
-      await _store.setSyncedDeleteId(topic, chat?.lastDeleteId ?? 0);
+      if (logged) {
+        // The log outlived the cache, and deletions may have gone by.
+        await _syncDeletes(topic);
+      } else {
+        // Nothing kept to delete: deletions so far are already applied.
+        final chat = await _store.chat(topic);
+        await _store.setSyncedDeleteId(topic, chat?.lastDeleteId ?? 0);
+      }
       return CatchUp(page, gap: true);
     }
     final page = await history(topic, since: top.high, limit: limit);
@@ -671,6 +726,10 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   Future<void> _applyDeletion(String topic, List<SeqRange> ranges) async {
+    await _quietly(
+      'Could not delete logged calls',
+      () => _calls.deleteRanges(topic, ranges),
+    );
     final deleted = await _store.messagesInRanges(topic, ranges);
     await _store.deleteMessages(topic, ranges);
     await _forgetKeptFiles(deleted);
@@ -799,6 +858,7 @@ final class CachedTinodeSession implements ChatSession {
     if (ranges.isEmpty) {
       return;
     }
+    unawaited(_write(() => _calls.deleteRanges(topic, ranges)));
     await _write(() async {
       final deleted = await _store.messagesInRanges(topic, ranges);
       await _store.deleteMessages(topic, ranges);
@@ -1382,34 +1442,43 @@ final class CachedTinodeSession implements ChatSession {
 
   // Arriving events.
 
-  void _onMessage(DataMessage message) => unawaited(
-    _write(() async {
-      await _store.putLive(message);
-      final own = message.from == userId;
-      await _store.advanceChat(
-        message.topic,
-        lastSeq: message.seq,
-        read: own ? message.seq : null,
-        lastMessageAt: message.time,
-      );
-      // The server moves a sender's own counters to their message.
-      if (message.from case final from?) {
-        await _store.advanceMember(
-          message.topic,
-          from,
-          read: message.seq,
-          received: message.seq,
-        );
-      }
-      // The echo of an outbox message may beat the server's ack.
-      if (clientIdOf(message.head) case final id? when own) {
-        if (await _store.outboxByClientId(id) case final entry?) {
-          await _complete(entry, message);
+  void _onMessage(DataMessage message) {
+    unawaited(_write(() => _storeLive(message)));
+    unawaited(
+      _write(() async {
+        if (await _calls.put([message])) {
+          _changed(message.topic);
         }
+      }),
+    );
+  }
+
+  Future<void> _storeLive(DataMessage message) async {
+    await _store.putLive(message);
+    final own = message.from == userId;
+    await _store.advanceChat(
+      message.topic,
+      lastSeq: message.seq,
+      read: own ? message.seq : null,
+      lastMessageAt: message.time,
+    );
+    // The server moves a sender's own counters to their message.
+    if (message.from case final from?) {
+      await _store.advanceMember(
+        message.topic,
+        from,
+        read: message.seq,
+        received: message.seq,
+      );
+    }
+    // The echo of an outbox message may beat the server's ack.
+    if (clientIdOf(message.head) case final id? when own) {
+      if (await _store.outboxByClientId(id) case final entry?) {
+        await _complete(entry, message);
       }
-      _changed(message.topic);
-    }),
-  );
+    }
+    _changed(message.topic);
+  }
 
   void _onPresence(PresMessage presence) {
     final source = presence.source;
@@ -1492,8 +1561,14 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   /// The chat was deleted, or this user left or was removed: its cache,
-  /// kept files and queued messages go.
+  /// calls, kept files and queued messages go.
   Future<void> _forgetChat(String topic) async {
+    _forgotten.update(topic, (times) => times + 1, ifAbsent: () => 1);
+    await _quietly(
+      'Could not forget logged calls',
+      () => _calls.deleteChat(topic),
+    );
+    _changed(topic);
     if (_uploading case final uploading?
         when (await _store.outboxByClientId(uploading))?.topic == topic) {
       _abortUpload();
@@ -1557,6 +1632,27 @@ final class CachedTinodeSession implements ChatSession {
     return _store.searchMessages(topic, match, limit: limit, before: before);
   }
 
+  // The call log.
+
+  /// Copies the cached calls into a log that has nothing yet: the calls of
+  /// an app updated from before the log. All or none, so a start that
+  /// doesn't get through this tries again next time.
+  Future<void> _seedCallLog() async {
+    if (await _calls.isEmpty) {
+      await _calls.put(await _store.callMessages());
+    }
+  }
+
+  /// The chats with logged calls; none when the log can't say.
+  Future<Set<String>> _loggedTopics() async {
+    try {
+      return await _calls.topics();
+    } on Object catch (e, stackTrace) {
+      _log('Could not read the call log', e, stackTrace);
+      return const {};
+    }
+  }
+
   Future<void> _prune(TinodeCacheLimits limits) async {
     await _write(() => _store.prune(keepPerChat: limits.messagesPerChat));
     try {
@@ -1614,6 +1710,7 @@ final class CachedTinodeSession implements ChatSession {
     await _remote.close();
     await _writes;
     await _store.close();
+    await _quietly('Could not close the call log', _calls.close);
     unawaited(_outbox.close());
     unawaited(_deletions.close());
     unawaited(_storedChanges.close());
@@ -1632,7 +1729,7 @@ final class CachedTinodeSession implements ChatSession {
     return high != null && high > low ? SeqRange(low, high) : null;
   }
 
-  /// File chores must not stop the outbox: a failure is logged.
+  /// File and call log chores must not stop the rest: a failure is logged.
   static Future<void> _quietly(
     String message,
     Future<void> Function() action,

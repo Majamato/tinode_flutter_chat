@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_history_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_list.dart';
 
-/// A spinner until the cache was read, then the calls. Watches only
-/// whether the cache was read.
+/// A spinner until the call log was read, then the calls. Watches only
+/// whether it was read.
 class CallHistoryBody extends ConsumerWidget {
   const CallHistoryBody({super.key});
 

@@ -107,8 +107,9 @@ The floating glass bar with the chats, the calls history and the settings, on by
 `HomeTab`, `HomeTabBar`.
 
 **Calls history**
-The calls of direct chats the cache holds, newest first, in its own tab; not "call log". *In
-code:* `CallHistoryController`, `CallHistoryEntry`, `CallsScreen`.
+The calls of direct chats shown newest first, in their own tab, read from the **call log**. The
+tab is the calls history; "call log" means only the file behind it. *In code:*
+`CallHistoryController`, `CallHistoryEntry`, `CallsScreen`.
 
 **Appearance**
 The palette and the light, dark or system theme the user picks on this device, from the host's
@@ -229,9 +230,19 @@ theirs, and the file cache drops the files used longest ago until it fits.
 How much pruning keeps: messages per chat (1000 by default) and the size of the file cache
 (200 MiB). The host sets them. *In code:* `TinodeCacheLimits`, `TinodeChat.cacheLimits`.
 
+**Call log**
+The call messages of direct chats the app has seen, kept on the device apart from the cache, in a
+SQLite file of their own per server and user. Unlike the cache it can't be fetched again, so
+pruning doesn't touch it and it stays through a log out: the user's calls are there on their next
+login, without asking the server. Only deleting the account deletes it. It starts from the calls
+in the cache, then takes every call that arrives or is loaded; what it never saw isn't in it.
+Calls deleted from a chat, and the calls of chats that go, leave it. *In code:* `CallLog`,
+`CallLogDatabase`, `ChatStoreOpener.openCallLog`.
+
 **Log out**
 Ends the session for good: deletes the user's cache, including unsent messages, and forgets the
-credentials. *In code:* `SessionController.logout`, `TinodeChatController.logOut`, `onLoggedOut`.
+credentials. The **call log** stays for the user's next login. *In code:*
+`SessionController.logout`, `TinodeChatController.logOut`, `onLoggedOut`.
 
 ## Account and profile
 

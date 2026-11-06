@@ -9,6 +9,7 @@ targets:
       drift_dev:
         generate_for:
           - lib/src/offline/data/chat_database.dart
+          - lib/src/offline/data/call_log_database.dart
           - lib/src/offline/data/chat_search.drift
         options:
           store_date_time_values_as_text: true

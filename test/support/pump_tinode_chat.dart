@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart'
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
+import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
@@ -20,7 +21,8 @@ import 'fake_voice_player.dart';
 import 'fake_voice_recorder.dart';
 import 'test_container.dart';
 
-/// Pumps a [TinodeChat] in a `MaterialApp`, connected to [session].
+/// Pumps a [TinodeChat] in a `MaterialApp`, connected to [session], or
+/// through [connector], for a test that needs another link after a logout.
 Future<void> pumpTinodeChat(
   WidgetTester tester,
   FakeTinodeSession session, {
@@ -29,6 +31,7 @@ Future<void> pumpTinodeChat(
   FakeNetworkMonitor? network,
   CallMediaFactory? callMedia,
   SystemCalls? systemCalls,
+  SessionConnector? connector,
   ChatStoreOpener? storeOpener,
   MemoryFileStoreOpener? fileStoreOpener,
   FileOpener? fileOpener,
@@ -69,7 +72,7 @@ Future<void> pumpTinodeChat(
       ),
       home: TinodeChat.withConnector(
         config: config ?? testConfig,
-        connector: connectTo(session),
+        connector: connector ?? connectTo(session),
         restorer: restoreTo(session),
         storeOpener: storeOpener ?? MemoryChatStoreOpener(),
         fileStoreOpener: fileStoreOpener ?? MemoryFileStoreOpener(),

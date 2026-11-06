@@ -5,8 +5,8 @@ import 'package:tinode_flutter_chat/src/calls/domain/call_history_entry.dart';
 /// Names one call of the history: its chat and the seq that started it.
 typedef CallId = ({String topic, int seq});
 
-/// The calls history: the calls the cache holds in direct chats, by chat,
-/// and the newest [limit] of them, newest first.
+/// The calls history: the calls the call log holds, by chat, and the newest
+/// [limit] of them, newest first.
 ///
 /// Updates keep the same [ids] instance while the order is the same, so a
 /// list that selects [ids] doesn't rebuild when only a call changed.
@@ -23,7 +23,7 @@ final class CallHistory {
   /// The most calls the history shows.
   static const limit = 200;
 
-  /// The cache was read.
+  /// The call log was read.
   final bool loaded;
 
   final Map<String, List<CallHistoryEntry>> byTopic;

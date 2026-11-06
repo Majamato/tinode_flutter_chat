@@ -53,7 +53,7 @@ final class ChatStoreOpenerProvider
   }
 }
 
-String _$chatStoreOpenerHash() => r'79dfc6aa461a2240f7ef096eb5617602c0181f48';
+String _$chatStoreOpenerHash() => r'5ed0a23e80445de4214bb4db188ace15333bcc5d';
 
 /// How much of each user's chats stays on the device;
 /// `createTinodeContainer` overrides it with the host's.

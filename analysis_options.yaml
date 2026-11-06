@@ -11,6 +11,7 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "test/offline/data/generated_migrations/**"
+    - "test/offline/data/generated_call_log_migrations/**"
 
 plugins:
   riverpod_lint: 3.1.4

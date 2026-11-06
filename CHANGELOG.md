@@ -10,6 +10,15 @@
 - **Behaviour change:** the Calls tab no longer fetches when it shows, and has no pull to refresh:
   its calls come from the same background catch-up as the chat list's previews, right after
   logging in.
+- **Fix:** the Calls tab keeps its calls after logging out and back in. Every call the app sees
+  now goes into a call log, a SQLite file of its own per server and user, which pruning doesn't
+  touch and which outlives a log out, so the calls show on the next login without asking the
+  server. An app updated to this version starts from the calls it has cached. Calls it never saw
+  aren't in the log, so a new device shows only what reaches it, and older calls appear as a chat
+  is scrolled back to them. Deleted calls, and the calls of chats that go, leave the log.
+- **Behaviour change:** logging out no longer deletes everything about the user on the device:
+  their call history (who called, when, for how long) stays, in the app's private storage,
+  unencrypted like the cache, for that user's next login. Deleting the account deletes it.
 - **Behaviour change:** an Account row in the settings, under the profile, opens a new account
   screen with "Change password", "Log out" and "Delete account", in cards like the settings.
   Log out is no longer on the settings tab itself, and the password change and account deletion

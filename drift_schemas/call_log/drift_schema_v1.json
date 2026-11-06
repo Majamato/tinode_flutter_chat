@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "description": "This file contains a serialized version of schema entities for drift.",
+    "version": "1.3.0"
+  },
+  "options": {
+    "store_date_time_values_as_text": true
+  },
+  "entities": [
+    {
+      "id": 0,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "call_messages",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "topic",
+            "getter_name": "topic",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "seq",
+            "getter_name": "seq",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "replaces",
+            "getter_name": "replaces",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "json",
+            "getter_name": "json",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "topic",
+          "seq"
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "references": [
+        0
+      ],
+      "type": "index",
+      "data": {
+        "on": 0,
+        "name": "call_messages_replaces",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "topic",
+            "order_by": null
+          },
+          {
+            "column": "replaces",
+            "order_by": null
+          }
+        ]
+      }
+    }
+  ],
+  "fixed_sql": [
+    {
+      "name": "call_messages",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"call_messages\" (\"topic\" TEXT NOT NULL, \"seq\" INTEGER NOT NULL, \"replaces\" TEXT NULL, \"json\" TEXT NOT NULL, PRIMARY KEY (\"topic\", \"seq\"));"
+        }
+      ]
+    },
+    {
+      "name": "call_messages_replaces",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX call_messages_replaces ON call_messages (topic, replaces)"
+        }
+      ]
+    }
+  ]
+}

@@ -57,42 +57,6 @@ void main() {
     });
   });
 
-  group('calls', () {
-    test('each call with its updates, in order', () async {
-      await store.putMessages(bob, [
-        callMessage(bob, 1, audioOnly: true),
-        message(bob, 2),
-        callUpdate(bob, 3, 1, CallState.accepted),
-        callMessage(bob, 4),
-        callUpdate(bob, 5, 1, CallState.finished),
-      ]);
-      await store.putMessages(carol, [callMessage(carol, 8, from: alice)]);
-
-      final calls = await store.calls();
-      expect(calls.map((c) => (c.message.topic, c.message.seq)), [
-        (bob, 1),
-        (bob, 4),
-        (carol, 8),
-      ]);
-      expect(calls.first.message.head?.audioOnly, isTrue);
-      expect(calls.first.updates.map((m) => m.seq), [3, 5]);
-      expect(calls[1].updates, isEmpty);
-
-      final onlyCarol = await store.calls(topic: carol);
-      expect(onlyCarol.map((c) => c.message.seq), [8]);
-    });
-
-    test('leaves out other messages and updates of calls not kept', () async {
-      await store.putMessages(bob, [
-        message(bob, 1),
-        // Its call was pruned.
-        callUpdate(bob, 3, 2, CallState.missed),
-      ]);
-
-      expect(await store.calls(), isEmpty);
-    });
-  });
-
   group('members', () {
     test('a full list replaces the members, merged', () async {
       await store.replaceMembers(friends, [

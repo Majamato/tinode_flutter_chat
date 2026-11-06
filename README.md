@@ -333,7 +333,8 @@ Each user's chats are kept on the device, so they open without waiting for the s
 
 Pass the token of the user who last logged in as `TinodeCredentials.token`, and the app opens
 their chats even with no network, logging in once the server answers. Logging out, from the chat
-list's menu or with a `TinodeChatController`, deletes the user's cache:
+list's menu or with a `TinodeChatController`, deletes the user's cache. Their call history stays
+on the device, in a file of its own, for their next login; deleting the account deletes it:
 
 ```dart
 final chat = TinodeChatController();

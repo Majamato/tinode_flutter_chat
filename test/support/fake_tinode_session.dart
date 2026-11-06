@@ -36,10 +36,15 @@ final class FakeTinodeSession implements TinodeSession {
   /// When set, `history` waits for it before answering.
   Completer<void>? holdHistory;
 
+  /// When set, `chatList` answers what [chats] held when it was asked,
+  /// after waiting for it.
+  Completer<void>? holdChatList;
+
   /// When set, the next `chatList`, `history`, `publish` or
   /// `deleteMessages` throws it.
   Exception? failChatList;
   Exception? failHistory;
+  Exception? failDeleteLog;
   Exception? failPublish;
   Exception? failDelete;
 
@@ -477,7 +482,9 @@ final class FakeTinodeSession implements TinodeSession {
       failChatList = null;
       throw error;
     }
-    return List.of(chats);
+    final answer = List.of(chats);
+    await holdChatList?.future;
+    return answer;
   }
 
   @override
@@ -666,6 +673,10 @@ final class FakeTinodeSession implements TinodeSession {
   Future<DeleteLog> deleteLog(String topic, {int? since, int? limit}) async {
     calls.add('deleteLog $topic${since == null ? '' : ' since $since'}');
     _requireConnected();
+    if (failDeleteLog case final error?) {
+      failDeleteLog = null;
+      throw error;
+    }
     final entries = [
       for (final MapEntry(key: id, value: ranges)
           in (deleteLogs[topic] ?? const <int, List<SeqRange>>{}).entries)

@@ -36,7 +36,7 @@ abstract interface class ChatSession implements TinodeSession {
   /// [storedChanges] then names them.
   Future<Map<String, LatestMessage>> storedLatestMessages({String? topic});
 
-  /// The call messages in the cache, or only [topic]'s, each with its
+  /// The call messages in the call log, or only [topic]'s, each with its
   /// updates; never asks the server.
   Future<List<CachedCall>> storedCalls({String? topic});
 

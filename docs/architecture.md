@@ -47,11 +47,12 @@ lib/
       presentation/chat_list/     list screen and its tile parts, the account menu
       presentation/chat/          chat screen, message list, bubbles, reveal highlight, composer
       presentation/chat_info/     chat info screen: members, delete, leave
-    offline/                      the cache, catching up, the outbox and pruning
+    offline/                      the cache, the call log, catching up, the outbox and pruning
       domain/                     SeqRanges, OutgoingMessage, outbox events, merge and retry rules,
                                   TinodeCacheLimits (public)
       data/                       ChatDatabase (drift, v3; message search in chat_search.drift),
-                                  ChatStore, ChatStoreOpener, ChatSession, CachedTinodeSession
+                                  ChatStore, CallLogDatabase (drift, v1), CallLog,
+                                  ChatStoreOpener, ChatSession, CachedTinodeSession
       application/                chatStoreOpener, tinodeCacheLimits
     search/                       message search over the cache
       domain/                     messageMatch, FoundMessage, MessageSnippet, FoundSender,
@@ -425,12 +426,28 @@ ChatPreview>>`):
 
 **Calls history** (`CallHistoryController`, keepAlive, sync `Notifier<CallHistory>`):
 
-1. The cache's call messages: `ChatStore.calls` finds them by `head.webrtc`, each with its
-   updates (`head.replace`), in one query on schema v3. `CallHistoryEntry.of` applies the updates
-   as a bubble does. Direct chats only.
+1. The call log's messages (`CallLog.calls`), each with its updates (`head.replace`).
+   `CallHistoryEntry.of` applies the updates as a bubble does. Direct chats only.
 2. Like the previews, it reads them all on build, then a chat again when `storedChanges` names it.
-3. The session's latest catch-up fills the cache (see chat list previews); the history only
-   reads it. History pages never ring: only live `data` packets do.
+   When the log can't be read the history is empty rather than loading forever, and a failed
+   read of a change keeps what shows.
+3. The history only reads. `CachedTinodeSession` fills the log: every page through `history`
+   (catch-ups, scrolling, reconciling) and every live message, each in a write of its own queued
+   right behind the cache's, so a failure on one side doesn't cost the other and no deletion can
+   land between the two. History pages never ring: only live `data` packets do.
+4. The log is its own SQLite file (`CallLogDatabase`, `ChatStoreOpener.openCallLog`), because the
+   cache is disposable and this isn't: a log out and pruning leave it alone, and only ending the
+   account deletes it (`SessionController._endSession`). It opens through
+   `openCallLogOrFallBack`, which reads it once, since the file only opens on the first read. Its
+   connection waits for a second one (`busy_timeout`): a refused write would be a call lost.
+5. The log starts from the calls in the cache (`ChatStore.callMessages`), before the first
+   pruning, when it is empty.
+6. What goes from the server goes from the log: deletions as they arrive and from the delete log;
+   a chat that goes (`_forgetChat`, which also stops a page in flight from putting its calls
+   back); and, after a log out, the deletions missed (a catch-up with nothing cached reads the
+   whole delete log for a chat the log has calls in) and the chats missed (a full, non-empty chat
+   list drops the calls of those no longer in it, among the topics logged before it was fetched,
+   so that a call landing meanwhile stays).
 
 **Chat** (`ChatController(topic)`, autoDispose, sync `Notifier<ChatState>`):
 

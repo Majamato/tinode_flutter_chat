@@ -8,30 +8,39 @@ part of 'call_history_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// The calls history, read from the cache like the chat list's previews:
-/// all calls first, then a chat's again when its cached messages change
-/// (`ChatSession.storedChanges`). Only direct chats have calls.
+/// The calls history, read from the call log like the chat list's previews
+/// from the cache: all calls first, then a chat's again when its stored
+/// messages change (`ChatSession.storedChanges`). Only direct chats have
+/// calls.
 ///
-/// The cache holds only what this device fetched, so [refresh] fetches the
-/// newest messages of the direct chats it is behind on.
+/// It never asks the server: every call the session sees reaches the log,
+/// and its latest catch-up fetches the newest messages of each chat it is
+/// behind on, calls included. When the log can't be read the history is
+/// empty rather than loading forever, and what it shows stays.
 
 @ProviderFor(CallHistoryController)
 final callHistoryControllerProvider = CallHistoryControllerProvider._();
 
-/// The calls history, read from the cache like the chat list's previews:
-/// all calls first, then a chat's again when its cached messages change
-/// (`ChatSession.storedChanges`). Only direct chats have calls.
+/// The calls history, read from the call log like the chat list's previews
+/// from the cache: all calls first, then a chat's again when its stored
+/// messages change (`ChatSession.storedChanges`). Only direct chats have
+/// calls.
 ///
-/// The cache holds only what this device fetched, so [refresh] fetches the
-/// newest messages of the direct chats it is behind on.
+/// It never asks the server: every call the session sees reaches the log,
+/// and its latest catch-up fetches the newest messages of each chat it is
+/// behind on, calls included. When the log can't be read the history is
+/// empty rather than loading forever, and what it shows stays.
 final class CallHistoryControllerProvider
     extends $NotifierProvider<CallHistoryController, CallHistory> {
-  /// The calls history, read from the cache like the chat list's previews:
-  /// all calls first, then a chat's again when its cached messages change
-  /// (`ChatSession.storedChanges`). Only direct chats have calls.
+  /// The calls history, read from the call log like the chat list's previews
+  /// from the cache: all calls first, then a chat's again when its stored
+  /// messages change (`ChatSession.storedChanges`). Only direct chats have
+  /// calls.
   ///
-  /// The cache holds only what this device fetched, so [refresh] fetches the
-  /// newest messages of the direct chats it is behind on.
+  /// It never asks the server: every call the session sees reaches the log,
+  /// and its latest catch-up fetches the newest messages of each chat it is
+  /// behind on, calls included. When the log can't be read the history is
+  /// empty rather than loading forever, and what it shows stays.
   CallHistoryControllerProvider._()
     : super(
         from: null,
@@ -60,14 +69,17 @@ final class CallHistoryControllerProvider
 }
 
 String _$callHistoryControllerHash() =>
-    r'e4b659db6040e3119f24d27a1d8d3d4429ef5e98';
+    r'dca204b5f1afe19179b47fc7226f370ae1e3cb0f';
 
-/// The calls history, read from the cache like the chat list's previews:
-/// all calls first, then a chat's again when its cached messages change
-/// (`ChatSession.storedChanges`). Only direct chats have calls.
+/// The calls history, read from the call log like the chat list's previews
+/// from the cache: all calls first, then a chat's again when its stored
+/// messages change (`ChatSession.storedChanges`). Only direct chats have
+/// calls.
 ///
-/// The cache holds only what this device fetched, so [refresh] fetches the
-/// newest messages of the direct chats it is behind on.
+/// It never asks the server: every call the session sees reaches the log,
+/// and its latest catch-up fetches the newest messages of each chat it is
+/// behind on, calls included. When the log can't be read the history is
+/// empty rather than loading forever, and what it shows stays.
 
 abstract class _$CallHistoryController extends $Notifier<CallHistory> {
   CallHistory build();

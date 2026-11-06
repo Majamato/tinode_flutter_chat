@@ -17,7 +17,7 @@
 |------|-------|-------|
 | Domain | Pure rules: merging, counters, ordering, identity of unchanged state | plain `test` |
 | Application | Providers with a fake session: loading, live updates, errors, lifecycle | `createTestContainer`, `loggedInContainer` |
-| Data | `ClientTinodeSession` over an in-memory WebSocket; `ChatStore` and `CachedTinodeSession` over an in-memory SQLite | `package:web_socket/testing.dart` `fakes()`, `NativeDatabase.memory()` |
+| Data | `ClientTinodeSession` over an in-memory WebSocket; `ChatStore`, `CallLog` and `CachedTinodeSession` over an in-memory SQLite, or real files | `package:web_socket/testing.dart` `fakes()`, `NativeDatabase.memory()` |
 | Widget | Screens and flows through `TinodeChat`, rebuild scope | `pumpTinodeChat`, `testWidgets` |
 | Integration | The real client against a real server | `@Tags(['integration'])` |
 
@@ -129,12 +129,41 @@ fill the cache, then a second with `session.reachable = false` (see
 `test/offline/cold_start_test.dart`). `test/flutter_test_config.dart` silences drift's warning about
 several in-memory databases.
 
+`holdChatList` holds a chat list sync, and `failDeleteLog` refuses the next read of the delete log.
+
+## The call log in tests
+
+The call log can't be fetched again, so it is tested harder than the cache:
+
+- `test/offline/data/call_log_test.dart`: the log alone.
+- `test/support/cached_calls_oracle.dart` keeps, word for word, the query the cache answered with
+  before the log. Where nothing was logged out or pruned the log must match it. Don't improve it.
+- `test/offline/data/call_log_model_test.dart`: random days with the app through the real session
+  and SQLite, each step checked against a plain model. Each day also runs with a log that always
+  fails, and the cache must come out the same. A failure prints its seed and steps. When the
+  session gains an operation, add it there.
+- `test/offline/data/call_log_file_test.dart`: the real `DeviceChatStoreOpener` on real files in
+  a temporary folder (give it `directory:`). It answers `path_provider`'s channel because drift
+  asks it for a temporary folder.
+- `DatabaseFault` (`test/support/faulty_database.dart`) makes a real database fail, half way
+  through a batch too, or holds a batch so a test can act in the middle of it:
+  `NativeDatabase.memory().interceptWith(fault)`. `FaultyStoreOpener` puts it behind a whole app.
+- `test/session/application/call_log_lifecycle_test.dart` goes through every way a session ends.
+- `test/integration/call_log_test.dart` runs on the real server. A direct chat gives its members
+  no `D`, so a peer's "delete for everyone" stays their own: deletions that reach a user come from
+  their other devices.
+
 `drift_schemas/` holds the schema of each version (`dart run drift_dev schema dump
 lib/src/offline/data/chat_database.dart drift_schemas/`). Dump it again when the schema version
 goes up, regenerate the test helpers (`dart run drift_dev schema generate drift_schemas/
 test/offline/data/generated_migrations/`), and add the step to
 `test/offline/data/chat_database_migration_test.dart`: the schema it migrates to, and the data a
 cache of the older version keeps.
+
+The call log has its own in `drift_schemas/call_log/`, helpers in
+`test/offline/data/generated_call_log_migrations/`, and its steps in
+`test/offline/data/call_log_database_migration_test.dart`. A file of it can't be rebuilt, so every
+step must keep its rows.
 
 ## Files in tests
 

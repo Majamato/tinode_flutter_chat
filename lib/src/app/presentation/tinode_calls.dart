@@ -65,7 +65,7 @@ abstract final class TinodeCalls {
             TinodeChatStrings.forLocale(PlatformDispatcher.instance.locale),
       ),
     ),
-    storeOpener: DeviceChatStoreOpener(),
+    storeOpener: const DeviceChatStoreOpener(),
     registerHangUp: registerBackgroundHangUp,
   );
 

@@ -13,9 +13,11 @@ part of 'chat_preview_controller.dart';
 /// or members change (`ChatSession.storedChanges`), changes in one turn
 /// read once.
 ///
-/// It never asks the server: a chat this device isn't attached to gets no
-/// message content, only `pres msg`, so its preview falls behind until the
-/// chat is opened (see `chatPreviewBehindProvider`).
+/// It never asks the server itself: a chat this device isn't attached to
+/// gets no message content, only `pres msg`, and the session's latest
+/// catch-up fetches the newest messages (and the members a preview needs)
+/// into the cache. Until then, or while offline, the preview is behind
+/// (see `chatPreviewBehindProvider`).
 
 @ProviderFor(ChatPreviewController)
 final chatPreviewControllerProvider = ChatPreviewControllerProvider._();
@@ -25,9 +27,11 @@ final chatPreviewControllerProvider = ChatPreviewControllerProvider._();
 /// or members change (`ChatSession.storedChanges`), changes in one turn
 /// read once.
 ///
-/// It never asks the server: a chat this device isn't attached to gets no
-/// message content, only `pres msg`, so its preview falls behind until the
-/// chat is opened (see `chatPreviewBehindProvider`).
+/// It never asks the server itself: a chat this device isn't attached to
+/// gets no message content, only `pres msg`, and the session's latest
+/// catch-up fetches the newest messages (and the members a preview needs)
+/// into the cache. Until then, or while offline, the preview is behind
+/// (see `chatPreviewBehindProvider`).
 final class ChatPreviewControllerProvider
     extends $NotifierProvider<ChatPreviewController, Map<String, ChatPreview>> {
   /// The preview of each chat's newest message, by topic, read from the
@@ -35,9 +39,11 @@ final class ChatPreviewControllerProvider
   /// or members change (`ChatSession.storedChanges`), changes in one turn
   /// read once.
   ///
-  /// It never asks the server: a chat this device isn't attached to gets no
-  /// message content, only `pres msg`, so its preview falls behind until the
-  /// chat is opened (see `chatPreviewBehindProvider`).
+  /// It never asks the server itself: a chat this device isn't attached to
+  /// gets no message content, only `pres msg`, and the session's latest
+  /// catch-up fetches the newest messages (and the members a preview needs)
+  /// into the cache. Until then, or while offline, the preview is behind
+  /// (see `chatPreviewBehindProvider`).
   ChatPreviewControllerProvider._()
     : super(
         from: null,
@@ -73,9 +79,11 @@ String _$chatPreviewControllerHash() =>
 /// or members change (`ChatSession.storedChanges`), changes in one turn
 /// read once.
 ///
-/// It never asks the server: a chat this device isn't attached to gets no
-/// message content, only `pres msg`, so its preview falls behind until the
-/// chat is opened (see `chatPreviewBehindProvider`).
+/// It never asks the server itself: a chat this device isn't attached to
+/// gets no message content, only `pres msg`, and the session's latest
+/// catch-up fetches the newest messages (and the members a preview needs)
+/// into the cache. Until then, or while offline, the preview is behind
+/// (see `chatPreviewBehindProvider`).
 
 abstract class _$ChatPreviewController
     extends $Notifier<Map<String, ChatPreview>> {

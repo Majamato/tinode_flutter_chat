@@ -6,7 +6,7 @@ part 'offline_inputs.g.dart';
 
 /// Where the per-user caches live; tests override it with memory.
 @Riverpod(keepAlive: true)
-ChatStoreOpener chatStoreOpener(Ref ref) => DeviceChatStoreOpener();
+ChatStoreOpener chatStoreOpener(Ref ref) => const DeviceChatStoreOpener();
 
 /// How much of each user's chats stays on the device;
 /// `createTinodeContainer` overrides it with the host's.

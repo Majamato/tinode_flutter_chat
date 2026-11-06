@@ -8,6 +8,7 @@ import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/io_file_store.dart';
 import 'package:tinode_flutter_chat/src/offline/application/offline_inputs.dart';
 import 'package:tinode_flutter_chat/src/offline/data/cached_tinode_session.dart';
+import 'package:tinode_flutter_chat/src/offline/data/call_log.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/application/credentials_controller.dart';
@@ -60,11 +61,17 @@ class SessionController extends _$SessionController {
           config.server,
           userId,
         );
+        final calls = await openCallLogOrFallBack(
+          opener,
+          config.server,
+          userId,
+        );
         final session = _cached(
           await restore(config, token),
           store,
           userId: userId,
           files: files,
+          calls: calls,
         );
         open.session = session;
         if (lifetime.isActive) {
@@ -183,12 +190,12 @@ class SessionController extends _$SessionController {
   /// Ends the session for good: removes the push token from the server,
   /// so the device stops getting the user's pushes, deletes the user's
   /// cache, including what the outbox still held, forgets the credentials
-  /// and goes back to the login screen. The host's token stays, for the
-  /// next user to log in.
+  /// and goes back to the login screen. The call log stays, for this user's
+  /// next login, and so does the host's token, for the next user to log in.
   Future<void> logout() async {
     if (state.value case SessionLoggedIn(:final session, :final userId)) {
       await _clearPushToken(session);
-      await _endSession(userId);
+      await _endSession(userId, keepCallLog: true);
     }
   }
 
@@ -255,14 +262,17 @@ class SessionController extends _$SessionController {
   }
 
   /// Closes the session, deletes [userId]'s cache and files, and forgets
-  /// them.
-  Future<void> _endSession(String userId) async {
+  /// them. Their call log goes too, unless [keepCallLog].
+  Future<void> _endSession(String userId, {bool keepCallLog = false}) async {
     final server = ref.read(tinodeConfigProvider).server;
     final opener = ref.read(chatStoreOpenerProvider);
     ref.read(credentialsControllerProvider.notifier).forget();
     _open.ending = true;
     await _open.close();
     await _quietly(() => opener.delete(server, userId));
+    if (!keepCallLog) {
+      await _quietly(() => opener.deleteCallLog(server, userId));
+    }
     await _quietly(
       () => ref.read(fileStoreOpenerProvider).delete(server, userId),
     );
@@ -278,13 +288,15 @@ class SessionController extends _$SessionController {
     ref.invalidateSelf();
   }
 
-  /// [session] over the user's [store] and [files], keeping presence only
-  /// when the host allows it; otherwise what the store held is forgotten.
+  /// [session] over the user's [store], [files] and [calls], keeping
+  /// presence only when the host allows it; otherwise what the store held
+  /// is forgotten.
   CachedTinodeSession _cached(
     TinodeSession session,
     ChatStore store, {
     required String userId,
     required FileStore files,
+    required CallLog calls,
   }) {
     final presence = ref.read(tinodeChatFeaturesProvider).presence;
     final cached = CachedTinodeSession(
@@ -292,6 +304,7 @@ class SessionController extends _$SessionController {
       store,
       userId: userId,
       files: files,
+      calls: calls,
       limits: ref.read(tinodeCacheLimitsProvider),
       keepsPresence: presence,
     );
@@ -314,8 +327,15 @@ class SessionController extends _$SessionController {
       server,
       login.userId,
     );
+    final calls = await openCallLogOrFallBack(opener, server, login.userId);
     await _quietly(() => opener.rememberUser(server, login.userId));
-    final cached = _cached(session, store, userId: login.userId, files: files);
+    final cached = _cached(
+      session,
+      store,
+      userId: login.userId,
+      files: files,
+      calls: calls,
+    );
     _open.session = cached;
     return SessionLoggedIn(cached, userId: login.userId, login: login);
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -12,12 +13,15 @@ import 'package:tinode_flutter_chat/src/shared/application/build_lifetime.dart';
 
 part 'call_history_controller.g.dart';
 
-/// The calls history, read from the cache like the chat list's previews:
-/// all calls first, then a chat's again when its cached messages change
-/// (`ChatSession.storedChanges`). Only direct chats have calls.
+/// The calls history, read from the call log like the chat list's previews
+/// from the cache: all calls first, then a chat's again when its stored
+/// messages change (`ChatSession.storedChanges`). Only direct chats have
+/// calls.
 ///
-/// It never asks the server: the session's latest catch-up fills the cache
-/// with the newest messages of each chat it is behind on, calls included.
+/// It never asks the server: every call the session sees reaches the log,
+/// and its latest catch-up fetches the newest messages of each chat it is
+/// behind on, calls included. When the log can't be read the history is
+/// empty rather than loading forever, and what it shows stays.
 @Riverpod(keepAlive: true)
 class CallHistoryController extends _$CallHistoryController {
   final _changed = <String>{};
@@ -51,7 +55,7 @@ class CallHistoryController extends _$CallHistoryController {
     String me,
     BuildLifetime lifetime,
   ) async {
-    final calls = _byTopic(await session.storedCalls(), me);
+    final calls = _byTopic(await _stored(session) ?? const [], me);
     if (lifetime.isActive) {
       // A chat read again meanwhile is newer than this first read.
       state = state.withCalls({...calls, ...state.byTopic}, all: true);
@@ -69,10 +73,32 @@ class CallHistoryController extends _$CallHistoryController {
       for (final topic in topics) topic: const [],
     };
     for (final topic in topics) {
-      calls.addAll(_byTopic(await session.storedCalls(topic: topic), me));
+      final stored = await _stored(session, topic: topic);
+      if (stored == null) {
+        return;
+      }
+      calls.addAll(_byTopic(stored, me));
     }
     if (lifetime.isActive) {
       state = state.withCalls(calls);
+    }
+  }
+
+  /// The stored calls; null when the log can't be read.
+  static Future<List<CachedCall>?> _stored(
+    ChatSession session, {
+    String? topic,
+  }) async {
+    try {
+      return await session.storedCalls(topic: topic);
+    } on Object catch (e, stackTrace) {
+      log(
+        'Could not read the calls',
+        name: 'tinode_flutter_chat',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 
