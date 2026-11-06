@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_header.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_presence_line.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_info_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
@@ -53,6 +54,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ChatInfoScreen), findsOneWidget);
   }
+
+  Finder inInfo(Finder finder) =>
+      find.descendant(of: find.byType(ChatInfoScreen), matching: finder);
+
+  testWidgets("a direct chat's info says when the peer was last seen", (
+    tester,
+  ) async {
+    session.chats[0] = chat(
+      bob,
+      name: 'Bob',
+      lastSeq: 1,
+      lastMessageAt: at(1),
+      seen: DateTime.now().subtract(const Duration(days: 3)),
+    );
+    await openInfo(tester, 'Bob');
+
+    final lastSeen = inInfo(find.textContaining(strings.lastSeenOn('')));
+    expect(lastSeen, findsOneWidget);
+
+    // Online outranks it, as in the header.
+    session.emitPresence(
+      const PresMessage(topic: 'me', event: PresenceEvent.online, source: bob),
+    );
+    await tester.pump();
+    expect(inInfo(find.text(strings.online)), findsOneWidget);
+    expect(lastSeen, findsNothing);
+  });
+
+  testWidgets("a group's info has no presence", (tester) async {
+    await openInfo(tester, 'Friends');
+
+    expect(inInfo(find.byType(ChatPresenceLine)), findsOneWidget);
+    expect(inInfo(find.text(strings.online)), findsNothing);
+    expect(inInfo(find.textContaining(strings.lastSeenOn(''))), findsNothing);
+  });
 
   Future<void> confirm(WidgetTester tester, String action) async {
     await tester.tap(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/typing_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_presence_line.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_status.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/date_chip.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_bubble.dart';
@@ -250,6 +251,47 @@ void main() {
     );
   });
 
+  testWidgets('a last seen too long for the header slides inside its pill', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(360, 800)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const strings = TinodeChatStrings();
+    final seen = DateTime.now().subtract(const Duration(minutes: 1));
+    session.chats.add(chat(bob, name: 'Bob', lastSeq: 1, read: 1, seen: seen));
+    session.histories[bob] = [message(bob, 1, text: 'hi')];
+    await pumpTinodeChat(
+      tester,
+      session,
+      credentials: TinodeCredentials.token(session.token),
+      reduceMotion: false,
+    );
+    await tester.tap(find.text('Bob'));
+    // It never settles while the text slides.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    final sliding = find.descendant(
+      of: find.byType(ChatStatus),
+      matching: find.byType(SingleChildScrollView),
+    );
+    final scroll = tester.widget<SingleChildScrollView>(sliding).controller!;
+    expect(scroll.position.maxScrollExtent, greaterThan(0));
+    expect(
+      find.descendant(
+        of: find.byType(ChatStatus),
+        matching: find.textContaining(strings.lastSeenToday('')),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.pump(const Duration(seconds: 3));
+    expect(scroll.offset, greaterThan(0));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('no online or last seen while the host turns presence off', (
     tester,
   ) async {
@@ -284,7 +326,7 @@ void main() {
     final now = DateTime(2026, 3, 5, 18);
 
     String lastSeen(DateTime time) =>
-        ChatStatus.lastSeenText(strings, localizations, time, now: now);
+        ChatPresenceLine.lastSeenText(strings, localizations, time, now: now);
 
     test('today at the time', () {
       expect(

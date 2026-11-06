@@ -617,7 +617,9 @@ given by ref through `RefPhotoAvatar`, which watches `attachmentFile` too.
 "Delete for everyone" where the user has `D`. A long press on an outgoing message offers Retry
 (once failed) and Discard.
 
-**Chat info** (`ChatInfoScreen`, a tap on the chat's title): a group's members, owner first, with a
+**Chat info** (`ChatInfoScreen`, a tap on the chat's title): under the name, whether a direct
+chat's peer is online or when they were last seen (`ChatPresenceLine`, also in the chat's header,
+where a long last seen slides as a `SlidingText`); a group's members, owner first, with a
 remove button for those the user may remove (`A`, not the owner, not themselves), and one way out
 (`ChatExit`): "Delete chat" in a 1:1 chat (the peer keeps their side), "Delete group" for the owner
 (for everyone) and "Leave group" for other members. `ChatActionsController(topic)` runs them,

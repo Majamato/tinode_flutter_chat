@@ -27,17 +27,19 @@ may write, whether it is online and muted. *In code:* `ChatSummary`.
 
 **Online**
 The other user of a direct chat has a session open. Live only (`pres on` / `off`), never cached.
-Shown as the online dot on the tile's avatar and "online" under the chat's title. Groups have no
+Shown as the online dot on the tile's avatar and "online" under the chat's title and in its chat
+info. Groups have no
 presence in the UI. Not shown, and not kept, while the host turns presence off; not shown for a
 peer who hides it (see **Presence**). *In code:* `ChatSummary.online`, `ChatOnlineDot`,
-`ChatStatus`.
+`ChatPresenceLine`.
 
 **Last seen**
 When the other user of a direct chat was last online: the server's `seen.when`, or now when
-`pres off` arrives; it never moves back. Shown under the chat's title while they are offline:
+`pres off` arrives; it never moves back. Shown under the chat's title, sliding when it doesn't
+fit, and in its chat info while they are offline:
 "last seen today at 14:05", "… yesterday at 14:05", "… Mar 3". Cached, unlike online, and
 refreshed from the chat's description when it opens. *Avoid:* "last connection".
-*In code:* `ChatSummary.lastSeen`, `ChatStatus`.
+*In code:* `ChatSummary.lastSeen`, `ChatPresenceLine`.
 
 **Presence**
 Online and last seen together. Two separate switches:

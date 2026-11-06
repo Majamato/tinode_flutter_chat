@@ -421,7 +421,7 @@ class TinodeChatStrings {
     this.deleteAccount = 'Eliminar cuenta',
     this.deleteAccountConfirm =
         '¿Eliminar tu cuenta, con tus chats y mensajes? No se puede deshacer.',
-    this.chatInfo = 'Info del chat',
+    this.chatInfo = 'Información del chat',
     this.members = 'Miembros',
     this.ownerLabel = 'Propietario',
     this.youLabel = 'Tú',

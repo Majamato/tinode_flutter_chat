@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_actions_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_presence_line.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_exit_tile.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_members_section.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar.dart';
@@ -9,8 +10,9 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// About one chat: its photo and name, a group's members, and deleting or
-/// leaving it. A failed action shows in a snack bar.
+/// About one chat: its photo and name, whether the peer of a direct chat
+/// is online or when they were last seen, a group's members, and deleting
+/// or leaving it. A failed action shows in a snack bar.
 class ChatInfoScreen extends ConsumerWidget {
   const ChatInfoScreen({required this.topic, super.key});
 
@@ -44,6 +46,12 @@ class ChatInfoScreen extends ConsumerWidget {
               child: DefaultTextStyle.merge(
                 style: Theme.of(context).textTheme.titleLarge,
                 child: ChatTitle(topic: topic),
+              ),
+            ),
+            Center(
+              child: ChatPresenceLine(
+                topic: topic,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
             const SizedBox(height: 24),

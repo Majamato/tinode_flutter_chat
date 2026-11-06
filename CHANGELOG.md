@@ -1,5 +1,10 @@
 ## Unreleased
 
+- **Fix:** a last seen too long for the chat's header slides to its end and back, so all of it
+  can be read, instead of being cut off. With Reduce motion it stays cut.
+- **New:** the chat info of a direct chat shows whether the peer is online, or when they were
+  last seen, under their name.
+- **Fix:** the Spanish chat info title reads "Información del chat".
 - **Fix:** read markers reach the server when a chat opens from the cache. Before, the marker went
   out before the chat was attached, the server didn't take it, and the chat turned unread again
   after a log out or a reinstall. Chats already behind recover the next time they are opened.
