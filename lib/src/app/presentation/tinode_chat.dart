@@ -28,6 +28,7 @@ import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/login_builder_scope.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_header_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/app_bar_builder_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
@@ -78,6 +79,7 @@ class TinodeChat extends StatefulWidget {
     this.bubbleBuilder,
     this.appBarBuilder,
     this.loginHeader,
+    this.loginBuilder,
     this.tabBar = true,
     this.appearance,
     this.appearanceExtra,
@@ -127,6 +129,7 @@ class TinodeChat extends StatefulWidget {
     this.bubbleBuilder,
     this.appBarBuilder,
     this.loginHeader,
+    this.loginBuilder,
     this.tabBar = true,
     this.appearance,
     this.appearanceExtra,
@@ -205,10 +208,25 @@ class TinodeChat extends StatefulWidget {
   /// ```
   final TinodeAppBarBuilder? appBarBuilder;
 
-  /// Shown centred near the top of the login screen, over its backdrop
-  /// and above the sheet that signs in or up: e.g. the app's
-  /// animated logo. Null shows nothing there. Read on every build.
+  /// Shown centred above the default login screen's form: e.g. the app's
+  /// logo. Null shows nothing there. A [loginBuilder] places its own header
+  /// instead. Read on every build.
   final Widget? loginHeader;
+
+  /// Draws the login screen around its working form, in place of the plain
+  /// default one. Sign-up is the same screen; resetting a password and
+  /// confirming an email keep their plain screens, in your theme. Null shows
+  /// the default. Read on every build.
+  ///
+  /// ```dart
+  /// TinodeChat(
+  ///   config: config,
+  ///   loginBuilder: (context, login, defaultLogin) => Center(
+  ///     child: MyCard(child: login.form),
+  ///   ),
+  /// )
+  /// ```
+  final TinodeLoginBuilder? loginBuilder;
 
   /// Whether the chat list sits in a floating tab bar with the calls
   /// history (when [features] offer calls) and the settings: the user's
@@ -381,12 +399,15 @@ class _TinodeChatState extends State<TinodeChat> {
               builder: widget.appBarBuilder,
               child: LoginHeaderScope(
                 header: widget.loginHeader,
-                child: ShellScope(
-                  tabBar: _tabBar,
-                  child: AppearanceScope(
-                    appearance: widget.appearance,
-                    extra: widget.appearanceExtra,
-                    child: const ChatThemeScope(child: SessionGate()),
+                child: LoginBuilderScope(
+                  builder: widget.loginBuilder,
+                  child: ShellScope(
+                    tabBar: _tabBar,
+                    child: AppearanceScope(
+                      appearance: widget.appearance,
+                      extra: widget.appearanceExtra,
+                      child: const ChatThemeScope(child: SessionGate()),
+                    ),
                   ),
                 ),
               ),

@@ -48,6 +48,7 @@ Future<void> pumpTinodeChat(
   TinodeBubbleBuilder? bubbleBuilder,
   TinodeAppBarBuilder? appBarBuilder,
   Widget? loginHeader,
+  TinodeLoginBuilder? loginBuilder,
   bool tabBar = false,
   TinodeAppearance? appearance,
   Widget? appearanceExtra,
@@ -64,8 +65,8 @@ Future<void> pumpTinodeChat(
       localizationsDelegates: locale == null
           ? null
           : GlobalMaterialLocalizations.delegates,
-      // The login screen's bubbles drift for as long as it shows, so
-      // `pumpAndSettle` would never settle on it; Reduce motion stills them.
+      // The call screens loop for as long as they show, so `pumpAndSettle`
+      // would never settle on them; Reduce motion stills them.
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
         child: child!,
@@ -93,6 +94,7 @@ Future<void> pumpTinodeChat(
         bubbleBuilder: bubbleBuilder,
         appBarBuilder: appBarBuilder,
         loginHeader: loginHeader,
+        loginBuilder: loginBuilder,
         tabBar: tabBar,
         appearance: appearance,
         appearanceExtra: appearanceExtra,

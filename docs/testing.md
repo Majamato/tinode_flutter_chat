@@ -110,11 +110,10 @@ and a `MemoryChatStoreOpener` directly (`test/calls/application/call_push_handle
 
 ## Motion in tests
 
-`pumpTinodeChat` turns on Reduce motion (`reduceMotion: true`): the login screen's bubbles drift
-for as long as it shows, so `pumpAndSettle` would never settle on it. A test about motion passes
-`reduceMotion: false` and pumps frames instead of settling (see "the login screen moves" in
-`account_flows_test.dart`). The call screens loop too (the blobs, the avatar rings, the dots of
-"Ringing…"); "the call screen moves" in `call_layer_test.dart` checks them that way.
+`pumpTinodeChat` turns on Reduce motion (`reduceMotion: true`): the call screens loop for as long
+as they show (the blobs, the avatar rings, the dots of "Ringing…"), so `pumpAndSettle` would never
+settle on them. A test about motion passes `reduceMotion: false` and pumps frames instead of
+settling; "the call screen moves" in `call_layer_test.dart` checks them that way.
 
 To seed the cache before the widget opens, open the user's store from a shared
 `MemoryChatStoreOpener` first and put the chats as well as their messages: a new session prunes

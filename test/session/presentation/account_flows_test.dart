@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/auth_mode_switch.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/confirm_email_screen.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/password_reset_screen.dart';
@@ -135,7 +134,7 @@ void main() {
   });
 
   group('the links the login screen offers', () {
-    Finder signUp() => find.byType(AuthModeSwitch);
+    Finder signUp() => find.text(strings.signUpTab);
     Finder reset() => find.text(strings.forgotPassword);
 
     testWidgets('by default sign-up, but no reset without email', (
@@ -220,21 +219,18 @@ void main() {
       expect(find.text('Our logo'), findsOneWidget);
     });
 
-    testWidgets('moves: the sheet rises, the forms swap, the bubbles drift', (
-      tester,
-    ) async {
-      await pumpTinodeChat(tester, session, reduceMotion: false);
-      // The floating bubbles never stop, so frames are pumped, not settled.
-      await tester.pump(const Duration(seconds: 1));
-      expect(find.text(strings.loginBubbleHello), findsOneWidget);
+    testWidgets('swaps its forms at once', (tester) async {
+      await pumpTinodeChat(tester, session);
 
       await tester.tap(find.text(strings.signUpTab));
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
+      await tester.pump();
       expect(find.byType(SignUpForm), findsOneWidget);
       expect(find.text(strings.signUpHeadline), findsOneWidget);
-      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text(strings.loginTitle));
+      await tester.pump();
+      expect(find.byType(SignUpForm), findsNothing);
+      expect(find.text(strings.loginHeadline), findsOneWidget);
     });
 
     testWidgets('with the keyboard open, the button stays above it, and the '
@@ -246,7 +242,6 @@ void main() {
       await pumpTinodeChat(
         tester,
         session,
-        reduceMotion: false,
         loginHeader: const SizedBox.square(dimension: 150),
       );
       Future<void> frames() async {
@@ -280,6 +275,110 @@ void main() {
       await frames();
       expect(tester.takeException(), isNull);
       expect(find.byType(SignUpForm), findsNothing);
+    });
+  });
+
+  group('a login the host draws', () {
+    Widget hostLogin(
+      BuildContext context,
+      TinodeLoginView login,
+      Widget defaultLogin,
+    ) {
+      final signIn = login.mode == TinodeAuthMode.signIn;
+      return ListView(
+        children: [
+          const Text('Our login'),
+          if (login.signUpOffered)
+            TextButton(
+              onPressed: () => login.onModeChanged(
+                signIn ? TinodeAuthMode.signUp : TinodeAuthMode.signIn,
+              ),
+              child: const Text('The other side'),
+            ),
+          login.form,
+        ],
+      );
+    }
+
+    testWidgets("replaces the default, in the screen's Scaffold", (
+      tester,
+    ) async {
+      await pumpTinodeChat(tester, session, loginBuilder: hostLogin);
+      expect(
+        find.ancestor(
+          of: find.text('Our login'),
+          matching: find.byType(Scaffold),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(strings.loginHeadline), findsNothing);
+    });
+
+    testWidgets('logs in with the form', (tester) async {
+      session.accounts['carol'] = 'carol123';
+      await pumpTinodeChat(tester, session, loginBuilder: hostLogin);
+
+      await tester.enterText(field(strings.loginField), 'carol');
+      await tester.enterText(field(strings.passwordField), 'carol123');
+      await tester.tap(find.widgetWithText(FilledButton, strings.signIn));
+      await tester.pumpAndSettle();
+      expect(find.text(strings.chatListTitle), findsOneWidget);
+    });
+
+    testWidgets('swaps the form with onModeChanged', (tester) async {
+      await pumpTinodeChat(tester, session, loginBuilder: hostLogin);
+
+      await tester.tap(find.text('The other side'));
+      await tester.pump();
+      expect(find.byType(SignUpForm), findsOneWidget);
+
+      await tester.tap(find.text('The other side'));
+      await tester.pump();
+      expect(find.byType(SignUpForm), findsNothing);
+    });
+
+    testWidgets('still asks for the mailed code', (tester) async {
+      session
+        ..accounts['carol'] = 'carol123'
+        ..emailCodes['carol'] = '654321';
+      await pumpTinodeChat(tester, session, loginBuilder: hostLogin);
+
+      await tester.enterText(field(strings.loginField), 'carol');
+      await tester.enterText(field(strings.passwordField), 'carol123');
+      await tester.tap(find.widgetWithText(FilledButton, strings.signIn));
+      await tester.pumpAndSettle();
+      expect(find.byType(ConfirmEmailScreen), findsOneWidget);
+    });
+
+    testWidgets('stays on signing in where sign-up is not offered', (
+      tester,
+    ) async {
+      TinodeLoginView? seen;
+      await pumpTinodeChat(
+        tester,
+        session,
+        features: const TinodeChatFeatures(signUp: false),
+        loginBuilder: (context, login, defaultLogin) {
+          seen = login;
+          return hostLogin(context, login, defaultLogin);
+        },
+      );
+      expect(seen?.signUpOffered, isFalse);
+      expect(seen?.mode, TinodeAuthMode.signIn);
+      expect(find.text('The other side'), findsNothing);
+    });
+
+    testWidgets('can wrap the default', (tester) async {
+      await pumpTinodeChat(
+        tester,
+        session,
+        loginBuilder: (context, login, defaultLogin) => Stack(
+          fit: StackFit.expand,
+          children: [const Text('Behind it'), defaultLogin],
+        ),
+      );
+      expect(find.text('Behind it'), findsOneWidget);
+      expect(find.text(strings.loginHeadline), findsOneWidget);
     });
   });
 }

@@ -25,11 +25,16 @@ export 'src/chats/domain/tinode_bubble.dart'
     show TinodeBubble, TinodeBubbleKind, TinodeBubbleStatus;
 export 'src/chats/presentation/chat/bubble_builder_scope.dart'
     show TinodeBubbleBuilder;
+export 'src/chats/presentation/chat/bubble_tail.dart' show BubbleTail;
 export 'src/offline/domain/tinode_cache_limits.dart' show TinodeCacheLimits;
+export 'src/session/domain/tinode_auth_mode.dart' show TinodeAuthMode;
 export 'src/session/domain/tinode_chat_features.dart'
     show PasswordResetMode, TinodeChatFeatures;
 export 'src/session/domain/tinode_credentials.dart'
     show PasswordCredentials, TinodeCredentials, TokenCredentials;
+export 'src/session/presentation/login_builder_scope.dart'
+    show TinodeLoginBuilder;
+export 'src/session/presentation/tinode_login_view.dart' show TinodeLoginView;
 export 'src/shared/domain/tinode_screen.dart'
     show
         TinodeAccountScreen,
@@ -45,6 +50,7 @@ export 'src/shared/presentation/icons/tinode_chat_icons.dart'
     show TinodeChatIcons;
 export 'src/shared/presentation/l10n/tinode_chat_strings.dart'
     show TinodeChatStrings;
+export 'src/shared/presentation/sliding_segments.dart' show SlidingSegments;
 export 'src/shared/presentation/theme/tinode_chat_palette.dart'
     show TinodeChatPalette;
 export 'src/shared/presentation/theme/tinode_chat_theme.dart'

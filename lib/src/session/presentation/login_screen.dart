@@ -1,64 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/auth_mode.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/login_backdrop.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/login_header_scope.dart';
-import 'package:tinode_flutter_chat/src/session/presentation/login_sheet.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinode_flutter_chat/src/session/application/sign_up_controller.dart';
+import 'package:tinode_flutter_chat/src/session/domain/tinode_auth_mode.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/default_login.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/login_builder_scope.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/login_form.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/sign_up_form.dart';
+import 'package:tinode_flutter_chat/src/session/presentation/tinode_login_view.dart';
 
-/// The built-in login screen, shown when the host gave no credentials or
-/// its token was rejected: the backdrop with its floating bubbles,
-/// the host's `loginHeader` near the top, and the sheet that signs in or
-/// up. With the keyboard open, the sheet stays above it, button included,
-/// and the header is what scrolls off.
-class LoginScreen extends StatefulWidget {
+/// The login screen, shown when the host gave no credentials or its token
+/// was rejected. It holds the side the user is on and offers the form for
+/// it, in the host's `loginBuilder` or, without one, in [DefaultLogin].
+/// Only one form is ever in the tree. Watches whether sign-up is offered.
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  AuthMode _mode = AuthMode.signIn;
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  TinodeAuthMode _mode = TinodeAuthMode.signIn;
 
-  void _setMode(AuthMode mode) => setState(() => _mode = mode);
+  void _setMode(TinodeAuthMode mode) => setState(() => _mode = mode);
 
   @override
   Widget build(BuildContext context) {
-    final header = LoginHeaderScope.maybeOf(context);
+    final signUpOffered = ref.watch(signUpOfferedProvider);
+    final mode = signUpOffered ? _mode : TinodeAuthMode.signIn;
+    final login = TinodeLoginView(
+      mode: mode,
+      onModeChanged: _setMode,
+      signUpOffered: signUpOffered,
+      form: mode == TinodeAuthMode.signIn
+          ? const LoginForm(key: ValueKey(TinodeAuthMode.signIn))
+          : const SignUpForm(key: ValueKey(TinodeAuthMode.signUp)),
+    );
+    final defaultLogin = DefaultLogin(login: login);
+    final builder = LoginBuilderScope.maybeOf(context);
     return Scaffold(
-      body: Stack(
-        children: [
-          const Positioned.fill(child: LoginBackdrop()),
-          // Reversed, so the scroll view is anchored at its bottom: when the
-          // keyboard shrinks it, the sheet and its button stay above the
-          // keyboard and the header scrolls off instead. The content is at
-          // least as tall as the view, without intrinsic sizes: they would
-          // read the form's end size while it animates between modes.
-          LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              reverse: true,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Column(
-                  mainAxisAlignment: header == null
-                      ? MainAxisAlignment.end
-                      : MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (header != null)
-                      SafeArea(
-                        bottom: false,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 56, bottom: 24),
-                          child: Center(child: header),
-                        ),
-                      ),
-                    LoginSheet(mode: _mode, onModeChanged: _setMode),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      body: builder == null
+          ? defaultLogin
+          : builder(context, login, defaultLogin),
     );
   }
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/typing_controller.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_tail.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_status.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/date_chip.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_bubble.dart';

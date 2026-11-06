@@ -143,6 +143,41 @@ runApp(
 your app's own such as its text size.
 
 
+### Login screen
+
+The login is plain: a title and the form, on the theme's background. `loginHeader` puts your logo
+above it. To draw the screen yourself, pass `loginBuilder`: it gets the working form, and you
+place it. The form logs in, signs up, resets passwords and asks for mailed codes on its own, in
+your theme.
+
+```dart
+TinodeChat(
+  config: config,
+  loginBuilder: (context, login, defaultLogin) => Stack(
+    children: [
+      const MyBackground(),
+      Center(
+        child: MyCard(
+          child: Column(
+            children: [
+              if (login.signUpOffered)
+                MyModeSwitch(mode: login.mode, onChanged: login.onModeChanged),
+              login.form,
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
+)
+```
+
+The result is the body of the screen's `Scaffold`, and `loginHeader` shows only in the default
+screen. `defaultLogin` is that default, to wrap instead. Keep the form above the keyboard as you
+see fit (a scroll view reversed to its bottom does it), and put no `Navigator` around it: it opens
+its screens on the chat's own. Resetting a password and confirming an email stay plain screens in
+your theme. `BubbleTail` and `SlidingSegments` are exported for your own design.
+
 ## Languages
 
 The chat's texts are built in for English, Spanish and French, and follow the app's locale. For
@@ -560,7 +595,7 @@ where it needs the protocol:
 8. ~~**Design**~~: done ([`docs/design.md`](docs/design.md): the palette, the theme's tokens
    and `TinodeChatTheme.materialTheme`; the chat screen with bubble tails, runs, date chips,
    the wallpaper, the glass app bar and composer, the send button's morph and the bubble
-   builder; online presence and last seen; the chat list; login with a `loginHeader` slot; the call screens
+   builder; online presence and last seen; the chat list; the call screens
    and the call bar; the app shell with the floating tab bar, the calls history, the settings
    and the Appearance screen; and voice messages).
 

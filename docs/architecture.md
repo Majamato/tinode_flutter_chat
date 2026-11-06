@@ -33,11 +33,11 @@ lib/
       presentation/               settings screen, profile, online status and log-out tiles
     session/                      connecting and logging in
       data/                       TinodeSession interface + ClientTinodeSession
-      domain/                     TinodeCredentials, TinodeChatFeatures (public),
+      domain/                     TinodeCredentials, TinodeChatFeatures, TinodeAuthMode (public),
                                   PasswordResetState
       application/                providers: session, credentials, login, sign-up, password reset
-      presentation/               login, sign-up and password reset screens, connecting and error
-                                  views
+      presentation/               login screen, its plain default and the host's builder, sign-up
+                                  and password reset forms, connecting and error views
     chats/                        chat list and open chats
       domain/                     ChatSummary, ChatListState, ChatMessage, ChatState, CallRecord,
                                   ChatMembers, ChatMember, MessageReceipt, MessageSender,
@@ -155,10 +155,11 @@ provider.
 - `config`, `credentials`, `features` and `cacheLimits` are read once. To switch server or user, give `TinodeChat` a new `Key`.
   `pushToken` is read on every build and handed to `PushTokenController`.
 
-Host-provided builders and widgets (`TinodeChat.bubbleBuilder`, `TinodeChat.loginHeader`,
-`TinodeChat.appearanceExtra`) run inside the chat's own container, so they can't watch the host's
-providers. They get plain data instead (`TinodeBubble`) through inherited widgets
-(`BubbleBuilderScope`, `LoginHeaderScope`, `AppearanceScope`), never a provider. A builder that needs host state reads it from the widget tree above
+Host-provided builders and widgets (`TinodeChat.bubbleBuilder`, `TinodeChat.loginBuilder`,
+`TinodeChat.loginHeader`, `TinodeChat.appearanceExtra`) run inside the chat's own container, so
+they can't watch the host's providers. They get plain data instead (`TinodeBubble`,
+`TinodeLoginView`) through inherited widgets (`BubbleBuilderScope`, `LoginBuilderScope`,
+`LoginHeaderScope`, `AppearanceScope`), never a provider. A builder that needs host state reads it from the widget tree above
 `TinodeChat`.
 
 `TinodeChat.appearance` (a `TinodeAppearance`) is host state the other way round: the host
@@ -175,15 +176,16 @@ TinodeChat                      owns the container
   └ TinodeChatStringsScope      host strings, or the locale's
     └ BubbleBuilderScope        host bubble builder
       └ LoginHeaderScope        host login header
+       └ LoginBuilderScope      host login builder
         └ ShellScope            host tabBar
          └ AppearanceScope      host appearance and appearanceExtra
           └ ChatThemeScope      adds TinodeChatTheme.fallback when the host has none
           └ SessionGate             watches the session phase only
             ├ ConnectingView
             ├ AuthNavigator         nested Navigator, only while awaiting login
-            │ ├ LoginScreen         first route: LoginBackdrop (LoginBubbles), the host's
-            │ │                     header, LoginSheet (AuthModeSwitch, LoginForm or SignUpForm,
-            │ │                     ForgotPasswordLink)
+            │ ├ LoginScreen         first route: the mode, and in a Scaffold the host's
+            │ │                     loginBuilder or DefaultLogin, around LoginForm
+            │ │                     (ForgotPasswordLink) or SignUpForm
             │ ├ ConfirmEmailScreen  pushed by either form
             │ └ PasswordResetScreen
             ├ SessionErrorView      "Reconnect"

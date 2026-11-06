@@ -164,8 +164,6 @@ class TinodeChatStrings {
     this.signUpTerms = '',
     this.showPassword = 'Show password',
     this.hidePassword = 'Hide password',
-    this.loginBubbleHello = '¡Hola!',
-    this.loginBubbleLater = 'Call me later?',
     this.displayNameField = 'Your name',
     this.signUp = 'Create account',
     this.forgotPassword = 'Forgot password?',
@@ -399,8 +397,6 @@ class TinodeChatStrings {
     this.signUpTerms = '',
     this.showPassword = 'Mostrar contraseña',
     this.hidePassword = 'Ocultar contraseña',
-    this.loginBubbleHello = '¡Hola!',
-    this.loginBubbleLater = '¿Me llamas luego?',
     this.displayNameField = 'Tu nombre',
     this.signUp = 'Crear cuenta',
     this.forgotPassword = '¿Olvidaste tu contraseña?',
@@ -636,8 +632,6 @@ class TinodeChatStrings {
     this.signUpTerms = '',
     this.showPassword = 'Afficher le mot de passe',
     this.hidePassword = 'Masquer le mot de passe',
-    this.loginBubbleHello = 'Salut\u00A0!',
-    this.loginBubbleLater = "On s'appelle plus tard\u00A0?",
     this.displayNameField = 'Votre nom',
     this.signUp = 'Créer un compte',
     this.forgotPassword = 'Mot de passe oublié\u00A0?',
@@ -1196,13 +1190,6 @@ class TinodeChatStrings {
 
   /// Tooltip of a password field's eye while the password shows.
   final String hidePassword;
-
-  /// The incoming bubble floating over the login screen. Decoration only:
-  /// screen readers skip it.
-  final String loginBubbleHello;
-
-  /// The outgoing bubble floating over the login screen. Decoration only.
-  final String loginBubbleLater;
 
   /// Label of the name field on sign-up, shown to others.
   final String displayNameField;

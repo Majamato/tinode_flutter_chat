@@ -1,5 +1,14 @@
 ## Unreleased
 
+- **Behaviour change:** the login screen is plain: a title, the form and a button to the other
+  side, on the theme's background. The floating bubbles, the rising sheet and the Sign in | Sign
+  up switch are gone from the package; an app that wants a designed login draws it.
+- **New:** `TinodeChat.loginBuilder` draws the login screen around its working form. It gets a
+  `TinodeLoginView` (`form`, `mode`, `onModeChanged`, `signUpOffered`) and the default screen.
+  `TinodeAuthMode`, `BubbleTail` and `SlidingSegments` are exported for it. `loginHeader` shows
+  only in the default screen.
+- **Breaking:** `TinodeChatStrings.loginBubbleHello` and `loginBubbleLater` are removed along with
+  the bubbles.
 - **Fix:** the chat list's previews come from the server, not only from the cache: after logging
   in again (the cache is gone), after an offline start or a reconnect, and when a message arrives
   in a chat that isn't open, the session fetches the newest messages of each chat behind it, in

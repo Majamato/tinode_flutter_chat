@@ -248,9 +248,17 @@ credentials. The **call log** stays for the user's next login. *In code:*
 
 **Sign up**
 Creating an account from the login screen's Sign up side with a name, a login and a password; it
-logs in as the new user. *In code:* `SessionController.signUp`, `SignUpController`, `SignUpForm`,
-`AuthModeSwitch`.
+logs in as the new user. *In code:* `SessionController.signUp`, `SignUpController`, `SignUpForm`.
 *Avoid:* "register".
+
+**Auth mode**
+Which side of the login screen the user is on: signing in or signing up. `LoginScreen` holds it,
+and the host's switch changes it. *In code:* `TinodeAuthMode`.
+
+**Login builder**
+The host's own login screen, drawn around the working form in place of the plain default. It gets
+plain data, not providers, and resetting a password and confirming an email stay the package's.
+*In code:* `TinodeChat.loginBuilder`, `TinodeLoginBuilder`, `TinodeLoginView`, `DefaultLogin`.
 
 **Account features**
 What the login screen offers besides logging in: signing up, and resetting a forgotten password.

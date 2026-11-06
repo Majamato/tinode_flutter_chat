@@ -8,8 +8,9 @@ The values live in code, not here: the palette in `TinodeChatPalette`, the neutr
 `ChatNeutrals`, everything the widgets read in `TinodeChatTheme`, and the Material theme around
 them in `chatMaterialTheme` (`TinodeChatTheme.materialTheme`). This page says what each is for.
 
-Every screen follows it: the chat screen with voice messages, the chat list, login, the call
-screens and the app shell (tab bar, calls history, settings, appearance).
+Every screen follows it: the chat screen with voice messages, the chat list, the call screens
+and the app shell (tab bar, calls history, settings, appearance). Login is the exception: it is
+plain, and the look of a designed login is the host's.
 
 ## Palette
 
@@ -55,7 +56,7 @@ messages.
 | Text role | Size / line | Weight | Use |
 |---|---|---|---|
 | `headlineLarge` | 32 / 38, −0.02 em | 800 | Large title |
-| `headlineSmall` | 26 / 32 | 800 | Sheet title (login) |
+| `headlineSmall` | 26 / 32 | 800 | Title (login) |
 | `titleLarge` | 18 | 800 | App bar title |
 | `titleMedium` | 17 / 22 | 700 | A chat's name |
 | `bodyLarge` | 16 / 22 | 400 | Message text, inputs |
@@ -104,21 +105,22 @@ Fill for the current tab, play, pause and hang up, Bold for the small ticks and 
 
 ## Login
 
-- One screen signs in and up. Behind it: `wallpaperColor` and decorative bubbles (an incoming hello, an outgoing reply, a tiny voice
-  note, an `accent` dot) drifting 12 px over 5–7 s, hidden from screen readers and still with
-  Reduce motion.
-- The host's `TinodeChat.loginHeader` (e.g. an animated logo) sits centred near the top; by
-  default there is none.
-- A sheet (`colorScheme.surface`, top radius `sheetRadius`) rises 60 px into place as it fades
-  in (550 ms on `springCurve`): the title (`headlineSmall`) and subtitle, a 44 px Sign in |
-  Sign up switch whose pill slides on `springCurve` (only where sign-up is offered), and the
-  form. Switching cross-fades the forms in 320 ms.
+The package's login is deliberately plain, because how an app greets its users is the app's brand:
+
+- One screen signs in and up, on the theme's background: a centred column up to 400 px wide with
+  the host's `TinodeChat.loginHeader` if any, the title (`headlineSmall`) and subtitle, the form,
+  and a text button to the other side where sign-up is offered. Forms swap at once.
 - Fields are the theme's (radius `fieldRadius`, `surface`, a `line` border) with Material's
   floating label rather than a label above; the password has a show/hide eye. The primary button
   is 54 px, `buttonRadius`, with a trailing arrow. Under it: "Forgot password?" when offered, or
   `TinodeChatStrings.signUpTerms` when the host sets it.
-- The screen scrolls from the bottom: with the keyboard open, the sheet and its button stay just
+- The screen scrolls from the bottom: with the keyboard open, the form and its button stay just
   above the keyboard, and the header scrolls off the top.
+
+A host draws its own login with `TinodeChat.loginBuilder`, which gets the working form
+(`TinodeLoginView.form`), the mode and whether sign-up is offered. `BubbleTail` and
+`SlidingSegments` are exported for it. Resetting a password and confirming an email stay plain
+screens in the host's theme.
 
 ## Glass
 
