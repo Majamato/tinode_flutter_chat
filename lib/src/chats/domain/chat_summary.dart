@@ -14,6 +14,7 @@ final class ChatSummary with ValueObject {
     this.lastMessageAt,
     this.lastSeq = 0,
     this.read = 0,
+    this.uncountedSeqs = const {},
     this.canWrite = true,
     this.canDeleteForEveryone = false,
     this.isOwner = false,
@@ -63,6 +64,11 @@ final class ChatSummary with ValueObject {
   /// Highest seq this user has read.
   final int read;
 
+  /// The seqs known to be no unread message (see `uncountedBy`): they use
+  /// up a seq, so [unread] leaves them out. A `pres msg` doesn't tell: one
+  /// counts until the cache has it.
+  final Set<int> uncountedSeqs;
+
   /// False for channel followers, who can only read.
   final bool canWrite;
 
@@ -93,7 +99,11 @@ final class ChatSummary with ValueObject {
   /// presence (`P`), so the server sends no push for it.
   final bool muted;
 
-  int get unread => lastSeq > read ? lastSeq - read : 0;
+  int get unread => lastSeq > read
+      ? lastSeq -
+            read -
+            uncountedSeqs.where((seq) => seq > read && seq <= lastSeq).length
+      : 0;
 
   /// Up to two letters for the avatar; see [initialsOf].
   String get initials => initialsOf(title);
@@ -107,6 +117,9 @@ final class ChatSummary with ValueObject {
               ? time
               : lastMessageAt,
         );
+
+  /// [seqs] are no unread messages; see [uncountedSeqs].
+  ChatSummary withUncounted(Set<int> seqs) => _copy(uncountedSeqs: seqs);
 
   /// The user read up to [seq]. A read marker never moves back.
   ChatSummary withRead(int seq) => seq <= read ? this : _copy(read: seq);
@@ -131,6 +144,7 @@ final class ChatSummary with ValueObject {
     int? lastSeq,
     DateTime? lastMessageAt,
     int? read,
+    Set<int>? uncountedSeqs,
     bool? online,
     DateTime? lastSeen,
   }) => ChatSummary(
@@ -141,6 +155,7 @@ final class ChatSummary with ValueObject {
     lastMessageAt: lastMessageAt ?? this.lastMessageAt,
     lastSeq: lastSeq ?? this.lastSeq,
     read: read ?? this.read,
+    uncountedSeqs: uncountedSeqs ?? this.uncountedSeqs,
     canWrite: canWrite,
     canDeleteForEveryone: canDeleteForEveryone,
     isOwner: isOwner,
@@ -160,6 +175,7 @@ final class ChatSummary with ValueObject {
     lastMessageAt,
     lastSeq,
     read,
+    uncountedSeqs,
     canWrite,
     canDeleteForEveryone,
     isOwner,

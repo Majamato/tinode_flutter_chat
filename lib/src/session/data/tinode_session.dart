@@ -78,6 +78,10 @@ abstract interface class TinodeSession {
   /// The subscription stays.
   Future<void> detach(String topic);
 
+  /// Whether [topic] is attached now; not yet while an [attach] is under
+  /// way.
+  bool isAttached(String topic);
+
   /// The chat list: the subscriptions of `me` that name a topic. With
   /// [ifModifiedSince], only the chats changed since; see
   /// `TinodeClient.getSubscriptions`.
@@ -145,6 +149,9 @@ abstract interface class TinodeSession {
 
   void sendTyping(String topic);
 
+  /// Tells the server the user read [topic] up to [seq]. The topic must be
+  /// attached: the server takes no read marker otherwise. Dropped while not
+  /// connected.
   void markRead(String topic, int seq);
 
   /// Tells the other members this device received [topic] up to [seq].

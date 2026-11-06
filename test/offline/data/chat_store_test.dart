@@ -17,6 +17,90 @@ void main() {
     addTearDown(store.close);
   });
 
+  group('uncounted seqs', () {
+    DataMessage update(
+      String topic,
+      int seq,
+      int target, [
+      CallState state = CallState.missed,
+    ]) => DataMessage(
+      topic: topic,
+      seq: seq,
+      from: bob,
+      time: at(seq),
+      head: MessageHead(replaces: ':$target', callState: state),
+      content: const PlainText(' '),
+    );
+
+    setUp(() async {
+      await store.replaceChats([
+        chat(bob, lastSeq: 6, read: 3),
+        chat(friends, lastSeq: 2),
+        chat(carol, lastSeq: 1, read: 1),
+      ]);
+      await store.putMessages(bob, [
+        message(bob, 1),
+        update(bob, 2, 1),
+        message(bob, 3),
+        message(bob, 4),
+        update(bob, 5, 4),
+        update(bob, 6, 4),
+      ]);
+      await store.putMessages(friends, [
+        message(friends, 1),
+        update(friends, 2, 1),
+      ]);
+      await store.putMessages(carol, [message(carol, 1)]);
+    });
+
+    test('only the updates past the read marker, by chat', () async {
+      expect(await store.uncountedSeqs(), {
+        bob: {5, 6},
+        friends: {2},
+      });
+    });
+
+    test('of one chat', () async {
+      expect(await store.uncountedSeqs(topic: friends), {
+        friends: {2},
+      });
+      expect(await store.uncountedSeqs(topic: carol), isEmpty);
+    });
+
+    test('an answered call goes with its updates', () async {
+      await store.replaceChats([chat(bob, lastSeq: 9, read: 6)]);
+      await store.putMessages(bob, [
+        message(bob, 7),
+        update(bob, 8, 7, CallState.accepted),
+        update(bob, 9, 7, CallState.finished),
+      ]);
+
+      expect(await store.uncountedSeqs(topic: bob), {
+        bob: {7, 8, 9},
+      });
+    });
+
+    test('a declined call goes with its update', () async {
+      await store.replaceChats([chat(bob, lastSeq: 8, read: 6)]);
+      await store.putMessages(bob, [
+        message(bob, 7),
+        update(bob, 8, 7, CallState.declined),
+      ]);
+
+      expect(await store.uncountedSeqs(topic: bob), {
+        bob: {7, 8},
+      });
+    });
+
+    test('follows the read marker', () async {
+      await store.advanceChat(bob, read: 5);
+
+      expect(await store.uncountedSeqs(topic: bob), {
+        bob: {6},
+      });
+    });
+  });
+
   group('latest messages', () {
     DataMessage update(String topic, int seq, int target) => DataMessage(
       topic: topic,

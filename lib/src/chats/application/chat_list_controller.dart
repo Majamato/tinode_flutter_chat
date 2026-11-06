@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/chats/domain/chat_list_state.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_summary.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/uncounted_seqs.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/shared/application/build_lifetime.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
@@ -27,6 +28,11 @@ part 'chat_list_controller.g.dart';
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
 /// what came while the link was down.
 ///
+/// A chat's unread count leaves out what isn't an unread message (see
+/// `uncountedBy`), such as how a call ended, or a call that was answered
+/// or declined: as they arrive live, and for those that came as `pres
+/// msg`, which doesn't tell, once the cache has them.
+///
 /// It subscribes to the streams before loading, so nothing that arrives
 /// during the load is lost. Offline, the cached list stays as it is.
 @Riverpod(keepAlive: true)
@@ -37,6 +43,13 @@ class ChatListController extends _$ChatListController {
   /// Whether this build attached `me`; the client keeps it attached
   /// across reconnects from then on.
   var _attachedMe = false;
+
+  /// Each chat's `ChatSummary.uncountedSeqs`, kept apart since the list is
+  /// rebuilt from subscriptions, which don't have them.
+  var _uncounted = <String, Set<int>>{};
+
+  /// The chats to read [_uncounted] of again.
+  final _changed = <String>{};
 
   @override
   ChatListState build() {
@@ -49,11 +62,21 @@ class ChatListController extends _$ChatListController {
     }
 
     _attachedMe = false;
+    _uncounted = {};
+    _changed.clear();
     final subscriptions = [
       session.presence
           .where((p) => p.topic == 'me')
           .listen((p) => _onPresence(session, p)),
       session.messages.listen((m) => _onMessage(session, m, me: me)),
+      session.storedChanges.listen((topic) {
+        if (_changed.isEmpty) {
+          scheduleMicrotask(
+            () => unawaited(_reloadUncounted(session, lifetime)),
+          );
+        }
+        _changed.add(topic);
+      }),
       // Presence missed while the link was down is never replayed.
       session.statusChanges
           .where((s) => s is Connected)
@@ -95,8 +118,13 @@ class ChatListController extends _$ChatListController {
   Future<void> _load(ChatSession session, BuildLifetime lifetime) async {
     try {
       final cached = await session.storedChatList();
-      if (lifetime.isActive && cached.isNotEmpty) {
-        state = state.loaded(cached.map(ChatSummary.fromSubscription));
+      final updates = await session.storedUncountedSeqs();
+      if (lifetime.isActive) {
+        // A chat read again meanwhile is newer than this first read.
+        _uncounted = {...updates, ..._uncounted};
+        if (cached.isNotEmpty) {
+          state = state.loaded(cached.map(_summary));
+        }
       }
     } on Object {
       // The cache is a convenience: the server fills the list instead.
@@ -117,7 +145,7 @@ class ChatListController extends _$ChatListController {
       }
       final chats = await session.chatList();
       if (lifetime.isActive) {
-        state = state.loaded(chats.map(ChatSummary.fromSubscription));
+        state = state.loaded(chats.map(_summary));
         for (final chat in chats) {
           if (chat.lastSeq > chat.received) {
             session.markReceived(chat.topic!, chat.lastSeq);
@@ -129,6 +157,36 @@ class ChatListController extends _$ChatListController {
         state = state.failed(ChatFailure.of(e));
       }
     }
+  }
+
+  ChatSummary _summary(Subscription chat) => ChatSummary.fromSubscription(
+    chat,
+  ).withUncounted(_uncounted[chat.topic] ?? const {});
+
+  Future<void> _reloadUncounted(
+    ChatSession session,
+    BuildLifetime lifetime,
+  ) async {
+    final topics = Set.of(_changed);
+    _changed.clear();
+    try {
+      final updates = <String, Set<int>>{
+        for (final topic in topics)
+          ...await session.storedUncountedSeqs(topic: topic),
+      };
+      if (lifetime.isActive) {
+        for (final topic in topics) {
+          _setUncounted(topic, updates[topic] ?? const {});
+        }
+      }
+    } on Object {
+      // The count stays as it is until the next change.
+    }
+  }
+
+  void _setUncounted(String topic, Set<int> seqs) {
+    _uncounted[topic] = seqs;
+    state = state.update(topic, (chat) => chat.withUncounted(seqs));
   }
 
   void _onPresence(ChatSession session, PresMessage presence) {
@@ -188,6 +246,13 @@ class ChatListController extends _$ChatListController {
   }) {
     if (message.from case final from? when from != me) {
       session.markReceived(message.topic, message.seq);
+    }
+    final uncounted = uncountedBy(message.seq, message.head);
+    if (uncounted.isNotEmpty) {
+      _setUncounted(message.topic, {
+        ...?_uncounted[message.topic],
+        ...uncounted,
+      });
     }
     state = state.update(message.topic, (chat) {
       final updated = chat.withMessage(message.seq, message.time);

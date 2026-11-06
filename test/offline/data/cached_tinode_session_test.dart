@@ -302,6 +302,29 @@ void main() {
         'markRead $bob 5',
       ]);
     });
+
+    test('online, a chat not attached is attached for its marker', () async {
+      session.markRead(bob, 5);
+      await settle();
+      await settle();
+      await settle();
+
+      expect(
+        remote.calls,
+        containsAllInOrder(['attach $bob', 'markRead $bob 5', 'detach $bob']),
+      );
+      expect(remote.serverRead[bob], 5);
+    });
+
+    test('online, an attached chat gets its marker at once', () async {
+      await session.attach(bob);
+      remote.calls.clear();
+
+      session.markRead(bob, 5);
+
+      expect(remote.calls, ['markRead $bob 5']);
+      expect(remote.serverRead[bob], 5);
+    });
   });
 
   group('members', () {

@@ -36,6 +36,11 @@ abstract interface class ChatSession implements TinodeSession {
   /// [storedChanges] then names them.
   Future<Map<String, LatestMessage>> storedLatestMessages({String? topic});
 
+  /// The seqs past each chat's read marker that the cache shows aren't
+  /// unread messages (see `uncountedBy`), or only [topic]'s. Never asks the
+  /// server; [storedChanges] names the chats to read again.
+  Future<Map<String, Set<int>>> storedUncountedSeqs({String? topic});
+
   /// The call messages in the call log, or only [topic]'s, each with its
   /// updates; never asks the server.
   Future<List<CachedCall>> storedCalls({String? topic});

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
@@ -32,6 +33,10 @@ final class FakeTinodeSession implements TinodeSession {
 
   /// Every call, e.g. `attach usrBob` or `markRead usrBob 3`.
   final calls = <String>[];
+
+  /// The read marker the server holds, by topic. Like the server, it takes
+  /// `markRead` only for an attached topic.
+  final serverRead = <String, int>{};
 
   /// When set, `history` waits for it before answering.
   Completer<void>? holdHistory;
@@ -474,6 +479,9 @@ final class FakeTinodeSession implements TinodeSession {
   }
 
   @override
+  bool isAttached(String topic) => attachCount(topic) > 0;
+
+  @override
   Future<List<Subscription>> chatList({DateTime? ifModifiedSince}) async {
     calls.add('chatList');
     lastChatListSince = ifModifiedSince;
@@ -864,7 +872,12 @@ final class FakeTinodeSession implements TinodeSession {
   void sendTyping(String topic) => calls.add('sendTyping $topic');
 
   @override
-  void markRead(String topic, int seq) => calls.add('markRead $topic $seq');
+  void markRead(String topic, int seq) {
+    calls.add('markRead $topic $seq');
+    if (isAttached(topic)) {
+      serverRead.update(topic, (read) => max(read, seq), ifAbsent: () => seq);
+    }
+  }
 
   @override
   void markReceived(String topic, int seq) =>

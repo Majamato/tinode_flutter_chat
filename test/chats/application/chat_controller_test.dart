@@ -476,4 +476,133 @@ void main() {
       expect(chatState().seqs, [1, 2, 3]);
     });
   });
+
+  group('read marker', () {
+    /// The list hears of message [seq]. The history doesn't have it unless
+    /// the test adds it: otherwise it was deleted before it was read.
+    void listed(int seq) => session.emitPresence(
+      PresMessage(
+        topic: 'me',
+        event: PresenceEvent.message,
+        source: bob,
+        seq: seq,
+      ),
+    );
+
+    int? unread() => container.read(chatSummaryProvider(bob))?.unread;
+
+    /// Opens the chat once, so the cache holds it, and closes it.
+    Future<void> cacheChat() async {
+      final first = openChat();
+      await settle();
+      first.close();
+      await settle();
+    }
+
+    test('reaches the server when the chat opens from the cache', () async {
+      // As the latest catch-up does before the user opens the chat.
+      while (!session.calls.contains('detach $bob')) {
+        await settle();
+      }
+
+      openChat();
+      await settle();
+
+      expect(chatState().seqs, [1, 2, 3]);
+      expect(session.serverRead[bob], 3);
+    });
+
+    test('covers newest messages that were deleted', () async {
+      listed(5);
+
+      openChat();
+      await settle();
+
+      expect(chatState().seqs, [1, 2, 3]);
+      expect(session.serverRead[bob], 5);
+      expect(unread(), 0);
+    });
+
+    test('covers a chat with every message deleted', () async {
+      session = FakeTinodeSession(
+        chats: [chat(bob, name: 'Bob', lastSeq: 2, lastMessageAt: at(2))],
+        histories: {bob: []},
+      );
+      container = await loggedInContainer(session)
+        ..listen(chatListControllerProvider, (_, _) {});
+      await settle();
+
+      openChat();
+      await settle();
+
+      expect(chatState().seqs, isEmpty);
+      expect(session.serverRead[bob], 2);
+      expect(unread(), 0);
+    });
+
+    test('offline, stays at what the cache shows', () async {
+      await cacheChat();
+      listed(5);
+      session.emitStatus(
+        const Reconnecting(attempt: 1, retryIn: Duration(seconds: 1)),
+      );
+
+      openChat();
+      await settle();
+
+      expect(chatState().seqs, [1, 2, 3]);
+      expect(session.calls, isNot(contains('markRead $bob 5')));
+      expect(unread(), 2);
+    });
+
+    test('stays at what the cache shows when the fetch fails', () async {
+      await cacheChat();
+      listed(5);
+      session.failHistory = const ServerException(500, 'failed');
+
+      openChat();
+      await settle();
+
+      expect(chatState().seqs, [1, 2, 3]);
+      expect(session.calls, isNot(contains('markRead $bob 5')));
+      expect(unread(), 2);
+    });
+
+    test('stays at what the cache shows until the server answers', () async {
+      await cacheChat();
+      listed(5);
+      final hold = session.holdHistory = Completer<void>();
+
+      openChat();
+      await settle();
+
+      expect(session.calls, isNot(contains('markRead $bob 5')));
+      expect(unread(), 2);
+      hold.complete();
+      await settle();
+    });
+
+    test('follows newer messages that exist', () async {
+      await cacheChat();
+      session.histories[bob]!.addAll([message(bob, 4), message(bob, 5)]);
+      listed(5);
+
+      openChat();
+      await settle();
+
+      expect(chatState().seqs, [1, 2, 3, 4, 5]);
+      expect(session.serverRead[bob], 5);
+      expect(unread(), 0);
+    });
+
+    test('goes by the loaded messages for a chat not listed yet', () async {
+      session.histories[carol] = [message(carol, 1), message(carol, 2)];
+
+      openChat(carol);
+      await settle();
+
+      expect(chatState(carol).status, LoadStatus.ready);
+      expect(session.serverRead[carol], 2);
+    });
+  });
 }

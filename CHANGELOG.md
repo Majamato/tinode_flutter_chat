@@ -1,5 +1,15 @@
 ## Unreleased
 
+- **Fix:** read markers reach the server when a chat opens from the cache. Before, the marker went
+  out before the chat was attached, the server didn't take it, and the chat turned unread again
+  after a log out or a reinstall. Chats already behind recover the next time they are opened.
+- **Fix:** opening a chat whose newest messages were deleted before they were read clears its
+  unread count. Before, the count could never reach zero.
+- **Fix:** a missed call counts as one unread message, and a call that was answered or declined,
+  on any device, as none. The server gives a call a seq for each state, so a missed call counted
+  as two and an answered one as three. Edits of a message no longer count either. Messages unread before a call
+  stay unread. A state that arrives while the chat isn't open can count for a moment, until the
+  background catch-up fetches it.
 - **Behaviour change:** the login screen is plain: a title, the form and a button to the other
   side, on the theme's background. The floating bubbles, the rising sheet and the Sign in | Sign
   up switch are gone from the package; an app that wants a designed login draws it.

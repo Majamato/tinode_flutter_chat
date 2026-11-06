@@ -10,6 +10,7 @@ import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/seq_ranges.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/uncounted_seqs.dart';
 import 'package:tinode_flutter_chat/src/search/domain/found_message.dart';
 import 'package:tinode_flutter_chat/src/search/domain/message_snippet.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
@@ -310,6 +311,37 @@ final class ChatStore {
           _ => LatestMessage(newestSeq: value.newest),
         },
     };
+  }
+
+  /// The seqs past each chat's read marker that the cached updates show
+  /// aren't unread messages (see `uncountedBy`), or only [topic]'s. Chats
+  /// without any are left out. An update is past the marker whenever its
+  /// target is, so reading the updates finds both.
+  Future<Map<String, Set<int>>> uncountedSeqs({String? topic}) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT m.topic AS topic, m.seq AS seq, '
+          r"json_extract(m.json, '$.head.replace') AS replace_seq, "
+          r"json_extract(m.json, '$.head.webrtc') AS webrtc "
+          'FROM chats c JOIN messages m ON m.topic = c.topic '
+          r"AND m.seq > coalesce(json_extract(c.json, '$.read'), 0) "
+          r"WHERE json_extract(m.json, '$.head.replace') IS NOT NULL "
+          '${topic == null ? '' : 'AND c.topic = ?'}',
+          variables: [if (topic != null) Variable.withString(topic)],
+          readsFrom: {_db.chats, _db.messages},
+        )
+        .get();
+    final uncounted = <String, Set<int>>{};
+    for (final row in rows) {
+      final head = MessageHead.fromJson({
+        'replace': row.read<String>('replace_seq'),
+        'webrtc': ?row.readNullable<String>('webrtc'),
+      });
+      uncounted
+          .putIfAbsent(row.read<String>('topic'), () => {})
+          .addAll(uncountedBy(row.read<int>('seq'), head));
+    }
+    return uncounted;
   }
 
   /// Every cached call message, updates included.

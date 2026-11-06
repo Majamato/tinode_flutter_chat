@@ -252,6 +252,9 @@ final class CachedTinodeSession implements ChatSession {
     return _remote.detach(topic);
   }
 
+  @override
+  bool isAttached(String topic) => _remote.isAttached(topic);
+
   void _hold(String topic) =>
       _held.update(topic, (holds) => holds + 1, ifAbsent: () => 1);
 
@@ -602,6 +605,12 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   @override
+  Future<Map<String, Set<int>>> storedUncountedSeqs({String? topic}) async {
+    await _writes;
+    return _store.uncountedSeqs(topic: topic);
+  }
+
+  @override
   Future<List<CachedCall>> storedCalls({String? topic}) async {
     await _writes;
     return _calls.calls(topic: topic);
@@ -877,16 +886,19 @@ final class CachedTinodeSession implements ChatSession {
     _kick();
   }
 
-  /// Read markers reach the server now, or from the outbox once online.
+  /// Read markers reach the server now if the topic is attached, which
+  /// the server requires. Else they go to the outbox, which attaches it,
+  /// once online.
   @override
   void markRead(String topic, int seq) {
     unawaited(_write(() => _store.advanceChat(topic, read: seq)));
-    if (_remote.status is Connected) {
+    if (_remote.status is Connected && _remote.isAttached(topic)) {
       _remote.markRead(topic, seq);
     } else {
       unawaited(
         _write(() => _store.enqueueRead(topic, seq, clock.now().toUtc())),
       );
+      _kick();
     }
   }
 

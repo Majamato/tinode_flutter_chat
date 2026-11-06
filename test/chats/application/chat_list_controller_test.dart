@@ -4,6 +4,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_list_state.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -323,5 +324,196 @@ void main() {
     final bobChat = container.read(chatListControllerProvider).byTopic[bob]!;
     expect(bobChat.lastSeq, 5);
     expect(bobChat.unread, 0);
+  });
+
+  group('messages that update another', () {
+    /// How the server numbers what isn't a bubble, e.g. how a call ended.
+    DataMessage update(
+      int seq,
+      int target, {
+      CallState state = CallState.missed,
+    }) => DataMessage(
+      topic: bob,
+      seq: seq,
+      from: bob,
+      time: at(seq),
+      head: MessageHead(replaces: ':$target', callState: state),
+      content: const PlainText(' '),
+    );
+
+    void listed(int seq) => session.emitPresence(
+      PresMessage(
+        topic: 'me',
+        event: PresenceEvent.message,
+        source: bob,
+        seq: seq,
+      ),
+    );
+
+    int? unread([ProviderContainer? of]) =>
+        (of ?? container).read(chatSummaryProvider(bob))?.unread;
+
+    Future<void> until(bool Function() done) async {
+      for (var i = 0; i < 200 && !done(); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      expect(done(), isTrue, reason: 'timed out');
+    }
+
+    /// Bob's missed call reaches this device while its chat is closed: two
+    /// seqs in the list, one bubble in the cache.
+    Future<void> missCall() async {
+      await loadList();
+      session.histories[bob] = [
+        for (var seq = 1; seq <= 4; seq++) message(bob, seq),
+        update(5, 4),
+      ];
+      listed(4);
+      listed(5);
+      container.read(chatListControllerProvider.notifier).refresh();
+    }
+
+    test('a missed call counts as one unread message', () async {
+      await missCall();
+
+      await until(() => unread() == 3);
+    });
+
+    test('it stays one after the list syncs again', () async {
+      await missCall();
+      await until(() => unread() == 3);
+
+      container.read(chatListControllerProvider.notifier).refresh();
+      await settle();
+      await settle();
+
+      expect(unread(), 3);
+    });
+
+    test('a live update counts for nothing', () async {
+      await loadList();
+
+      session.emitMessage(update(4, 3));
+
+      expect(container.read(chatSummaryProvider(bob))?.lastSeq, 4);
+      expect(unread(), 2);
+    });
+
+    test('a new message after it still counts', () async {
+      await missCall();
+      await until(() => unread() == 3);
+
+      listed(6);
+
+      expect(unread(), 4);
+    });
+
+    test('a read chat with only an update past the marker is read', () async {
+      session.chats
+        ..clear()
+        ..add(chat(bob, lastSeq: 2, read: 2, lastMessageAt: at(2)));
+      await loadList();
+
+      session.emitMessage(update(3, 1));
+
+      expect(unread(), 0);
+    });
+
+    test('a call answered here counts for nothing, at once', () async {
+      await loadList();
+
+      session.emitMessage(message(bob, 4));
+      expect(unread(), 3);
+      session.emitMessage(update(5, 4, state: CallState.accepted));
+      expect(unread(), 2);
+      session.emitMessage(update(6, 4, state: CallState.finished));
+      expect(unread(), 2);
+    });
+
+    test('a call answered on another device counts for nothing', () async {
+      await loadList();
+      session.histories[bob] = [
+        for (var seq = 1; seq <= 4; seq++) message(bob, seq),
+        update(5, 4, state: CallState.accepted),
+        update(6, 4, state: CallState.finished),
+      ];
+      listed(4);
+      listed(5);
+      listed(6);
+      container.read(chatListControllerProvider.notifier).refresh();
+
+      await until(() => unread() == 2);
+    });
+
+    test('messages unread before an answered call stay unread', () async {
+      await loadList();
+
+      session
+        ..emitMessage(message(bob, 4))
+        ..emitMessage(update(5, 4, state: CallState.accepted));
+
+      final chat = container.read(chatSummaryProvider(bob))!;
+      expect(chat.read, 1);
+      expect(chat.unread, 2);
+      expect(session.calls, isNot(contains(startsWith('markRead'))));
+    });
+
+    test('a declined call counts for nothing, at once', () async {
+      await loadList();
+
+      session.emitMessage(message(bob, 4));
+      expect(unread(), 3);
+      session.emitMessage(update(5, 4, state: CallState.declined));
+      expect(unread(), 2);
+    });
+
+    test('a call declined on another device counts for nothing', () async {
+      await loadList();
+      session.histories[bob] = [
+        for (var seq = 1; seq <= 4; seq++) message(bob, seq),
+        update(5, 4, state: CallState.declined),
+      ];
+      listed(4);
+      listed(5);
+      container.read(chatListControllerProvider.notifier).refresh();
+
+      await until(() => unread() == 2);
+    });
+
+    test('messages unread before a declined call stay unread', () async {
+      await loadList();
+
+      session
+        ..emitMessage(message(bob, 4))
+        ..emitMessage(update(5, 4, state: CallState.declined));
+
+      expect(container.read(chatSummaryProvider(bob))!.read, 1);
+      expect(session.calls, isNot(contains(startsWith('markRead'))));
+    });
+
+    test('it stays one when the app starts from the cache', () async {
+      final stores = MemoryChatStoreOpener();
+      FakeTinodeSession online() => FakeTinodeSession(
+        chats: [chat(bob, lastSeq: 5, read: 3, lastMessageAt: at(5))],
+        histories: {
+          bob: [
+            for (var seq = 1; seq <= 4; seq++) message(bob, seq),
+            update(5, 4),
+          ],
+        },
+      );
+      final first = await loggedInContainer(online(), storeOpener: stores)
+        ..listen(chatListControllerProvider, (_, _) {});
+      await until(() => unread(first) == 1);
+      first.dispose();
+
+      final again = await loggedInContainer(online(), storeOpener: stores)
+        ..listen(chatListControllerProvider, (_, _) {});
+
+      await until(() => unread(again) != null);
+      await settle();
+      await settle();
+      expect(unread(again), 1);
+    });
   });
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -228,7 +229,7 @@ class ChatController extends _$ChatController {
                   .ready(hasOlder: _startsAfterFirst(caughtUp.messages))
             : state.withMessages(messages);
       }
-      _markLastRead();
+      _markCaughtUp();
       unawaited(_continueReveal());
     } on Object catch (e) {
       if (lifetime.isActive && state.status != LoadStatus.ready) {
@@ -351,6 +352,15 @@ class ChatController extends _$ChatController {
     if (state.lastSeq case final seq?) {
       _markRead(seq);
     }
+  }
+
+  /// After a fetch from the server, no message exists past the last one
+  /// loaded: any seq up to the chat's last seq was deleted, and would count
+  /// as unread for good.
+  void _markCaughtUp() {
+    final listed =
+        ref.read(chatListControllerProvider).byTopic[topic]?.lastSeq ?? 0;
+    _markRead(max(state.lastSeq ?? 0, listed));
   }
 
   void _markRead(int seq) {

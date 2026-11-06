@@ -130,6 +130,9 @@ final class ClientTinodeSession implements TinodeSession {
   }
 
   @override
+  bool isAttached(String topic) => (_holds[topic] ?? 0) > 0;
+
+  @override
   Future<List<Subscription>> chatList({DateTime? ifModifiedSince}) async => [
     for (final s in await _client.getSubscriptions(
       'me',
