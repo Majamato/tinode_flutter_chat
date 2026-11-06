@@ -1,5 +1,10 @@
 ## Unreleased
 
+- **Fix:** a touch outside a text field closes the keyboard, on every screen, including a touch
+  that starts a scroll. The composer's attach and send buttons count as its field, so sending
+  leaves the keyboard open.
+- **Fix:** a call screen closes the keyboard when it appears, also when the call rings with no
+  touch at all. Before, it stayed open over the call.
 - **Fix:** a last seen too long for the chat's header slides to its end and back, so all of it
   can be read, instead of being cut off. With Reduce motion it stays cut.
 - **New:** the chat info of a direct chat shows whether the peer is online, or when they were

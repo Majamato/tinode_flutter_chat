@@ -35,6 +35,7 @@ import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_ic
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons_scope.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings_scope.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tap_outside_closes_keyboard.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_theme_scope.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
@@ -406,7 +407,9 @@ class _TinodeChatState extends State<TinodeChat> {
                     child: AppearanceScope(
                       appearance: widget.appearance,
                       extra: widget.appearanceExtra,
-                      child: const ChatThemeScope(child: SessionGate()),
+                      child: const ChatThemeScope(
+                        child: TapOutsideClosesKeyboard(child: SessionGate()),
+                      ),
                     ),
                   ),
                 ),

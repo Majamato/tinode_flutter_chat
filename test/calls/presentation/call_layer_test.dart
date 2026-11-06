@@ -199,6 +199,45 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('a call that rings closes the keyboard, for good', (
+    tester,
+  ) async {
+    await pump(tester);
+    await openChat(tester, 'Bob');
+    await tester.showKeyboard(find.byType(TextField));
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    session.emitMessage(invite(2, audioOnly: true));
+    await tester.pumpAndSettle();
+    expect(find.byType(IncomingCallView), findsOneWidget);
+    expect(tester.testTextInput.isVisible, isFalse);
+
+    await tester.tap(find.text('Decline'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.byType(IncomingCallView), findsNothing);
+    expect(tester.testTextInput.isVisible, isFalse);
+  });
+
+  testWidgets('a minimized call closes the keyboard when it comes back', (
+    tester,
+  ) async {
+    await pump(tester);
+    await callBob(tester);
+    await tester.tap(find.byTooltip('Back to chat'));
+    await tester.pumpAndSettle();
+    await tester.showKeyboard(find.byType(TextField));
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    await tester.tap(find.text('Calling…'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(VoiceCallView), findsOneWidget);
+    expect(tester.testTextInput.isVisible, isFalse);
+  });
+
   testWidgets('a ringing call ignores Back', (tester) async {
     await pump(tester);
     await openChat(tester, 'Bob');

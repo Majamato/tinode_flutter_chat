@@ -77,6 +77,18 @@ void main() {
     expect(find.text(strings.messageSearchIdle), findsOneWidget);
   }
 
+  testWidgets('a tap outside the search field closes the keyboard', (
+    tester,
+  ) async {
+    await openSearch(tester);
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    await tester.tap(find.text(strings.messageSearchIdle));
+    await tester.pumpAndSettle();
+
+    expect(tester.testTextInput.isVisible, isFalse);
+  });
+
   testWidgets('a message found in the chat shows back in the chat', (
     tester,
   ) async {

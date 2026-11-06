@@ -460,8 +460,8 @@ controller attach that chat and read the new message; if it starts a call nobody
 rings and keeps the chat attached. *In code:* `CallController`, `CallInvite.findIn`.
 
 **Call layer**
-The ringing screen or the call screen, drawn over every chat route. *In code:* `CallLayer`,
-`IncomingCallView`, `CallView`.
+The ringing screen or the call screen, drawn over every chat route. It isn't a route, so it closes
+the keyboard itself when it appears. *In code:* `CallLayer`, `IncomingCallView`, `CallView`.
 
 **Voice call / video call screen**
 The call screen of each kind, always dark. *In code:* `VoiceCallView`, `VideoCallView`, both

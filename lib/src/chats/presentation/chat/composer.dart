@@ -25,7 +25,8 @@ import 'package:tinode_flutter_chat/src/voice/presentation/voice_failure_message
 /// grows to more lines) and the round send button. Typing and sending
 /// never rebuild it: the button watches both on its
 /// own. Typing tells the other members. A failed send, or a refused
-/// attachment, shows a snack bar and keeps the text.
+/// attachment, shows a snack bar and keeps the text. Its buttons count as
+/// the field, so a tap on them leaves the keyboard open.
 ///
 /// The send button's mic records a voice message: the recording panel
 /// (delete, pause or resume, send), on one piece of glass, takes the
@@ -179,47 +180,51 @@ class _ComposerState extends ConsumerState<Composer> {
           )
         : Padding(
             padding: const EdgeInsets.symmetric(horizontal: _side),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              spacing: 8,
-              children: [
-                AttachButton(topic: widget.topic),
-                Expanded(
-                  child: GlassSurface(
-                    radius: theme.composerRadius,
-                    child: TextField(
-                      controller: _text,
-                      decoration: InputDecoration(
-                        hintText: TinodeChatStrings.of(context).messageHint,
-                        isDense: true,
-                        filled: false,
-                        // 22 px of text: as tall as the round buttons.
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 11,
+            child: TextFieldTapRegion(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                spacing: 8,
+                children: [
+                  AttachButton(topic: widget.topic),
+                  Expanded(
+                    child: GlassSurface(
+                      radius: theme.composerRadius,
+                      child: TextField(
+                        controller: _text,
+                        decoration: InputDecoration(
+                          hintText: TinodeChatStrings.of(context).messageHint,
+                          isDense: true,
+                          filled: false,
+                          // 22 px of text: as tall as the round buttons.
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 11,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
                         ),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
+                        minLines: 1,
+                        maxLines: 5,
+                        textCapitalization: TextCapitalization.sentences,
+                        textInputAction: TextInputAction.send,
+                        onChanged: (_) => ref
+                            .read(
+                              typingControllerProvider(widget.topic).notifier,
+                            )
+                            .typed(),
+                        onSubmitted: (_) => _send(),
                       ),
-                      minLines: 1,
-                      maxLines: 5,
-                      textCapitalization: TextCapitalization.sentences,
-                      textInputAction: TextInputAction.send,
-                      onChanged: (_) => ref
-                          .read(typingControllerProvider(widget.topic).notifier)
-                          .typed(),
-                      onSubmitted: (_) => _send(),
                     ),
                   ),
-                ),
-                SendButton(
-                  topic: widget.topic,
-                  text: _text,
-                  onSend: _send,
-                  onRecord: () => unawaited(_record()),
-                ),
-              ],
+                  SendButton(
+                    topic: widget.topic,
+                    text: _text,
+                    onSend: _send,
+                    onRecord: () => unawaited(_record()),
+                  ),
+                ],
+              ),
             ),
           );
     // AnimatedSize can't run with no duration, so Reduce motion skips it.

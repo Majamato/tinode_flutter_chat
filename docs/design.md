@@ -274,6 +274,8 @@ them.
   (`composerRadius`, transparent inside, 44 px for one line, up to five) and the round send
   button. A read-only chat shows a glass pill instead. The messages are padded by the
   composer's height, keyboard included, in the same frame it changes.
+- On every screen, a touch outside the field closes the keyboard, and a touch that starts a
+  scroll counts. The composer's buttons count as its field, so sending leaves the keyboard open.
 - While the field is blank the send button rests on the microphone (in `onSurfaceVariant`),
   or, without `TinodeChatFeatures.voiceMessages`, on a greyed arrow. With text its glass fills
   with `actionColor` and the arrow turns in from a quarter turn as the mic turns out (300 ms on

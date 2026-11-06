@@ -14,7 +14,8 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_overlay_s
 /// or nothing, also while the call is minimized to the call bar. It sits
 /// above the chat navigator, so it reacts whatever route is open. Watches
 /// only whether there is a call, whether it is ringing and whether it is
-/// minimized; reports a failed call in a snack bar.
+/// minimized; reports a failed call in a snack bar. Closes the keyboard
+/// when a screen appears.
 class CallLayer extends ConsumerWidget {
   const CallLayer({super.key});
 
@@ -40,21 +41,34 @@ class CallLayer extends ConsumerWidget {
     return switch (ringing) {
       null => const SizedBox.shrink(),
       false when minimized => const SizedBox.shrink(),
-      true => const Positioned.fill(child: _DarkStatusBar(IncomingCallView())),
-      false => const Positioned.fill(child: _DarkStatusBar(CallView())),
+      true => const Positioned.fill(child: _CallScreen(IncomingCallView())),
+      false => const Positioned.fill(child: _CallScreen(CallView())),
     };
   }
 }
 
-/// Light status bar icons over the call screens, which are always dark.
-class _DarkStatusBar extends StatelessWidget {
-  const _DarkStatusBar(this.child);
+/// A call screen, with light status bar icons since those are always
+/// dark. The layer isn't a route, so nothing else takes the focus from the
+/// chat under it, and a call that rings has no touch to close the keyboard.
+class _CallScreen extends StatefulWidget {
+  const _CallScreen(this.child);
 
   final Widget child;
 
   @override
+  State<_CallScreen> createState() => _CallScreenState();
+}
+
+class _CallScreenState extends State<_CallScreen> {
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  @override
   Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
     value: chatOverlayStyle(Brightness.dark),
-    child: child,
+    child: widget.child,
   );
 }
