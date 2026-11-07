@@ -1,5 +1,21 @@
 ## Unreleased
 
+- **Fix:** every screen that can go back shows the same glass back button. Profile, the password
+  change, chat info, a new group, the attachment preview, the image viewer, password reset and
+  email confirmation had a plain arrow; Profile showed none of the "‹ Settings" the account and
+  appearance screens have. Profile, account, appearance and the password change name the screen
+  they go back to; the rest keep the chevron alone. The chat's own chevron takes the link colour.
+- **New:** `TinodeBackButton`, the back button for `TinodeAppBar.leading`, with an optional
+  label, badge and tooltip, for hosts replacing a bar with `appBarBuilder`.
+- **New:** `TinodeAppBar.overlayBrightness`, for a bar on a screen that doesn't follow the theme.
+- **New:** `appBarBuilder` also reaches the profile, password change, chat info, find people,
+  new group, message search, attachment preview, image viewer, password reset and email
+  confirmation screens, through `TinodeProfileScreen`, `TinodeChangePasswordScreen`,
+  `TinodeChatInfoScreen`, `TinodeFindPeopleScreen`, `TinodeNewGroupScreen`,
+  `TinodeMessageSearchScreen`, `TinodeAttachmentPreviewScreen`, `TinodeImageViewerScreen`,
+  `TinodePasswordResetScreen` and `TinodeConfirmEmailScreen`.
+- **Breaking:** `TinodeScreen` is sealed, so a `switch` over it without a wildcard must handle
+  these new screens.
 - **Fix:** a touch outside a text field closes the keyboard, on every screen, including a touch
   that starts a scroll. The composer's attach and send buttons count as its field, so sending
   leaves the keyboard open.

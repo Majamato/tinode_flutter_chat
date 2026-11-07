@@ -11,6 +11,7 @@ import 'package:tinode_flutter_chat/src/search/presentation/found_message_tile.d
 import 'package:tinode_flutter_chat/src/search/presentation/message_search_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
+import '../../support/back_button.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
@@ -76,6 +77,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(strings.messageSearchIdle), findsOneWidget);
   }
+
+  testWidgets('the search keeps its row for the field: back is the chevron', (
+    tester,
+  ) async {
+    await openSearch(tester);
+    expect(
+      find.descendant(of: backButton(), matching: find.byType(Text)),
+      findsNothing,
+    );
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(MessageSearchScreen), findsNothing);
+    expect(find.byType(ChatScreen), findsOneWidget);
+  });
 
   testWidgets('a tap outside the search field closes the keyboard', (
     tester,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
@@ -12,6 +13,7 @@ import 'package:tinode_flutter_chat/src/attachments/presentation/outgoing_attach
 import 'package:tinode_flutter_chat/src/shared/presentation/ref_photo_avatar.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
+import '../../support/back_button.dart';
 import '../../support/fake_attachment_picker.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
@@ -97,6 +99,7 @@ void main() {
     await chooseFromMenu(tester, 'Photo');
     expect(picker.picks, [AttachmentSource.gallery]);
     expect(find.byType(AttachmentPreviewScreen), findsOneWidget);
+    expect(backText(), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'Sunset');
     await tester.tap(find.byIcon(icons.send));
@@ -115,6 +118,41 @@ void main() {
     await tester.tap(find.byType(ImageBubbleContent));
     await tester.pumpAndSettle();
     expect(find.byType(ImageViewerScreen), findsOneWidget);
+    expect(backText(), findsNothing);
+    // Always black, so the status bar's icons stay light in a light theme.
+    expect(
+      tester
+          .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+            find.descendant(
+              of: find.byType(ImageViewerScreen),
+              matching: find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+            ),
+          )
+          .value
+          .statusBarIconBrightness,
+      Brightness.light,
+    );
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(ImageViewerScreen), findsNothing);
+  });
+
+  testWidgets('back from the preview sends nothing', (tester) async {
+    await openBob(tester);
+    picker.next = pickedFile(
+      'sunset.png',
+      pngBytes,
+      mimeType: 'image/png',
+      isImage: true,
+    );
+    await chooseFromMenu(tester, 'Photo');
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AttachmentPreviewScreen), findsNothing);
+    expect(session.calls, isNot(contains(startsWith('upload'))));
   });
 
   testWidgets('a received file downloads and opens on tap', (tester) async {

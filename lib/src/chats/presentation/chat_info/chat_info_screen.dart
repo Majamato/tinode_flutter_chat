@@ -7,8 +7,12 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_exit_t
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_members_section.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
 /// About one chat: its photo and name, whether the peer of a direct chat
 /// is online or when they were last seen, a group's members, and deleting
@@ -34,8 +38,13 @@ class ChatInfoScreen extends ConsumerWidget {
       }
     });
     final kind = TopicKind.of(topic);
-    return Scaffold(
-      appBar: AppBar(title: Text(TinodeChatStrings.of(context).chatInfo)),
+    return GlassScaffold(
+      screen: TinodeChatInfoScreen(topic),
+      appBar: TinodeAppBar(
+        title: Text(TinodeChatStrings.of(context).chatInfo),
+        // The chevron alone: the chat's name is right below.
+        leading: const TinodeBackButton(),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 24),

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/password_reset_form.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
 /// Resetting a forgotten password: an emailed code, then a new password.
 class PasswordResetScreen extends StatelessWidget {
@@ -16,9 +20,12 @@ class PasswordResetScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(TinodeChatStrings.of(context).resetPasswordTitle),
+    final strings = TinodeChatStrings.of(context);
+    return GlassScaffold(
+      screen: const TinodePasswordResetScreen(),
+      appBar: TinodeAppBar(
+        title: Text(strings.resetPasswordTitle),
+        leading: const TinodeBackButton(),
       ),
       body: const SafeArea(
         child: Center(

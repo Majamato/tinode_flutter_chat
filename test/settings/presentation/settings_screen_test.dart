@@ -10,6 +10,7 @@ import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/settings_section.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
+import '../../support/back_button.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/pump_tinode_chat.dart';
 import '../../support/test_palettes.dart';
@@ -56,6 +57,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ProfileScreen), findsOneWidget);
+    expect(backLabelled(strings.settingsTitle), findsOneWidget);
   });
 
   testWidgets('the account row opens the account screen, which holds '

@@ -38,6 +38,7 @@ class TinodeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.bottom,
     this.fadeColor,
     this.titleOnGlass = false,
+    this.overlayBrightness,
     super.key,
   });
 
@@ -56,7 +57,7 @@ class TinodeAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// under the bar's last row instead of showing a hard edge.
   static const _fadeOverhang = 16.0;
 
-  /// At the start, e.g. a back button.
+  /// At the start, e.g. a `TinodeBackButton`.
   final Widget? leading;
 
   /// The screen's name, or a widget standing for it.
@@ -80,6 +81,11 @@ class TinodeAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// chat's name pill). Plain text needs the solid fade behind it.
   final bool titleOnGlass;
 
+  /// How bright what is behind the status bar looks, for a screen that
+  /// doesn't follow the theme (the image viewer is always black). The
+  /// theme's brightness by default.
+  final Brightness? overlayBrightness;
+
   /// Below the status bar: the [Scaffold] adds that and caps the bar at
   /// the sum.
   @override
@@ -100,7 +106,7 @@ class TinodeAppBar extends StatelessWidget implements PreferredSizeWidget {
       solid + _fadeLength,
     );
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: chatOverlayStyle(theme.brightness),
+      value: chatOverlayStyle(overlayBrightness ?? theme.brightness),
       child: MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.3,
         child: Stack(

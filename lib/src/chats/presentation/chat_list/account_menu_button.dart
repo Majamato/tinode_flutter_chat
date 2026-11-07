@@ -32,7 +32,9 @@ class AccountMenuButton extends StatelessWidget {
           ),
           itemBuilder: (_) => [
             PopupMenuItem(
-              onTap: () => unawaited(ProfileScreen.open(context)),
+              onTap: () => unawaited(
+                ProfileScreen.open(context, backLabel: strings.chatListTitle),
+              ),
               child: Text(strings.profile),
             ),
             PopupMenuItem(

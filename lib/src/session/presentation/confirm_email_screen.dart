@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/confirm_email_form.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
 /// Confirming the user's email with the code the server mailed, after
 /// signing up or logging in with an email not yet confirmed. Confirming
@@ -24,9 +28,11 @@ class ConfirmEmailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+    return GlassScaffold(
+      screen: const TinodeConfirmEmailScreen(),
+      appBar: TinodeAppBar(
         title: Text(TinodeChatStrings.of(context).confirmEmailTitle),
+        leading: const TinodeBackButton(),
       ),
       body: SafeArea(
         child: Center(

@@ -97,11 +97,15 @@ of a screen shares one backdrop. *In code:* `GlassSurface`, `GlassIconButton`.
 *Avoid:* "frosted bar": there are no bars, only glass over the content.
 
 **App bar**
-The row of glass at the top of a screen (chat list, calls history, settings, appearance, a
-chat), over an **edge fade** of the screen's background. Content scrolls under it and starts
+The row of glass at the top of a screen, over an **edge fade** of the screen's background. Content scrolls under it and starts
 below it. The host can wrap or replace it per screen. *In code:* `TinodeAppBar`, `EdgeFade`,
 `GlassScaffold`, `TinodeChat.appBarBuilder`, `TinodeScreen`.
 *Avoid:* "header" for the bar itself (the chat's is `ChatHeader` for history).
+
+**Back button**
+The capsule at the start of the app bar that goes back a screen: the chevron, plus on the
+settings pages the name of the screen it goes back to ("‹ Settings"); the chat's shows the unread
+count instead. *In code:* `TinodeBackButton`, `ChatBackButton`.
 
 **Tab bar**
 The floating glass bar with the chats, the calls history and the settings, on by default

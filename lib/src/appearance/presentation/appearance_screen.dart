@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_back_button.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_preview.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scope.dart';
 import 'package:tinode_flutter_chat/src/appearance/presentation/palette_swatch_grid.dart';
@@ -12,6 +11,7 @@ import 'package:tinode_flutter_chat/src/shared/presentation/settings_label.dart'
 import 'package:tinode_flutter_chat/src/shared/presentation/settings_section.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
 /// Picks the look of the app: a live preview, the host's palettes (when
 /// it offers more than one), light, dark or system, the host's own extra
@@ -41,7 +41,7 @@ class AppearanceScreen extends StatelessWidget {
       backgroundColor: chat.pageColor,
       appBar: TinodeAppBar(
         title: Text(strings.appearance),
-        leading: AppearanceBackButton(label: backLabel),
+        leading: TinodeBackButton(label: Text(backLabel)),
         fadeColor: chat.pageColor,
       ),
       // No padding of its own: the list pads itself by the bars'.

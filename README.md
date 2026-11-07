@@ -41,9 +41,10 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
         : defaultBubble,
   )
   ```
-- Every screen with an app bar (chat list, calls, settings, appearance, a chat) shares one
-  glass `TinodeAppBar`. Wrap it or bring your own with `appBarBuilder`; the content scrolls
-  under whatever bar you return and starts below its preferred height:
+- Every screen with an app bar, from the chat list to the login's password reset, shares one
+  glass `TinodeAppBar`, and every screen that can go back one `TinodeBackButton`, which names
+  the screen it goes back to. Wrap the bar or bring your own with `appBarBuilder`; the content
+  scrolls under whatever bar you return and starts below its preferred height:
 
   ```dart
   TinodeChat(

@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/app/presentation/home/home_tab_bar.dart'
 import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
+import '../../support/back_button.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/pump_tinode_chat.dart';
 
@@ -54,6 +55,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ChangePasswordScreen), findsOneWidget);
   }
+
+  testWidgets('back from the password change names the account', (
+    tester,
+  ) async {
+    await openPasswordChange(tester);
+    expect(backLabelled(strings.account), findsOneWidget);
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(ChangePasswordScreen), findsNothing);
+    expect(find.byType(AccountScreen), findsOneWidget);
+  });
 
   testWidgets('holds the password, logging out and deleting the account', (
     tester,

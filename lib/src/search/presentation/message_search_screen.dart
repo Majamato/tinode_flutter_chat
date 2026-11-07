@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/search/presentation/message_search_field.dart';
 import 'package:tinode_flutter_chat/src/search/presentation/message_search_results.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_field.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
 /// Message search over the messages of the chat named [topic] kept on this
 /// device. Tapping a result goes back to the chat, scrolled to the message.
@@ -20,9 +25,15 @@ class MessageSearchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: MessageSearchField(topic: topic)),
-      body: MessageSearchResults(topic: topic),
+    return GlassScaffold(
+      screen: TinodeMessageSearchScreen(topic),
+      appBar: TinodeAppBar(
+        centerTitle: false,
+        titleOnGlass: true,
+        leading: const TinodeBackButton(),
+        title: GlassField(child: MessageSearchField(topic: topic)),
+      ),
+      body: SafeArea(bottom: false, child: MessageSearchResults(topic: topic)),
     );
   }
 }

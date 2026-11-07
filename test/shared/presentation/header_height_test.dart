@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_header.dart';
 import 'package:tinode_flutter_chat/src/session/application/reconnecting_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_field.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 /// A [Scaffold] caps its app bar at the status bar plus the preferred
@@ -67,6 +68,49 @@ void main() {
         await naturalHeight(tester, header, textScale: textScale),
         statusBar + header.preferredSize.height,
       );
+    });
+
+    testWidgets('an app bar with a named back button is as tall as it '
+        'says, text at $textScale', (tester) async {
+      const header = TinodeAppBar(
+        leading: TinodeBackButton(label: Text('Settings')),
+        title: Text('Account'),
+      );
+      expect(
+        await naturalHeight(tester, header, textScale: textScale),
+        statusBar + header.preferredSize.height,
+      );
+    });
+
+    testWidgets("a field in the app bar fits its row without the theme's "
+        'fill or borders, text at $textScale', (tester) async {
+      const header = TinodeAppBar(
+        leading: TinodeBackButton(),
+        centerTitle: false,
+        titleOnGlass: true,
+        title: GlassField(
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Search',
+              prefixIcon: Icon(Icons.search),
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+      );
+      expect(
+        await naturalHeight(tester, header, textScale: textScale),
+        statusBar + header.preferredSize.height,
+      );
+      expect(
+        tester.getSize(find.byType(TextField)).height,
+        lessThanOrEqualTo(TinodeAppBar.rowHeight),
+      );
+      final decoration = tester
+          .widget<InputDecorator>(find.byType(InputDecorator))
+          .decoration;
+      expect(decoration.filled, isNot(isTrue));
+      expect(decoration.enabledBorder, isNull);
     });
 
     for (final reconnecting in [false, true]) {

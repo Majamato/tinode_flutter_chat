@@ -47,10 +47,82 @@ final class TinodeAccountScreen extends TinodeScreen {
   const TinodeAccountScreen();
 }
 
+/// The user's own profile.
+final class TinodeProfileScreen extends TinodeScreen {
+  /// The profile screen.
+  const TinodeProfileScreen();
+}
+
+/// Changing the password.
+final class TinodeChangePasswordScreen extends TinodeScreen {
+  /// The password change screen.
+  const TinodeChangePasswordScreen();
+}
+
+/// Finding people and groups to chat with.
+final class TinodeFindPeopleScreen extends TinodeScreen {
+  /// The search for people and groups.
+  const TinodeFindPeopleScreen();
+}
+
+/// Creating a group.
+final class TinodeNewGroupScreen extends TinodeScreen {
+  /// The new group screen.
+  const TinodeNewGroupScreen();
+}
+
+/// A picked file, with its caption, before sending it.
+final class TinodeAttachmentPreviewScreen extends TinodeScreen {
+  /// The attachment preview screen.
+  const TinodeAttachmentPreviewScreen();
+}
+
+/// An image full screen.
+final class TinodeImageViewerScreen extends TinodeScreen {
+  /// The image viewer.
+  const TinodeImageViewerScreen();
+}
+
+/// Resetting a forgotten password, before logging in.
+final class TinodePasswordResetScreen extends TinodeScreen {
+  /// The password reset screen.
+  const TinodePasswordResetScreen();
+}
+
+/// Confirming the user's email, before logging in.
+final class TinodeConfirmEmailScreen extends TinodeScreen {
+  /// The email confirmation screen.
+  const TinodeConfirmEmailScreen();
+}
+
 /// One open chat.
 final class TinodeChatScreen extends TinodeScreen {
   /// The screen of the chat named [topic].
   const TinodeChatScreen(this.topic);
+
+  /// The chat's topic name.
+  final String topic;
+
+  @override
+  List<Object?> get props => [topic];
+}
+
+/// About one chat: its members, and deleting or leaving it.
+final class TinodeChatInfoScreen extends TinodeScreen {
+  /// The info of the chat named [topic].
+  const TinodeChatInfoScreen(this.topic);
+
+  /// The chat's topic name.
+  final String topic;
+
+  @override
+  List<Object?> get props => [topic];
+}
+
+/// The message search of one chat.
+final class TinodeMessageSearchScreen extends TinodeScreen {
+  /// The message search of the chat named [topic].
+  const TinodeMessageSearchScreen(this.topic);
 
   /// The chat's topic name.
   final String topic;

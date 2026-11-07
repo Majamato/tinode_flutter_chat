@@ -39,9 +39,19 @@ export 'src/shared/domain/tinode_screen.dart'
     show
         TinodeAccountScreen,
         TinodeAppearanceScreen,
+        TinodeAttachmentPreviewScreen,
         TinodeCallsScreen,
+        TinodeChangePasswordScreen,
+        TinodeChatInfoScreen,
         TinodeChatListScreen,
         TinodeChatScreen,
+        TinodeConfirmEmailScreen,
+        TinodeFindPeopleScreen,
+        TinodeImageViewerScreen,
+        TinodeMessageSearchScreen,
+        TinodeNewGroupScreen,
+        TinodePasswordResetScreen,
+        TinodeProfileScreen,
         TinodeScreen,
         TinodeSettingsScreen;
 export 'src/shared/presentation/app_bar_builder_scope.dart'
@@ -56,3 +66,4 @@ export 'src/shared/presentation/theme/tinode_chat_palette.dart'
 export 'src/shared/presentation/theme/tinode_chat_theme.dart'
     show TinodeChatTheme;
 export 'src/shared/presentation/tinode_app_bar.dart' show TinodeAppBar;
+export 'src/shared/presentation/tinode_back_button.dart' show TinodeBackButton;

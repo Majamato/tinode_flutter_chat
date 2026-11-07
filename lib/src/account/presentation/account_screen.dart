@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/account/presentation/change_password_tile.dart';
 import 'package:tinode_flutter_chat/src/account/presentation/delete_account_tile.dart';
 import 'package:tinode_flutter_chat/src/account/presentation/log_out_tile.dart';
-import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_back_button.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/settings_section.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
 /// The user's account: changing the password, logging out and deleting
 /// the account, in cards scrolling under the glass app bar, whose back
@@ -34,7 +34,7 @@ class AccountScreen extends StatelessWidget {
       backgroundColor: page,
       appBar: TinodeAppBar(
         title: Text(TinodeChatStrings.of(context).account),
-        leading: AppearanceBackButton(label: backLabel),
+        leading: TinodeBackButton(label: Text(backLabel)),
         fadeColor: page,
       ),
       // No padding of its own: the list pads itself by the bars'.

@@ -107,6 +107,11 @@ business logic in UI files. Flutter's own guidance is in
   dock reads `viewInsets`. The tab bar's room reaches the tabs as `MediaQuery` bottom padding,
   under a `GlassBelow`, so their scaffolds paint only a light veil there, not the solid
   fade (the bar's glass blurs the rows instead); touches on that room still stop there.
+- **Back buttons.** A screen that can go back has a `TinodeBackButton` in `TinodeAppBar.leading`,
+  never a Material `BackButton` or a bar's implied arrow. The chevron alone is the default; a
+  settings page adds a label naming the screen it goes back to. With more than one way in it
+  takes that name as a required `backLabel` in `open`, so a new caller can't forget it. A text field in the bar's row goes on a `GlassField`, with the chevron
+  alone beside it.
 - **Glass.** Every translucent piece is a `GlassSurface` (round buttons: `GlassIconButton`),
   whose `BackdropFilter.grouped` joins the screen's `BackdropGroup`. Glass must not overlap
   other glass of the same group.

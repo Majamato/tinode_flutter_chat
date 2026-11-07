@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/session/presentation/password_reset_scre
 import 'package:tinode_flutter_chat/src/session/presentation/sign_up_form.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
+import '../../support/back_button.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/pump_tinode_chat.dart';
 
@@ -98,6 +99,7 @@ void main() {
       await tester.tap(button);
       await tester.pumpAndSettle();
       expect(find.byType(ConfirmEmailScreen), findsOneWidget);
+      expect(backText(), findsNothing);
 
       await tester.enterText(field(strings.resetCodeField), '000000');
       await tester.pump();
@@ -124,6 +126,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, strings.signIn));
       await tester.pumpAndSettle();
       expect(find.byType(ConfirmEmailScreen), findsOneWidget);
+      expect(backText(), findsNothing);
 
       await tester.enterText(field(strings.resetCodeField), '654321');
       await tester.pump();
@@ -179,6 +182,19 @@ void main() {
       );
       expect(reset(), findsNothing);
     });
+  });
+
+  testWidgets('back from a password reset names the login', (tester) async {
+    session.requireEmails();
+    await pumpTinodeChat(tester, session);
+    await tester.tap(find.text(strings.forgotPassword));
+    await tester.pumpAndSettle();
+    expect(backText(), findsNothing);
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(PasswordResetScreen), findsNothing);
+    expect(find.byType(LoginScreen), findsOneWidget);
   });
 
   testWidgets('a reset code sets a new password, then the user signs in', (

@@ -28,7 +28,9 @@ class SettingsProfileTile extends ConsumerWidget {
       ),
       title: name.isEmpty ? strings.profile : name,
       subtitle: strings.profileSubtitle,
-      onTap: () => unawaited(ProfileScreen.open(context)),
+      onTap: () => unawaited(
+        ProfileScreen.open(context, backLabel: strings.settingsTitle),
+      ),
     );
   }
 }

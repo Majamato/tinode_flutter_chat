@@ -11,8 +11,12 @@ import 'package:tinode_flutter_chat/src/new_chat/presentation/find_field.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/find_results.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/selected_members.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
 /// Creates a group: its name, and people found by a search as members.
 /// Once created, the group's chat opens over the chat list. Shows a snack
@@ -81,41 +85,47 @@ class _NewGroupScreenState extends ConsumerState<NewGroupScreen> {
     });
     final strings = TinodeChatStrings.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
+    return GlassScaffold(
+      screen: const TinodeNewGroupScreen(),
+      appBar: TinodeAppBar(
         title: Text(strings.newGroup),
+        leading: const TinodeBackButton(),
         actions: [CreateGroupButton(name: _name, onCreate: _create)],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: TextField(
-              controller: _name,
-              autofocus: true,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(labelText: strings.groupNameField),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              // Clear of the bar's fade, where the label floats.
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: TextField(
+                controller: _name,
+                autofocus: true,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(labelText: strings.groupNameField),
+              ),
             ),
-          ),
-          if (_members.isNotEmpty)
-            SelectedMembers(members: _members, onRemove: _toggle),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: FindField(
-              scope: FindScope.groupMembers,
-              hint: strings.addMembersHint,
-              autofocus: false,
+            if (_members.isNotEmpty)
+              SelectedMembers(members: _members, onRemove: _toggle),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: FindField(
+                scope: FindScope.groupMembers,
+                hint: strings.addMembersHint,
+                autofocus: false,
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: FindResults(
-              scope: FindScope.groupMembers,
-              selected: _picked,
-              onSelected: _toggle,
+            const Divider(height: 1),
+            Expanded(
+              child: FindResults(
+                scope: FindScope.groupMembers,
+                selected: _picked,
+                onSelected: _toggle,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

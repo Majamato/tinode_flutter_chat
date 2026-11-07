@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen
 import 'package:tinode_flutter_chat/src/new_chat/presentation/new_group_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
+import '../../support/back_button.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
@@ -89,6 +90,29 @@ void main() {
     await tester.tap(find.text(strings.retry));
     await tester.pumpAndSettle();
     expect(find.text('Bob'), findsOneWidget);
+  });
+
+  testWidgets('the search keeps its row for the field: back is the chevron', (
+    tester,
+  ) async {
+    await openSearch(tester);
+    expect(backText(), findsNothing);
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(FindPeopleScreen), findsNothing);
+  });
+
+  testWidgets('back from a new group is the chevron', (tester) async {
+    await openSearch(tester);
+    await tester.tap(find.text(strings.newGroup));
+    await tester.pumpAndSettle();
+    expect(backText(), findsNothing);
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(NewGroupScreen), findsNothing);
+    expect(find.byType(FindPeopleScreen), findsOneWidget);
   });
 
   testWidgets('creates a group with a member and opens it', (tester) async {

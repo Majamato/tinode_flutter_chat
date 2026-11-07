@@ -4,6 +4,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/profile/presentation/profile_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
+import '../../support/back_button.dart';
 import '../../support/fake_attachment_picker.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/pump_tinode_chat.dart';
@@ -36,9 +37,16 @@ void main() {
     expect(find.byType(ProfileScreen), findsOneWidget);
   }
 
-  testWidgets('edits only the name; the note stays as it was', (
-    tester,
-  ) async {
+  testWidgets('from the chat list, back names the chat list', (tester) async {
+    await openProfile(tester);
+    expect(backLabelled(strings.chatListTitle), findsOneWidget);
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileScreen), findsNothing);
+  });
+
+  testWidgets('edits only the name; the note stays as it was', (tester) async {
     await openProfile(tester);
     expect(find.text('Alice'), findsOneWidget);
     // The photo and the name, nothing else to edit.

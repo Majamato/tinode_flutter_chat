@@ -3,12 +3,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
+import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
 /// The picked image (or the file's name and size) with a caption field,
-/// before sending. Pops with the caption on Send, or with null. Watches
-/// nothing.
+/// before sending. Pops with the caption on Send, or with null. Watches nothing
+/// itself.
 class AttachmentPreviewScreen extends StatefulWidget {
   const AttachmentPreviewScreen({required this.file, super.key});
 
@@ -44,8 +48,13 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
     final strings = TinodeChatStrings.of(context);
     final file = widget.file;
     final path = file.path;
-    return Scaffold(
-      appBar: AppBar(title: Text(file.name)),
+    return GlassScaffold(
+      screen: const TinodeAttachmentPreviewScreen(),
+      appBar: TinodeAppBar(
+        title: Text(file.name),
+        // The chevron alone: the file's name needs the room.
+        leading: const TinodeBackButton(),
+      ),
       body: SafeArea(
         child: Column(
           children: [

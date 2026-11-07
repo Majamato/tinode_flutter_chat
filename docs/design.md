@@ -119,8 +119,8 @@ The package's login is deliberately plain, because how an app greets its users i
 
 A host draws its own login with `TinodeChat.loginBuilder`, which gets the working form
 (`TinodeLoginView.form`), the mode and whether sign-up is offered. `BubbleTail` and
-`SlidingSegments` are exported for it. Resetting a password and confirming an email stay plain
-screens in the host's theme.
+`SlidingSegments` are exported for it. Resetting a password and confirming an email stay simple
+screens in the host's theme, with the same glass app bar and back button as the rest of the chat.
 
 ## Glass
 
@@ -138,7 +138,8 @@ them.
   palette (`soft` and `ink` in light, `night` and `onAction` in dark), so it follows the
   appearance screen. Only the chat list's new chat button uses it.
 - **App bar** (`TinodeAppBar`): a 44 px row 6 px under the status bar, 8 px from the sides,
-  its pieces 8 px apart: a leading capsule, the title (`titleLarge`, centred, or a capsule of
+  its pieces 8 px apart: a leading capsule (the back button on every screen that can go back),
+  the title (`titleLarge`, centred, or a capsule of
   its own), round 44 px buttons (`GlassIconButton`, 22 px icons in `onSurface`), then an
   optional bottom row such as a search pill. Buttons that belong together share one island of
   glass instead, 40 px wide each with 2 px at its ends (the chat's search and calls), leaving
@@ -151,8 +152,15 @@ them.
   its own (the chat's name pill, which starts with its 34 px photo 5 px in, `titleOnGlass`) needs no solid row: there the fade is solid
   under the status bar only and the messages show behind the capsules. The bar takes every touch that lands on it, between the buttons too, so nothing
   under it can be tapped through it; the composer's dock does the same. Text grows to 1.3
-  times at most. The chat list, calls history, settings, appearance and each chat use it; a
-  host wraps or replaces it with `TinodeChat.appBarBuilder`, which gets the `TinodeScreen`.
+  times at most. Every screen with an app bar uses it; a host wraps or replaces it with
+  `TinodeChat.appBarBuilder`, which gets the `TinodeScreen`.
+- **Back button** (`TinodeBackButton`): a 44 px glass capsule, its 24 px chevron and its label
+  (`titleMedium`, 600) in `linkColor`, at most 45 % of the screen wide. The chevron alone is the
+  default. Only Profile, Account, Appearance and Change password add a label, cut with an
+  ellipsis, naming the screen they go back to ("‹ Settings", "‹ Chats", "‹ Account"). The chat
+  itself has the chevron and its unread count. A bar whose title is a field (find people,
+  message search) keeps the room for it. That field sits on a 44 px capsule (`GlassField`), filled like the chat list's search
+  pill in light mode and glass in dark mode.
 - The content runs under the bars and is padded by their heights, which the `Scaffold` gives
   it, so a host's bar of any height, solid or not, works.
 

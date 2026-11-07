@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_info_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
+import '../../support/back_button.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
@@ -57,6 +58,18 @@ void main() {
 
   Finder inInfo(Finder finder) =>
       find.descendant(of: find.byType(ChatInfoScreen), matching: finder);
+
+  testWidgets('back is the chevron: the chat is named below it', (
+    tester,
+  ) async {
+    await openInfo(tester, 'Friends');
+    expect(backText(), findsNothing);
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(ChatInfoScreen), findsNothing);
+    expect(find.byType(ChatScreen), findsOneWidget);
+  });
 
   testWidgets("a direct chat's info says when the peer was last seen", (
     tester,
