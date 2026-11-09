@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/video_player_view.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
@@ -10,9 +11,9 @@ import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_str
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
-/// The picked image (or the file's name and size) with a caption field,
-/// before sending. Pops with the caption on Send, or with null. Watches nothing
-/// itself.
+/// The picked image (fading in once decoded), the video to play, or the
+/// file's name and size, with a caption field, before sending. Pops with
+/// the caption on Send, or with null. Watches nothing itself.
 class AttachmentPreviewScreen extends StatefulWidget {
   const AttachmentPreviewScreen({required this.file, super.key});
 
@@ -32,6 +33,8 @@ class AttachmentPreviewScreen extends StatefulWidget {
 }
 
 class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
+  static const _fadeIn = Duration(milliseconds: 150);
+
   final _caption = TextEditingController();
 
   @override
@@ -60,13 +63,26 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
           children: [
             Expanded(
               child: Center(
-                child: file.isImage && path != null
+                child: file.isVideo && path != null
+                    ? VideoPlayerView(path: path)
+                    : file.isImage && path != null
                     ? Image.file(
                         File(path),
                         cacheWidth:
                             (MediaQuery.sizeOf(context).width *
                                     MediaQuery.devicePixelRatioOf(context))
                                 .round(),
+                        // A large photo takes a moment to decode: it fades
+                        // in rather than pops.
+                        frameBuilder: (context, child, frame, synchronous) =>
+                            synchronous
+                            ? child
+                            : AnimatedOpacity(
+                                opacity: frame == null ? 0 : 1,
+                                duration: _fadeIn,
+                                curve: Curves.easeOut,
+                                child: child,
+                              ),
                       )
                     : Column(
                         mainAxisSize: MainAxisSize.min,
@@ -85,8 +101,9 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
                 children: [
                   Expanded(
                     child: TextField(
+                      // No keyboard until asked for: rising, it would
+                      // shrink the picture as it appears.
                       controller: _caption,
-                      autofocus: true,
                       decoration: InputDecoration(
                         hintText: strings.captionHint,
                       ),

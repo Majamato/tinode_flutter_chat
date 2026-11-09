@@ -55,6 +55,7 @@ class ChatPreviewLine extends ConsumerWidget {
     final call = preview.call;
     final (icon, iconColor) = switch (preview.kind) {
       ChatPreviewKind.voice => (icons.microphone, theme.linkColor),
+      ChatPreviewKind.video => (icons.video, theme.linkColor),
       ChatPreviewKind.file => (icons.file, theme.linkColor),
       ChatPreviewKind.call => (
         call?.audioOnly ?? true ? icons.voiceCall : icons.videoCall,
@@ -66,6 +67,7 @@ class ChatPreviewLine extends ConsumerWidget {
     final text = switch (preview) {
       ChatPreview(text: final text) when text.isNotEmpty => text,
       ChatPreview(kind: ChatPreviewKind.photo) => strings.photoMessage,
+      ChatPreview(kind: ChatPreviewKind.video) => strings.videoMessage,
       ChatPreview(kind: ChatPreviewKind.voice) => strings.voiceMessage,
       ChatPreview(isMissedCall: true) =>
         audioOnly ? strings.missedVoiceCall : strings.missedVideoCall,

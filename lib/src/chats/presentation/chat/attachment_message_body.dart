@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_bubble_content.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/video_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_text_layout.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/photo_time_chip.dart';
 
-/// The inside of a message with images or files: each of them, then the
+/// The inside of a message with images, videos or files: each of them, then the
 /// caption with the [footer] after its last line. Without a caption the
 /// footer sits on the last photo ([overPhoto]) or below the files. Watches
 /// nothing; its bubble passes them in.
@@ -15,6 +16,7 @@ class AttachmentMessageBody extends StatelessWidget {
     required this.caption,
     required this.color,
     required this.footer,
+    this.clientId,
     super.key,
   });
 
@@ -24,20 +26,28 @@ class AttachmentMessageBody extends StatelessWidget {
   final List<MessageAttachment> attachments;
   final String caption;
 
+  /// The client ID of the user's own message, for its photos' and videos'
+  /// stand-ins.
+  final String? clientId;
+
   /// Text color of the bubble.
   final Color color;
 
   /// The time and status; white when [overPhoto].
   final Widget footer;
 
-  /// Whether the footer sits on the last photo: there is no caption and
-  /// the message ends with a photo.
+  /// Whether the footer sits on the last photo or video: there is no
+  /// caption and the message ends with one.
   static bool overPhoto(List<MessageAttachment> attachments, String caption) =>
-      caption.isEmpty && attachments.lastOrNull is ImageAttachment;
+      caption.isEmpty && _isPicture(attachments.lastOrNull);
 
-  /// Whether the message shows a photo, which takes the photo padding.
+  /// Whether the message shows a photo or a video, which take the photo
+  /// padding.
   static bool hasPhoto(List<MessageAttachment> attachments) =>
-      attachments.any((a) => a is ImageAttachment);
+      attachments.any(_isPicture);
+
+  static bool _isPicture(MessageAttachment? attachment) =>
+      attachment is ImageAttachment || attachment is VideoAttachment;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +66,7 @@ class AttachmentMessageBody extends StatelessWidget {
                   when onPhoto && index == attachments.length - 1 =>
                 Stack(
                   children: [
-                    ImageBubbleContent(image: image),
+                    ImageBubbleContent(image: image, clientId: clientId),
                     PositionedDirectional(
                       end: 6,
                       bottom: 6,
@@ -64,7 +74,26 @@ class AttachmentMessageBody extends StatelessWidget {
                     ),
                   ],
                 ),
-              final ImageAttachment image => ImageBubbleContent(image: image),
+              final ImageAttachment image => ImageBubbleContent(
+                image: image,
+                clientId: clientId,
+              ),
+              final VideoAttachment video
+                  when onPhoto && index == attachments.length - 1 =>
+                Stack(
+                  children: [
+                    VideoBubbleContent(video: video, clientId: clientId),
+                    PositionedDirectional(
+                      end: 6,
+                      bottom: 6,
+                      child: PhotoTimeChip(child: footer),
+                    ),
+                  ],
+                ),
+              final VideoAttachment video => VideoBubbleContent(
+                video: video,
+                clientId: clientId,
+              ),
               final FileAttachment file => FileBubbleContent(
                 file: file,
                 color: color,

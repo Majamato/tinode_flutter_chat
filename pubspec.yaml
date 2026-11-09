@@ -13,6 +13,7 @@ environment:
   flutter: ">=3.38.0"
 
 dependencies:
+  camerawesome: ^2.5.0
   clock: ^1.1.1
   collection: ^1.19.0
   connectivity_plus: ^7.3.2
@@ -23,9 +24,13 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_callkit_incoming: ^3.1.6
+  flutter_image_compress: ^2.5.1
   flutter_riverpod: 3.1.0
   flutter_webrtc: ^1.6.2
+  gal: ^2.3.3
   image_picker: ^1.2.3
+  image_picker_android: ^0.8.13+17
+  image_picker_platform_interface: ^2.11.1
   just_audio: ^0.10.6
   meta: ^1.16.0
   mime: ^2.1.0
@@ -38,6 +43,8 @@ dependencies:
   super_sliver_list: ^0.4.1
   tinode_dart_client:
     path: ../tinode_dart_client
+  v_video_compressor: ^2.2.1
+  video_player: ^2.11.1
   web_socket: ^1.0.1
   webrtc_interface: ^1.5.1
 

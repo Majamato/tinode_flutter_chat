@@ -20,11 +20,15 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 - Opens direct chats, groups and channels. Channel followers get a read-only view.
 - Loads history, pages older messages in on scroll, and merges live messages as they arrive.
 - Sends plain text and marks what the user sees as read.
-- Sends and shows images and files: an attach button offers Photo, Camera and File, then a
-  preview with a caption. Images show in the chat and open full screen; files show their name and
-  size, and a tap downloads and opens them with the system's viewer. Uploads show their progress,
-  wait in the outbox like any message, and can be cancelled. Profile photos given by reference
-  show too.
+- Sends and shows images, videos and files: an attach button offers Photos (Gallery on Android)
+  for a photo or a video, Camera (an in-app camera that takes either, and saves what it takes to
+  the device's photos) and File, then a preview with a caption. Photos and videos are compressed
+  on the device before they go, and a video must fit 20 MiB once compressed (see
+  `TinodeAttachmentLimits`). Their bubble shows at once, with the compression's and then the
+  upload's progress in numbers; both carry on when the user leaves the chat, and wait in the
+  outbox like any message. Images show in the chat and open full screen; videos show their poster
+  and length, and play full screen; files show their name and size, and a tap downloads and opens
+  them with the system's viewer. Profile photos given by reference show too.
 - In groups, names the sender of each run of messages and shows their avatar. Shows who is
   typing, under the chat's name and as a bubble with bouncing dots. The user's own messages get
   delivered and read ticks, and a "Read by" list in groups.
@@ -325,19 +329,29 @@ call screens, which need a little more.
 
 ## Attachments: platform setup
 
-Picking photos and files uses `image_picker` and `file_picker`; opening received files uses
-`open_filex`. The package runs on Android, iOS and desktop; the web is not supported yet (its
-cache uses `dart:io`).
+Picking photos, videos and files uses `image_picker` and `file_picker`; the Camera entry is
+`camerawesome`; compressing uses `v_video_compressor` and `flutter_image_compress`; saving the
+camera's captures to the photos uses `gal`; playing videos uses `video_player`; opening received
+files uses `open_filex`. The package runs on Android, iOS and desktop; the web is not supported
+yet (its cache uses `dart:io`).
 
-- **iOS** (`ios/Runner/Info.plist`): `NSPhotoLibraryUsageDescription`, and
-  `NSCameraUsageDescription` (already there for calls) for the Camera entry.
-- **Android:** nothing for the system photo picker. See `file_picker`'s notes for older Android
-  versions.
+- **iOS** (`ios/Runner/Info.plist`): `NSPhotoLibraryUsageDescription` (photos and videos to
+  send), `NSPhotoLibraryAddUsageDescription` (saving what the camera takes),
+  `NSCameraUsageDescription` and `NSMicrophoneUsageDescription` (already there for calls) for the
+  Camera entry, which records sound with its videos.
+- **Android:** photos and videos open the system photo picker, a sheet over the app; the
+  package turns it on itself. `MainActivity` must not be `android:launchMode="singleInstance"`:
+  Android then opens every picker (photos and files) as a separate app and answers "cancelled"
+  before anything is picked. Use `singleTask` (see Calls below). For saving the camera's captures on Android
+  10 and older, `<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+  android:maxSdkVersion="29" tools:replace="android:maxSdkVersion"/>` (with
+  `xmlns:tools="http://schemas.android.com/tools"` on `<manifest>`: `v_video_compressor` declares
+  it up to Android 9). See `file_picker`'s notes for older Android versions.
 - **macOS:** the `com.apple.security.files.user-selected.read-only` entitlement (in
   `DebugProfile.entitlements` and `Release.entitlements`), next to `network.client`.
 - **Linux:** `file_picker` needs `zenity` or `kdialog` installed.
-- **Desktop:** there is no Camera entry, and photos go up at their original size (the pickers
-  can't scale them there). Every file is still capped by the server's `maxFileUploadSize`.
+- **Desktop:** there is no Camera entry, and photos and videos go up as they are (there are no
+  encoders there). Every file is still capped by the server's `maxFileUploadSize`.
 
 ## Voice messages: platform setup
 
@@ -406,6 +420,21 @@ TinodeChat(
 
 Message search finds only what the cache keeps, so `messagesPerChat` is also how far back it
 reaches. Files waiting to be sent never count and are never pruned.
+
+Photos and videos shrink before they are sent, and a video must fit a size limit once compressed:
+
+```dart
+TinodeChat(
+  config: config,
+  attachmentLimits: const TinodeAttachmentLimits(
+    maxVideoBytes: 20 * 1024 * 1024, // the default; the server's limit wins when lower
+    videoBitrate: 1500000, // bits per second, at about 720p
+    maxPhotoSide: 2048, // pixels, JPEG at photoQuality 85
+  ),
+)
+```
+
+The server must accept files that large too (`max_file_upload_size` in `tinode.conf`).
 
 The calls history is built from the cache too. Each time the calls tab shows, it fetches the
 newest messages of the direct chats the cache is behind on (at most 30, three at a time), so
@@ -518,7 +547,9 @@ Future<void> onBackgroundPush(RemoteMessage message) async {
   system's settings). iOS asks nothing for CallKit.
 
 **Android:** the plugin declares its permissions, services and the Telecom connection itself.
-Set `android:launchMode="singleInstance"` on `MainActivity`, and keep the plugin from R8:
+Set `android:launchMode="singleTask"` on `MainActivity`, so a call opens the app you have rather
+than a second one. Not `singleInstance`, as the plugin's own README says: with it, the photo and
+file pickers open as a separate app and come back empty. Keep the plugin from R8:
 `-keep class com.hiennv.flutter_callkit_incoming.** { *; }` in `proguard-rules.pro`. Google Play
 allows full screen notifications (`USE_FULL_SCREEN_INTENT`) for calling apps; declare it in the
 Play Console.

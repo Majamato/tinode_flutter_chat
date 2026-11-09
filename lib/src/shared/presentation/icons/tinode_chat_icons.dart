@@ -44,7 +44,9 @@ class TinodeChatIcons {
     this.muted = PhosphorIconsRegular.bellSlash,
     this.attach = PhosphorIconsRegular.paperclip,
     this.photo = PhosphorIconsRegular.image,
+    this.gallery = PhosphorIconsRegular.images,
     this.camera = PhosphorIconsRegular.camera,
+    this.video = PhosphorIconsRegular.videoCamera,
     this.file = PhosphorIconsRegular.file,
     this.audioFile = PhosphorIconsRegular.fileAudio,
     this.videoFile = PhosphorIconsRegular.fileVideo,
@@ -150,8 +152,14 @@ class TinodeChatIcons {
   /// Picks a photo; a photo in the chat list's preview.
   final IconData photo;
 
-  /// Takes a photo.
+  /// Picks photos and videos from the gallery (Photos on iOS).
+  final IconData gallery;
+
+  /// Takes a photo or records a video.
   final IconData camera;
+
+  /// A video in the chat list's preview.
+  final IconData video;
 
   /// A file of any other kind, in bubbles, previews and the chat list.
   final IconData file;
@@ -297,7 +305,9 @@ class TinodeChatIcons {
     muted,
     attach,
     photo,
+    gallery,
     camera,
+    video,
     file,
     audioFile,
     videoFile,

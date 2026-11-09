@@ -70,7 +70,7 @@ final class ChatControllerProvider
   }
 }
 
-String _$chatControllerHash() => r'3468a13aa2b7c967956fb28c248bbc3822e2bda8';
+String _$chatControllerHash() => r'32e67cdd0e3c964e5656997fe6e7ff868e6b7d30';
 
 /// One open chat: shows what the cache holds, attaches to the topic,
 /// catches up with the server, merges live messages and the outbox, and

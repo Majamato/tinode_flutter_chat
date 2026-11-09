@@ -4,6 +4,9 @@ import 'package:tinode_flutter_chat/src/attachments/application/attachment_input
 import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/gallery_saver.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/media_compressor.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/tinode_attachment_limits.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_inputs.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_call_texts.dart';
@@ -29,12 +32,15 @@ ProviderContainer createTinodeContainer({
   TinodeCredentials? credentials,
   TinodeChatFeatures features = const TinodeChatFeatures(),
   TinodeCacheLimits cacheLimits = const TinodeCacheLimits(),
+  TinodeAttachmentLimits attachmentLimits = const TinodeAttachmentLimits(),
   SessionConnector? connector,
   SessionRestorer? restorer,
   ChatStoreOpener? storeOpener,
   FileStoreOpener? fileStoreOpener,
   FileOpener? fileOpener,
   AttachmentPicker? attachmentPicker,
+  MediaCompressor? mediaCompressor,
+  GallerySaver? gallerySaver,
   NetworkMonitor? network,
   CallMediaFactory? callMedia,
   SystemCalls? systemCalls,
@@ -47,12 +53,15 @@ ProviderContainer createTinodeContainer({
     initialCredentialsProvider.overrideWithValue(credentials),
     tinodeChatFeaturesProvider.overrideWithValue(features),
     tinodeCacheLimitsProvider.overrideWithValue(cacheLimits),
+    tinodeAttachmentLimitsProvider.overrideWithValue(attachmentLimits),
     ?_override(connector, sessionConnectorProvider.overrideWithValue),
     ?_override(restorer, sessionRestorerProvider.overrideWithValue),
     ?_override(storeOpener, chatStoreOpenerProvider.overrideWithValue),
     ?_override(fileStoreOpener, fileStoreOpenerProvider.overrideWithValue),
     ?_override(fileOpener, fileOpenerProvider.overrideWithValue),
     ?_override(attachmentPicker, attachmentPickerProvider.overrideWithValue),
+    ?_override(mediaCompressor, mediaCompressorProvider.overrideWithValue),
+    ?_override(gallerySaver, gallerySaverProvider.overrideWithValue),
     ?_override(network, networkMonitorProvider.overrideWithValue),
     ?_override(callMedia, callMediaFactoryProvider.overrideWithValue),
     ?_override(systemCalls, systemCallsProvider.overrideWithValue),

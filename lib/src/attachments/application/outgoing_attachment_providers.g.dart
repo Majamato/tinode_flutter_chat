@@ -8,57 +8,59 @@ part of 'outgoing_attachment_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// How far the upload of message [clientId]'s attachment got, from 0 to 1;
-/// null before it starts. Only the outgoing bubble's progress ring watches
-/// it.
+/// How far message [clientId]'s attachment got: compressing, then
+/// uploading; null before either reports. Only the outgoing bubble's
+/// progress overlay and ring watch it.
 
-@ProviderFor(UploadProgressController)
-final uploadProgressControllerProvider = UploadProgressControllerFamily._();
+@ProviderFor(AttachmentProgressController)
+final attachmentProgressControllerProvider =
+    AttachmentProgressControllerFamily._();
 
-/// How far the upload of message [clientId]'s attachment got, from 0 to 1;
-/// null before it starts. Only the outgoing bubble's progress ring watches
-/// it.
-final class UploadProgressControllerProvider
-    extends $NotifierProvider<UploadProgressController, double?> {
-  /// How far the upload of message [clientId]'s attachment got, from 0 to 1;
-  /// null before it starts. Only the outgoing bubble's progress ring watches
-  /// it.
-  UploadProgressControllerProvider._({
-    required UploadProgressControllerFamily super.from,
+/// How far message [clientId]'s attachment got: compressing, then
+/// uploading; null before either reports. Only the outgoing bubble's
+/// progress overlay and ring watch it.
+final class AttachmentProgressControllerProvider
+    extends
+        $NotifierProvider<AttachmentProgressController, AttachmentProgress?> {
+  /// How far message [clientId]'s attachment got: compressing, then
+  /// uploading; null before either reports. Only the outgoing bubble's
+  /// progress overlay and ring watch it.
+  AttachmentProgressControllerProvider._({
+    required AttachmentProgressControllerFamily super.from,
     required (String, String) super.argument,
   }) : super(
          retry: null,
-         name: r'uploadProgressControllerProvider',
+         name: r'attachmentProgressControllerProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$uploadProgressControllerHash();
+  String debugGetCreateSourceHash() => _$attachmentProgressControllerHash();
 
   @override
   String toString() {
-    return r'uploadProgressControllerProvider'
+    return r'attachmentProgressControllerProvider'
         ''
         '$argument';
   }
 
   @$internal
   @override
-  UploadProgressController create() => UploadProgressController();
+  AttachmentProgressController create() => AttachmentProgressController();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(double? value) {
+  Override overrideWithValue(AttachmentProgress? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<double?>(value),
+      providerOverride: $SyncValueProvider<AttachmentProgress?>(value),
     );
   }
 
   @override
   bool operator ==(Object other) {
-    return other is UploadProgressControllerProvider &&
+    return other is AttachmentProgressControllerProvider &&
         other.argument == argument;
   }
 
@@ -68,64 +70,65 @@ final class UploadProgressControllerProvider
   }
 }
 
-String _$uploadProgressControllerHash() =>
-    r'97cf62325bc53eb07dce6379204367ae416aab78';
+String _$attachmentProgressControllerHash() =>
+    r'e36edfc6261ec7457208fd9f2fae10385d735600';
 
-/// How far the upload of message [clientId]'s attachment got, from 0 to 1;
-/// null before it starts. Only the outgoing bubble's progress ring watches
-/// it.
+/// How far message [clientId]'s attachment got: compressing, then
+/// uploading; null before either reports. Only the outgoing bubble's
+/// progress overlay and ring watch it.
 
-final class UploadProgressControllerFamily extends $Family
+final class AttachmentProgressControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-          UploadProgressController,
-          double?,
-          double?,
-          double?,
+          AttachmentProgressController,
+          AttachmentProgress?,
+          AttachmentProgress?,
+          AttachmentProgress?,
           (String, String)
         > {
-  UploadProgressControllerFamily._()
+  AttachmentProgressControllerFamily._()
     : super(
         retry: null,
-        name: r'uploadProgressControllerProvider',
+        name: r'attachmentProgressControllerProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  /// How far the upload of message [clientId]'s attachment got, from 0 to 1;
-  /// null before it starts. Only the outgoing bubble's progress ring watches
-  /// it.
+  /// How far message [clientId]'s attachment got: compressing, then
+  /// uploading; null before either reports. Only the outgoing bubble's
+  /// progress overlay and ring watch it.
 
-  UploadProgressControllerProvider call(String topic, String clientId) =>
-      UploadProgressControllerProvider._(
+  AttachmentProgressControllerProvider call(String topic, String clientId) =>
+      AttachmentProgressControllerProvider._(
         argument: (topic, clientId),
         from: this,
       );
 
   @override
-  String toString() => r'uploadProgressControllerProvider';
+  String toString() => r'attachmentProgressControllerProvider';
 }
 
-/// How far the upload of message [clientId]'s attachment got, from 0 to 1;
-/// null before it starts. Only the outgoing bubble's progress ring watches
-/// it.
+/// How far message [clientId]'s attachment got: compressing, then
+/// uploading; null before either reports. Only the outgoing bubble's
+/// progress overlay and ring watch it.
 
-abstract class _$UploadProgressController extends $Notifier<double?> {
+abstract class _$AttachmentProgressController
+    extends $Notifier<AttachmentProgress?> {
   late final _$args = ref.$arg as (String, String);
   String get topic => _$args.$1;
   String get clientId => _$args.$2;
 
-  double? build(String topic, String clientId);
+  AttachmentProgress? build(String topic, String clientId);
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<double?, double?>;
+    final ref = this.ref as $Ref<AttachmentProgress?, AttachmentProgress?>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<double?, double?>,
-              double?,
+              AnyNotifier<AttachmentProgress?, AttachmentProgress?>,
+              AttachmentProgress?,
               Object?,
               Object?
             >;

@@ -50,9 +50,11 @@ business logic in UI files. Flutter's own guidance is in
   `ChatPreviewLine`, which turns to "New message"; later ones don't.
 - **Attachments** follow the same rule. In the chat, `AttachmentMessageBody` lays out what the
   message carries; `ImageBubbleContent` watches only its file (`attachmentFile(ref)`),
-  `FileBubbleContent` only its download, and `RefPhotoAvatar` only its photo. An outgoing
-  attachment's `UploadProgressRing` is the only widget that watches upload progress
-  (`attachments_flow_test.dart` checks that progress rebuilds nothing else). Images keep their
+  `FileBubbleContent` and `VideoBubbleContent` only their download, and `RefPhotoAvatar` only
+  its photo. The image and video bubbles also read `sentStandIns`, which changes only with the
+  session. An outgoing attachment's `AttachmentProgressRing` is the only widget that watches
+  its compression and upload progress (`attachments_flow_test.dart` checks that progress
+  rebuilds nothing else). Images keep their
   space from the sender's width and height, so the list doesn't jump when they load, and decode
   at display size (`ResizeImage`). The attach menu (`AttachSheet`), the caption screen
   (`AttachmentPreviewScreen`) and the full-screen `ImageViewerScreen` watch nothing but the

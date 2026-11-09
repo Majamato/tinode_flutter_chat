@@ -10,6 +10,9 @@ import 'package:tinode_flutter_chat/src/appearance/presentation/appearance_scope
 import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/gallery_saver.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/media_compressor.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/tinode_attachment_limits.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/system_call_texts_of.dart';
@@ -77,6 +80,7 @@ class TinodeChat extends StatefulWidget {
     this.icons = const TinodeChatIcons(),
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
+    this.attachmentLimits = const TinodeAttachmentLimits(),
     this.bubbleBuilder,
     this.appBarBuilder,
     this.loginHeader,
@@ -91,6 +95,8 @@ class TinodeChat extends StatefulWidget {
        fileStoreOpener = null,
        fileOpener = null,
        attachmentPicker = null,
+       mediaCompressor = null,
+       gallerySaver = null,
        network = null,
        callMedia = null,
        systemCalls = null,
@@ -100,7 +106,9 @@ class TinodeChat extends StatefulWidget {
   /// Like the default constructor, with sessions opened by [connector]
   /// (or [restorer] for a remembered user) instead of a real connection,
   /// caches from [storeOpener], files from [fileStoreOpener], opened with
-  /// [fileOpener] and picked with [attachmentPicker], network reports from
+  /// [fileOpener], picked with [attachmentPicker], compressed with
+  /// [mediaCompressor] and saved to the photos with [gallerySaver], network
+  /// reports from
   /// [network], the media of calls from [callMedia], the phone's call
   /// screens from [systemCalls], and voice messages recorded with
   /// [voiceRecorder] and played with [voicePlayer].
@@ -113,6 +121,8 @@ class TinodeChat extends StatefulWidget {
     this.fileStoreOpener,
     this.fileOpener,
     this.attachmentPicker,
+    this.mediaCompressor,
+    this.gallerySaver,
     this.network,
     this.callMedia,
     this.systemCalls,
@@ -127,6 +137,7 @@ class TinodeChat extends StatefulWidget {
     this.icons = const TinodeChatIcons(),
     this.features = const TinodeChatFeatures(),
     this.cacheLimits = const TinodeCacheLimits(),
+    this.attachmentLimits = const TinodeAttachmentLimits(),
     this.bubbleBuilder,
     this.appBarBuilder,
     this.loginHeader,
@@ -185,6 +196,10 @@ class TinodeChat extends StatefulWidget {
   /// and the size of the file cache. Message search finds only what is
   /// kept.
   final TinodeCacheLimits cacheLimits;
+
+  /// How photos and videos shrink before they are sent, and how large a
+  /// video may be once shrunk (20 MiB by default). Read once.
+  final TinodeAttachmentLimits attachmentLimits;
 
   /// Builds message bubbles in place of the default ones, e.g. to wrap or
   /// restyle them beyond `TinodeChatTheme`; null for the default bubbles.
@@ -272,6 +287,15 @@ class TinodeChat extends StatefulWidget {
   @visibleForTesting
   final AttachmentPicker? attachmentPicker;
 
+  /// Shrinks photos and videos before they are sent; null for the
+  /// device's encoders.
+  @visibleForTesting
+  final MediaCompressor? mediaCompressor;
+
+  /// Saves the in-app camera's captures; null for the device's photos.
+  @visibleForTesting
+  final GallerySaver? gallerySaver;
+
   /// Reports network changes; null for the OS's.
   @visibleForTesting
   final NetworkMonitor? network;
@@ -302,12 +326,15 @@ class _TinodeChatState extends State<TinodeChat> {
     credentials: widget.credentials,
     features: widget.features,
     cacheLimits: widget.cacheLimits,
+    attachmentLimits: widget.attachmentLimits,
     connector: widget.connector,
     restorer: widget.restorer,
     storeOpener: widget.storeOpener,
     fileStoreOpener: widget.fileStoreOpener,
     fileOpener: widget.fileOpener,
     attachmentPicker: widget.attachmentPicker,
+    mediaCompressor: widget.mediaCompressor,
+    gallerySaver: widget.gallerySaver,
     network: widget.network,
     callMedia: widget.callMedia,
     systemCalls: widget.systemCalls,

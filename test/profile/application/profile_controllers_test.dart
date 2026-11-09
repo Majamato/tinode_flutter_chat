@@ -58,21 +58,24 @@ void main() {
     );
   });
 
-  test('saving the name keeps the rest of the profile, the note included', () async {
-    await container.read(profileControllerProvider.future);
+  test(
+    'saving the name keeps the rest of the profile, the note included',
+    () async {
+      await container.read(profileControllerProvider.future);
 
-    final saved = await container
-        .read(profileSaveControllerProvider.notifier)
-        .save(name: ' Alicia ');
+      final saved = await container
+          .read(profileSaveControllerProvider.notifier)
+          .save(name: ' Alicia ');
 
-    expect(saved, isTrue);
-    expect(session.profile?.toJson(), {
-      'fn': 'Alicia',
-      'note': 'Hi',
-      'org': {'fn': 'Acme'},
-    });
-    expect(container.read(profileControllerProvider).value?.name, 'Alicia');
-  });
+      expect(saved, isTrue);
+      expect(session.profile?.toJson(), {
+        'fn': 'Alicia',
+        'note': 'Hi',
+        'org': {'fn': 'Acme'},
+      });
+      expect(container.read(profileControllerProvider).value?.name, 'Alicia');
+    },
+  );
 
   test('a refused save shows why', () async {
     await container.read(profileControllerProvider.future);

@@ -306,6 +306,8 @@ class SessionController extends _$SessionController {
       files: files,
       calls: calls,
       limits: ref.read(tinodeCacheLimitsProvider),
+      compressor: ref.read(mediaCompressorProvider),
+      attachmentLimits: ref.read(tinodeAttachmentLimitsProvider),
       keepsPresence: presence,
     );
     if (!presence) {

@@ -155,6 +155,168 @@ final class AttachmentPickerProvider
 
 String _$attachmentPickerHash() => r'79e3ef3a5e4c0caec51d11d7c422fcce66e9644e';
 
+/// How photos and videos shrink before they are sent; null where the
+/// encoders aren't (desktops), and they go as picked. Tests override it
+/// with a fake.
+
+@ProviderFor(mediaCompressor)
+final mediaCompressorProvider = MediaCompressorProvider._();
+
+/// How photos and videos shrink before they are sent; null where the
+/// encoders aren't (desktops), and they go as picked. Tests override it
+/// with a fake.
+
+final class MediaCompressorProvider
+    extends
+        $FunctionalProvider<
+          MediaCompressor?,
+          MediaCompressor?,
+          MediaCompressor?
+        >
+    with $Provider<MediaCompressor?> {
+  /// How photos and videos shrink before they are sent; null where the
+  /// encoders aren't (desktops), and they go as picked. Tests override it
+  /// with a fake.
+  MediaCompressorProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'mediaCompressorProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$mediaCompressorHash();
+
+  @$internal
+  @override
+  $ProviderElement<MediaCompressor?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  MediaCompressor? create(Ref ref) {
+    return mediaCompressor(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(MediaCompressor? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<MediaCompressor?>(value),
+    );
+  }
+}
+
+String _$mediaCompressorHash() => r'917568eef2c518502834ff172a76f6d7437e0c19';
+
+/// Where the in-app camera's captures are saved; tests override it with a
+/// fake.
+
+@ProviderFor(gallerySaver)
+final gallerySaverProvider = GallerySaverProvider._();
+
+/// Where the in-app camera's captures are saved; tests override it with a
+/// fake.
+
+final class GallerySaverProvider
+    extends $FunctionalProvider<GallerySaver, GallerySaver, GallerySaver>
+    with $Provider<GallerySaver> {
+  /// Where the in-app camera's captures are saved; tests override it with a
+  /// fake.
+  GallerySaverProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'gallerySaverProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$gallerySaverHash();
+
+  @$internal
+  @override
+  $ProviderElement<GallerySaver> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  GallerySaver create(Ref ref) {
+    return gallerySaver(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GallerySaver value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GallerySaver>(value),
+    );
+  }
+}
+
+String _$gallerySaverHash() => r'ad3d0aeb03598fa06d98f743434aa32b7f44f0fb';
+
+/// How photos and videos shrink, and how large a video may be;
+/// `createTinodeContainer` overrides it with the host's.
+
+@ProviderFor(tinodeAttachmentLimits)
+final tinodeAttachmentLimitsProvider = TinodeAttachmentLimitsProvider._();
+
+/// How photos and videos shrink, and how large a video may be;
+/// `createTinodeContainer` overrides it with the host's.
+
+final class TinodeAttachmentLimitsProvider
+    extends
+        $FunctionalProvider<
+          TinodeAttachmentLimits,
+          TinodeAttachmentLimits,
+          TinodeAttachmentLimits
+        >
+    with $Provider<TinodeAttachmentLimits> {
+  /// How photos and videos shrink, and how large a video may be;
+  /// `createTinodeContainer` overrides it with the host's.
+  TinodeAttachmentLimitsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'tinodeAttachmentLimitsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$tinodeAttachmentLimitsHash();
+
+  @$internal
+  @override
+  $ProviderElement<TinodeAttachmentLimits> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  TinodeAttachmentLimits create(Ref ref) {
+    return tinodeAttachmentLimits(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(TinodeAttachmentLimits value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<TinodeAttachmentLimits>(value),
+    );
+  }
+}
+
+String _$tinodeAttachmentLimitsHash() =>
+    r'be70a5ff603b99aa5ff30a586a457ebd8510ffc0';
+
 /// Whether the attach menu offers the camera.
 
 @ProviderFor(cameraAvailable)

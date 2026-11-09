@@ -1,5 +1,5 @@
 /// Sits between a player and the position shown, so the playhead never
-/// jumps (after YoMap's `AudioSeekGate`):
+/// jumps:
 ///
 /// 1. Seeks run one at a time: a new target while one runs waits, replacing
 ///    any older waiting one, so quick taps end at the last.

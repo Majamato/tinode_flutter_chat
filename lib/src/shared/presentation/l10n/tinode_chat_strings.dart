@@ -118,6 +118,7 @@ class TinodeChatStrings {
     this.chatMuted = 'Muted',
     this.newMessageArrived = 'New message',
     this.photoMessage = 'Photo',
+    this.videoMessage = 'Video',
     this.voiceMessage = 'Voice message',
     this.findHint = 'Search by login, email or phone',
     this.nobodyFound = 'Nobody found',
@@ -143,10 +144,14 @@ class TinodeChatStrings {
     this.typingTwo = _typingTwo,
     this.typingMany = _typingMany,
     this.attach = 'Attach',
-    this.attachPhoto = 'Photo',
+    this.attachPhotos = 'Photos',
+    this.attachGallery = 'Gallery',
+    this.attachMediaSubtitle = 'Photos and videos',
     this.attachCamera = 'Camera',
+    this.attachCameraSubtitle = 'Take a photo or video',
     this.attachFile = 'File',
     this.captionHint = 'Add a caption',
+    this.compressing = 'Compressing…',
     this.uploading = 'Uploading…',
     this.cancelUpload = 'Cancel',
     this.fileTooLarge = 'The file is too large to send.',
@@ -154,6 +159,14 @@ class TinodeChatStrings {
     this.downloadFailed = 'The file could not be downloaded.',
     this.cannotOpenFile = 'No app on this device opens this file.',
     this.openFile = 'Open',
+    this.videoLabel = 'Video',
+    this.playVideo = 'Play video',
+    this.pauseVideo = 'Pause video',
+    this.videoFailed = 'The video could not be played.',
+    this.videoTooLong = _videoTooLong,
+    this.cameraPhoto = 'Photo',
+    this.cameraVideo = 'Video',
+    this.closeCamera = 'Close camera',
     this.imageLabel = 'Image',
     this.fileLabel = 'File',
     this.signUpTab = 'Sign up',
@@ -350,6 +363,7 @@ class TinodeChatStrings {
     this.chatMuted = 'Silenciado',
     this.newMessageArrived = 'Nuevo mensaje',
     this.photoMessage = 'Foto',
+    this.videoMessage = 'Video',
     this.voiceMessage = 'Mensaje de voz',
     this.findHint = 'Busca por usuario, correo o teléfono',
     this.nobodyFound = 'No se encontró a nadie',
@@ -375,10 +389,14 @@ class TinodeChatStrings {
     this.typingTwo = _typingTwoEs,
     this.typingMany = _typingManyEs,
     this.attach = 'Adjuntar',
-    this.attachPhoto = 'Foto',
+    this.attachPhotos = 'Fotos',
+    this.attachGallery = 'Galería',
+    this.attachMediaSubtitle = 'Fotos y videos',
     this.attachCamera = 'Cámara',
+    this.attachCameraSubtitle = 'Toma una foto o un video',
     this.attachFile = 'Archivo',
     this.captionHint = 'Añade una descripción',
+    this.compressing = 'Comprimiendo…',
     this.uploading = 'Subiendo…',
     this.cancelUpload = 'Cancelar',
     this.fileTooLarge = 'El archivo es demasiado grande para enviarlo.',
@@ -387,6 +405,14 @@ class TinodeChatStrings {
     this.cannotOpenFile =
         'Ninguna app de este dispositivo puede abrir este archivo.',
     this.openFile = 'Abrir',
+    this.videoLabel = 'Video',
+    this.playVideo = 'Reproducir video',
+    this.pauseVideo = 'Pausar video',
+    this.videoFailed = 'No se pudo reproducir el video.',
+    this.videoTooLong = _videoTooLongEs,
+    this.cameraPhoto = 'Foto',
+    this.cameraVideo = 'Video',
+    this.closeCamera = 'Cerrar cámara',
     this.imageLabel = 'Imagen',
     this.fileLabel = 'Archivo',
     this.signUpTab = 'Registrarse',
@@ -585,6 +611,7 @@ class TinodeChatStrings {
     this.chatMuted = 'En sourdine',
     this.newMessageArrived = 'Nouveau message',
     this.photoMessage = 'Photo',
+    this.videoMessage = 'Vidéo',
     this.voiceMessage = 'Message vocal',
     this.findHint = 'Rechercher par identifiant, e-mail ou téléphone',
     this.nobodyFound = 'Aucun résultat',
@@ -610,10 +637,14 @@ class TinodeChatStrings {
     this.typingTwo = _typingTwoFr,
     this.typingMany = _typingManyFr,
     this.attach = 'Joindre',
-    this.attachPhoto = 'Photo',
+    this.attachPhotos = 'Photos',
+    this.attachGallery = 'Galerie',
+    this.attachMediaSubtitle = 'Photos et vidéos',
     this.attachCamera = 'Appareil photo',
+    this.attachCameraSubtitle = 'Prendre une photo ou une vidéo',
     this.attachFile = 'Fichier',
     this.captionHint = 'Ajouter une légende',
+    this.compressing = 'Compression…',
     this.uploading = 'Envoi…',
     this.cancelUpload = 'Annuler',
     this.fileTooLarge = 'Le fichier est trop volumineux pour être envoyé.',
@@ -622,6 +653,14 @@ class TinodeChatStrings {
     this.cannotOpenFile =
         'Aucune app de cet appareil ne peut ouvrir ce fichier.',
     this.openFile = 'Ouvrir',
+    this.videoLabel = 'Vidéo',
+    this.playVideo = 'Lire la vidéo',
+    this.pauseVideo = 'Mettre la vidéo en pause',
+    this.videoFailed = "La vidéo n'a pas pu être lue.",
+    this.videoTooLong = _videoTooLongFr,
+    this.cameraPhoto = 'Photo',
+    this.cameraVideo = 'Vidéo',
+    this.closeCamera = "Fermer l'appareil photo",
     this.imageLabel = 'Image',
     this.fileLabel = 'Fichier',
     this.signUpTab = "S'inscrire",
@@ -1046,6 +1085,9 @@ class TinodeChatStrings {
   /// A chat list preview of a photo without a caption.
   final String photoMessage;
 
+  /// A video with no caption, in the chat list's preview.
+  final String videoMessage;
+
   /// A chat list preview of a voice message without a caption.
   final String voiceMessage;
 
@@ -1127,17 +1169,29 @@ class TinodeChatStrings {
   /// Tooltip of the composer's button that sends an image or a file.
   final String attach;
 
-  /// Sends a photo from the gallery.
-  final String attachPhoto;
+  /// Sends a photo or a video from the photo library, on iOS and macOS.
+  final String attachPhotos;
 
-  /// Takes a photo with the camera and sends it.
+  /// Sends a photo or a video from the gallery, elsewhere.
+  final String attachGallery;
+
+  /// Under [attachPhotos] and [attachGallery] in the chat's attach menu.
+  final String attachMediaSubtitle;
+
+  /// Takes a photo or records a video with the camera and sends it.
   final String attachCamera;
+
+  /// Under [attachCamera] in the chat's attach menu.
+  final String attachCameraSubtitle;
 
   /// Sends any file.
   final String attachFile;
 
   /// Hint of the caption field before sending an image or a file.
   final String captionHint;
+
+  /// Shown while a photo or a video is made smaller before it goes.
+  final String compressing;
 
   /// Shown while an image or a file goes to the server.
   final String uploading;
@@ -1159,6 +1213,31 @@ class TinodeChatStrings {
 
   /// Opens a received file.
   final String openFile;
+
+  /// Names a video that has no name, e.g. for screen readers.
+  final String videoLabel;
+
+  /// Plays a video in a message.
+  final String playVideo;
+
+  /// Pauses a playing video.
+  final String pauseVideo;
+
+  /// A video could not be fetched or played.
+  final String videoFailed;
+
+  /// A video too long to send once compressed, with the longest that fits,
+  /// e.g. `1:32`.
+  final String Function(String max) videoTooLong;
+
+  /// The camera's switch to taking photos.
+  final String cameraPhoto;
+
+  /// The camera's switch to recording videos.
+  final String cameraVideo;
+
+  /// Closes the camera without taking anything.
+  final String closeCamera;
 
   /// Names an image without a file name, e.g. for screen readers.
   final String imageLabel;
@@ -1431,6 +1510,9 @@ String _typingMany(int count) => '$count people are typing…';
 String _fileTooLargeLimit(String limit) =>
     'The file is too large to send: the limit is $limit.';
 
+String _videoTooLong(String max) =>
+    'The video is too long to send: it can last up to $max.';
+
 String _removeMemberConfirm(String name) => 'Remove $name from the group?';
 
 String _appearancePreviewAnswer(String name) => '$name, obviously';
@@ -1454,6 +1536,9 @@ String _typingManyEs(int count) => '$count personas están escribiendo…';
 
 String _fileTooLargeLimitEs(String limit) =>
     'El archivo es demasiado grande para enviarlo: el límite es $limit.';
+
+String _videoTooLongEs(String max) =>
+    'El video es demasiado largo para enviarlo: puede durar hasta $max.';
 
 String _removeMemberConfirmEs(String name) => '¿Quitar a $name del grupo?';
 
@@ -1479,6 +1564,10 @@ String _typingManyFr(int count) => '$count personnes écrivent…';
 String _fileTooLargeLimitFr(String limit) =>
     'Le fichier est trop volumineux pour être envoyé\u00A0: la limite est '
     'de $limit.';
+
+String _videoTooLongFr(String max) =>
+    'La vidéo est trop longue pour être envoyée\u00A0: elle peut durer '
+    "jusqu'à $max.";
 
 String _removeMemberConfirmFr(String name) => 'Retirer $name du groupe\u00A0?';
 

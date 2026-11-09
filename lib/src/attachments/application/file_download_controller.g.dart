@@ -8,18 +8,18 @@ part of 'file_download_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Opening a received file: its download progress, then the file. Only
-/// the file's bubble watches it.
+/// Opening a received file or playing a video: its download progress, then
+/// the file. Only the file's or video's bubble watches it.
 
 @ProviderFor(FileDownloadController)
 final fileDownloadControllerProvider = FileDownloadControllerFamily._();
 
-/// Opening a received file: its download progress, then the file. Only
-/// the file's bubble watches it.
+/// Opening a received file or playing a video: its download progress, then
+/// the file. Only the file's or video's bubble watches it.
 final class FileDownloadControllerProvider
     extends $NotifierProvider<FileDownloadController, FileDownloadState> {
-  /// Opening a received file: its download progress, then the file. Only
-  /// the file's bubble watches it.
+  /// Opening a received file or playing a video: its download progress, then
+  /// the file. Only the file's or video's bubble watches it.
   FileDownloadControllerProvider._({
     required FileDownloadControllerFamily super.from,
     required String super.argument,
@@ -66,10 +66,10 @@ final class FileDownloadControllerProvider
 }
 
 String _$fileDownloadControllerHash() =>
-    r'f5fba41cf76629ae1322657cbff2da846c03f50e';
+    r'f7c6ad7c86a98bbb0a88a4ccdd01e2d96e45a3a5';
 
-/// Opening a received file: its download progress, then the file. Only
-/// the file's bubble watches it.
+/// Opening a received file or playing a video: its download progress, then
+/// the file. Only the file's or video's bubble watches it.
 
 final class FileDownloadControllerFamily extends $Family
     with
@@ -89,8 +89,8 @@ final class FileDownloadControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Opening a received file: its download progress, then the file. Only
-  /// the file's bubble watches it.
+  /// Opening a received file or playing a video: its download progress, then
+  /// the file. Only the file's or video's bubble watches it.
 
   FileDownloadControllerProvider call(String fileRef) =>
       FileDownloadControllerProvider._(argument: fileRef, from: this);
@@ -99,8 +99,8 @@ final class FileDownloadControllerFamily extends $Family
   String toString() => r'fileDownloadControllerProvider';
 }
 
-/// Opening a received file: its download progress, then the file. Only
-/// the file's bubble watches it.
+/// Opening a received file or playing a video: its download progress, then
+/// the file. Only the file's or video's bubble watches it.
 
 abstract class _$FileDownloadController extends $Notifier<FileDownloadState> {
   late final _$args = ref.$arg as String;

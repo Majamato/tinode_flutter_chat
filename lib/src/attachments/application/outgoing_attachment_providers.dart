@@ -1,19 +1,20 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/attachment_progress.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 
 part 'outgoing_attachment_providers.g.dart';
 
-/// How far the upload of message [clientId]'s attachment got, from 0 to 1;
-/// null before it starts. Only the outgoing bubble's progress ring watches
-/// it.
+/// How far message [clientId]'s attachment got: compressing, then
+/// uploading; null before either reports. Only the outgoing bubble's
+/// progress overlay and ring watch it.
 @riverpod
-class UploadProgressController extends _$UploadProgressController {
+class AttachmentProgressController extends _$AttachmentProgressController {
   @override
-  double? build(String topic, String clientId) {
+  AttachmentProgress? build(String topic, String clientId) {
     final session = ref.watch(activeSessionProvider);
     if (session == null) {
       return null;
@@ -22,9 +23,12 @@ class UploadProgressController extends _$UploadProgressController {
       event,
     ) {
       switch (event) {
+        case CompressProgress(clientId: final id, :final fraction)
+            when id == clientId:
+          state = AttachmentProgress(AttachmentPhase.compressing, fraction);
         case UploadProgress(clientId: final id, :final fraction)
             when id == clientId:
-          state = fraction;
+          state = AttachmentProgress(AttachmentPhase.uploading, fraction);
         case OutgoingDiscarded(clientId: final id) when id == clientId:
           state = null;
         case _:

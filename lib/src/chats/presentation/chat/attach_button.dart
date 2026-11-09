@@ -2,17 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tinode_flutter_chat/src/attachments/application/attachment_inputs.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/attach_sheet.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_preview_screen.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/media_camera_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_icon_button.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// The composer's round glass button that sends an image or a file: the
-/// attach menu, the picker, then a preview
+/// The composer's round glass button that sends a photo, a video or a
+/// file: the attach menu, the picker or the in-app camera, then a preview
 /// with a caption. Watches nothing; failures show through the composer.
 class AttachButton extends ConsumerWidget {
   const AttachButton({required this.topic, super.key});
@@ -38,7 +40,18 @@ class AttachButton extends ConsumerWidget {
       return;
     }
     final send = ref.read(sendControllerProvider(topic).notifier);
-    final file = await send.pick(source);
+    final PickedFile? file;
+    if (source == AttachmentSource.camera) {
+      final capture = await MediaCameraScreen.open(
+        context,
+        maxVideoDuration: ref
+            .read(tinodeAttachmentLimitsProvider)
+            .maxVideoDuration,
+      );
+      file = capture == null ? null : await send.captured(capture);
+    } else {
+      file = await send.pick(source);
+    }
     if (file == null || !context.mounted) {
       return;
     }

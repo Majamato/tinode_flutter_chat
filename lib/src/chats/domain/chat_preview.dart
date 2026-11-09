@@ -10,7 +10,7 @@ import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 
 /// What a chat's newest message is, for the preview line of its tile.
-enum ChatPreviewKind { text, photo, file, voice, call }
+enum ChatPreviewKind { text, photo, video, file, voice, call }
 
 /// The newest cached message of a chat, as its tile's preview line shows
 /// it. Built from the cache, which the session fills from the server: Tinode
@@ -55,6 +55,7 @@ final class ChatPreview with ValueObject {
         message.caption,
         bytes,
       ),
+      VideoAttachment() => (ChatPreviewKind.video, message.caption, null),
       VoiceAttachment() => (ChatPreviewKind.voice, message.caption, null),
       FileAttachment(:final mimeType?) when mimeType.startsWith('audio/') => (
         ChatPreviewKind.voice,

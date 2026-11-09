@@ -400,10 +400,50 @@ for what came while away. Not queued offline. *In code:* `TinodeSession.markRece
 ## Attachments
 
 **Attachment**
-An image or file in a message: a Drafty `IM` (shown in the bubble) or `EX` (shown as its name and
-size; audio and video read as files too), sent inline (`val`) or as a `ref` to an **upload**.
-*In code:* `MessageAttachment` (`ImageAttachment`, `FileAttachment`), `ChatMessage.attachments`;
+An image, video or file in a message: a Drafty `IM` (shown in the bubble), `VD` (a **video**) or
+`EX` (shown as its name and size; audio reads as a file too), sent inline (`val`) or as a `ref` to
+an **upload**.
+*In code:* `MessageAttachment` (`ImageAttachment`, `VideoAttachment`, `FileAttachment`),
+`ChatMessage.attachments`;
 the text beside it is the **caption** (`ChatMessage.caption`).
+
+**Video**
+A video in a message: its poster (a small JPEG sent inline as `preview`), its length and its size
+in pixels, with a play button; a tap downloads it and plays it full screen. One the user sends is
+compressed first and must fit the **attachment limits**.
+*In code:* `VideoAttachment`, `DraftyVideo`, `VideoBubbleContent`, `VideoPlayerScreen`.
+
+**Poster**
+A small upright JPEG of a photo or video the user sends, at most 640 px on its longer side, taken
+when it is queued: its bubble shows it while it compresses and uploads. Only a video's is sent,
+inline as `preview`. GIFs get none, so their bubble shows them moving.
+*In code:* `OutgoingAttachment.poster`, `MediaCompressor.imagePoster`, `videoPoster`.
+
+**Stand-in**
+The picture an outgoing photo or video bubble showed, which its sent bubble shows until its own
+picture is ready.
+*In code:* `SentStandIns`, `StandInPicture`.
+
+**Compression**
+Shrinking a photo or video the user sends, on the device, before its upload: a photo scaled down
+to a JPEG, a video re-encoded as H.264 MP4. Part of the outbox, one at a time and whether online
+or not; its bubble shows meanwhile. An app closed during it compresses again from the start. GIFs
+and files are not compressed.
+*In code:* `MediaCompressor`, `OutgoingAttachment.pendingCompression`, `CachedTinodeSession`
+(`_runCompressions`).
+
+**Attachment limits**
+How photos and videos shrink and how large a video may be once compressed (20 MiB by default,
+or the server's limit when lower). A video whose length alone says it can't fit is refused
+before it is queued, naming the longest that fits; one still too large once compressed is not
+sent. *In code:* `TinodeAttachmentLimits`, `TinodeChat.attachmentLimits`,
+`VideoTooLongException`.
+
+**Media camera**
+The in-app camera the attach menu's Camera opens: it takes a photo or records a video, with its
+own switch between the two, and stops a video at the longest the limits allow. What it takes is
+also saved to the device's photos (the **gallery save**), since the app keeps its own files
+apart. *In code:* `MediaCameraScreen`, `CameraCapture`, `GallerySaver`.
 
 **Upload**
 Sending an attachment's file to the server over HTTP before its message goes; the server answers
@@ -416,7 +456,8 @@ chat, beside the drain that sends messages. *In code:* `CachedTinodeSession` (`_
 
 **Staged file**
 A copy of a file the user picked, kept in the app's own folder until the server has the message:
-picker files can vanish. *In code:* `FileStore.stage`, `OutgoingAttachment.stagedId`.
+picker files can vanish. A photo or video is staged as picked, then its compressed copy takes its
+place. *In code:* `FileStore.stage`, `OutgoingAttachment.stagedId`.
 
 **File cache**
 Downloaded files, and files the user sent, kept by their URL in the OS's cache folder (which the
@@ -442,10 +483,12 @@ scrolling left as levels come. Not the bubble's waveform, which is drawn from th
 How long a voice message being recorded has recorded, not counting its pauses: what the panel
 shows, what is sent as its duration, and what counts towards the ten-minute limit.
 
-**Upload progress**
-How much of an attachment's file has gone to the server, reported a few times a second at most and
-never stored. *In code:* `UploadProgress` (outbox event), `UploadProgressController`,
-`UploadProgressRing`.
+**Attachment progress**
+How far an outgoing attachment got: its **compression** (a fraction for a video, none for a
+photo), then its upload (how much of the file has gone to the server). Reported a few times a
+second at most and never stored; shown in numbers over the photo or video.
+*In code:* `CompressProgress` and `UploadProgress` (outbox events), `AttachmentProgress`,
+`AttachmentProgressController`, `AttachmentProgressRing`, `AttachmentProgressOverlay`.
 
 ## Calls
 

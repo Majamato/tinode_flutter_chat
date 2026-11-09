@@ -3,9 +3,11 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/attachment_progress.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/progress_throttle.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/tinode_attachment_limits.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
@@ -181,6 +183,30 @@ void main() {
       expect(received.voice, isNull);
     });
 
+    test('reads a video with its poster, after the images', () {
+      final attachments = MessageAttachment.listFrom(
+        DraftyContent(
+          Drafty.video(
+            DraftyVideo(
+              mimeType: 'video/mp4',
+              ref: '/v0/file/s/v.mp4',
+              width: 720,
+              height: 1280,
+              duration: const Duration(seconds: 61),
+              preview: Uint8List.fromList([1, 2]),
+            ),
+            caption: 'Look',
+          ),
+        ),
+      );
+
+      final video = attachments.single as VideoAttachment;
+      expect(video.ref, '/v0/file/s/v.mp4');
+      expect(video.aspectRatio, 720 / 1280);
+      expect(video.duration, const Duration(seconds: 61));
+      expect(video.poster, [1, 2]);
+    });
+
     test('plain text has none and keeps its text as caption', () {
       final text = ChatMessage.fromData(message(bob, 1), me: alice);
       expect(text.attachments, isEmpty);
@@ -226,6 +252,62 @@ void main() {
       expect(file.content.drafty.files.single.name, 'a.pdf');
     });
 
+    group('a video', () {
+      final video = OutgoingAttachment(
+        stagedId: '3_c.mov',
+        name: 'c.mov',
+        size: 9000,
+        mimeType: 'video/quicktime',
+        isVideo: true,
+        width: 1280,
+        height: 720,
+        caption: 'Look',
+        duration: const Duration(seconds: 12),
+        poster: Uint8List.fromList([7, 8, 9]),
+        pendingCompression: true,
+      );
+
+      test('round-trips through JSON, as the outbox stores it', () {
+        final compressed = video
+            .compressed(
+              stagedId: '4_c.mp4',
+              name: 'c.mp4',
+              size: 4000,
+              mimeType: 'video/mp4',
+            )
+            .uploaded('/v0/file/s/c.mp4', at(5));
+        for (final a in [video, compressed]) {
+          final stored = jsonDecode(jsonEncode(a.toJson())) as Json;
+          expect(OutgoingAttachment.fromJson(stored), a);
+        }
+      });
+
+      test('compressed, it is the new copy and no longer pending', () {
+        final compressed = video.compressed(
+          stagedId: '4_c.mp4',
+          name: 'c.mp4',
+          size: 4000,
+          mimeType: 'video/mp4',
+          width: 1270,
+        );
+        expect(compressed.pendingCompression, isFalse);
+        expect(compressed.stagedId, '4_c.mp4');
+        expect((compressed.width, compressed.height), (1270, 720));
+        expect(compressed.poster, [7, 8, 9]);
+        expect(compressed.isMedia, isTrue);
+      });
+
+      test('its content is a VD entity above the caption, with the poster', () {
+        final drafty = video.uploaded('r', at(1)).content.drafty;
+        final sent = drafty.videos.single;
+        expect(sent.ref, 'r');
+        expect(sent.duration, const Duration(seconds: 12));
+        expect(sent.preview, [7, 8, 9]);
+        expect(sent.previewMimeType, 'image/jpeg');
+        expect(drafty.caption, 'Look');
+      });
+    });
+
     group('a voice message', () {
       const voice = OutgoingAttachment(
         stagedId: '2_v.m4a',
@@ -268,6 +350,43 @@ void main() {
           ],
         });
       });
+    });
+  });
+
+  group('TinodeAttachmentLimits', () {
+    const limits = TinodeAttachmentLimits();
+
+    test('a 20 MiB video lasts about a minute and a half', () {
+      expect(limits.maxVideoDuration.inSeconds, 92);
+    });
+
+    test('the server lowers the limit, never raises it', () {
+      expect(limits.videoBytesLimit(null), 20 * 1024 * 1024);
+      expect(limits.videoBytesLimit(8 * 1024 * 1024), 8 * 1024 * 1024);
+      expect(limits.videoBytesLimit(1 << 40), 20 * 1024 * 1024);
+    });
+
+    test('a video is estimated no larger than it was', () {
+      const minute = Duration(minutes: 1);
+      expect(limits.estimatedVideoBytes(minute, 1 << 30), 12210000);
+      expect(limits.estimatedVideoBytes(minute, 1000), 1000);
+    });
+  });
+
+  group('AttachmentProgress', () {
+    const compressing = AttachmentProgress(AttachmentPhase.compressing, 0.42);
+
+    test('shows the phase it is in, of unknown progress at first', () {
+      expect(
+        AttachmentProgress.shown(null, compress: true),
+        const AttachmentProgress(AttachmentPhase.compressing),
+      );
+      expect(AttachmentProgress.shown(compressing, compress: true).percent, 42);
+      // Compressed: the last report is stale until the upload reports.
+      expect(
+        AttachmentProgress.shown(compressing, compress: false),
+        const AttachmentProgress(AttachmentPhase.uploading),
+      );
     });
   });
 

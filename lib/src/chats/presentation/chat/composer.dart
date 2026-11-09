@@ -10,6 +10,7 @@ import 'package:tinode_flutter_chat/src/chats/application/typing_controller.dart
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/attach_button.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/send_button.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
@@ -145,6 +146,9 @@ class _ComposerState extends ConsumerState<Composer> {
       final message = switch (error) {
         FileTooLargeException(:final limit) => strings.fileTooLargeLimit(
           fileSizeLabel(limit),
+        ),
+        VideoTooLongException(:final max) => strings.videoTooLong(
+          formatCallDuration(max),
         ),
         _ => failureMessage(strings, ChatFailure.of(error)),
       };

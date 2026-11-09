@@ -260,7 +260,8 @@ them.
 - **Rows** (`ChatSheetAction`): at least 56 px, the ripple a rounded pill 8 px in from the sides
   (`buttonRadius`); a 40 px rounded square (radius 12) in the row's tint @ 12 % behind a 22 px
   icon in the tint, then the label (`bodyLarge` 600). The tint is `linkColor` unless the row sets
-  one: Attach tints Photo, Camera and File with `senderNameColors` blue, pink and purple. What
+  one: Attach tints Photos (or Gallery), Camera and File with `senderNameColors` blue, pink and
+  purple, the first two with a subtitle. What
   deletes or discards is `destructive`: icon, square and label in `colorScheme.error`. A tap
   ticks the haptics.
 - Read by lists the members under its title, with "Delivered to" as an upper-case

@@ -96,6 +96,7 @@ class MessageBubble extends ConsumerWidget {
           caption: message.caption,
           color: foreground,
           footer: footer,
+          clientId: own ? message.clientId : null,
         ),
         null,
       ),

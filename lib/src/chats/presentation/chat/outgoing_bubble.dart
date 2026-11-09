@@ -4,8 +4,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_progress_ring.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/outgoing_attachment_view.dart';
-import 'package:tinode_flutter_chat/src/attachments/presentation/upload_progress_ring.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/message_runs.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/bubble_status.dart';
@@ -25,9 +25,9 @@ import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/voice_bubble_content.dart';
 
 /// A message of the user's still in the outbox, with its status; an
-/// image, file or recording shows from its staged copy while it uploads
-/// (a recording plays from it). One just sent pops
-/// in. A long press offers to retry or discard it.
+/// image, video, file or recording shows from its staged copy (a video from
+/// its poster) while it compresses and uploads (a recording plays from
+/// it). One just sent pops in. A long press offers to retry or discard it.
 class OutgoingBubble extends ConsumerWidget {
   const OutgoingBubble({
     required this.topic,
@@ -56,7 +56,7 @@ class OutgoingBubble extends ConsumerWidget {
     ).textTheme.bodyLarge?.copyWith(color: foreground);
     final attachment = message.attachment;
     final text = attachment?.caption ?? message.content.text;
-    final onPhoto = (attachment?.isImage ?? false) && text.isEmpty;
+    final onPhoto = (attachment?.isMedia ?? false) && text.isEmpty;
     final footer = BubbleFooter(
       time: message.createdAt,
       color: onPhoto ? PhotoTimeChip.footerColor : theme.ownMetaColor,
@@ -69,7 +69,7 @@ class OutgoingBubble extends ConsumerWidget {
       tail: run.endsRun,
       padding: switch (attachment) {
         null => BubbleFrame.textPadding,
-        final a when a.isImage => BubbleFrame.photoPadding,
+        final a when a.isMedia => BubbleFrame.photoPadding,
         _ => BubbleFrame.tilePadding,
       },
       onLongPress: () => unawaited(
@@ -87,9 +87,10 @@ class OutgoingBubble extends ConsumerWidget {
             own: true,
             footer: footer,
             busy: message.status == OutgoingStatus.queued
-                ? UploadProgressRing(
+                ? AttachmentProgressRing(
                     topic: topic,
                     clientId: clientId,
+                    compress: false,
                     color: foreground,
                   )
                 : null,
@@ -122,7 +123,7 @@ class OutgoingBubble extends ConsumerWidget {
               color: foreground,
             ),
             Padding(
-              padding: attachment.isImage
+              padding: attachment.isMedia
                   ? const EdgeInsets.fromLTRB(8, 2, 8, 6)
                   : const EdgeInsets.only(top: 4),
               child: text.isEmpty

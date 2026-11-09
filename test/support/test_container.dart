@@ -4,6 +4,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/media_compressor.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
@@ -17,6 +18,7 @@ import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
 
 import 'fake_attachment_picker.dart';
 import 'fake_call_media.dart';
+import 'fake_media_compressor.dart';
 import 'fake_network_monitor.dart';
 import 'fake_system_calls.dart';
 import 'fake_tinode_session.dart';
@@ -45,6 +47,7 @@ ProviderContainer createTestContainer({
   MemoryFileStoreOpener? fileStoreOpener,
   FileOpener? fileOpener,
   AttachmentPicker? attachmentPicker,
+  MediaCompressor? mediaCompressor,
   TinodeCredentials? credentials,
   CallMediaFactory? callMedia,
   SystemCalls? systemCalls,
@@ -65,6 +68,8 @@ ProviderContainer createTestContainer({
     fileStoreOpener: fileStoreOpener ?? MemoryFileStoreOpener(),
     fileOpener: fileOpener ?? (_, {mimeType}) async => false,
     attachmentPicker: attachmentPicker ?? FakeAttachmentPicker(),
+    mediaCompressor: mediaCompressor ?? FakeMediaCompressor(),
+    gallerySaver: (_, {required isVideo}) async {},
     network: FakeNetworkMonitor(),
     callMedia: callMedia ?? FakeCallMedia.new,
     systemCalls: systemCalls ?? FakeSystemCalls(),

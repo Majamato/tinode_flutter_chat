@@ -14,15 +14,42 @@ final class FakeAttachmentPicker implements AttachmentPicker {
   /// What the next pick returns; null as if the user cancelled.
   PickedFile? next;
 
+  /// What every pick throws while set, as a broken picker would.
+  Exception? failWith;
+
   /// The sources asked for, in order.
   final picks = <AttachmentSource>[];
+
+  /// The in-app camera's captures handed in, in order.
+  final captures = <(String, bool)>[];
 
   @override
   Future<PickedFile?> pick(AttachmentSource source) async {
     picks.add(source);
+    if (failWith case final error?) {
+      throw error;
+    }
     final file = next;
     next = null;
     return file;
+  }
+
+  /// What [next] holds, else an empty JPEG or MP4 named after [path].
+  @override
+  Future<PickedFile> captured(String path, {required bool isVideo}) async {
+    captures.add((path, isVideo));
+    final file = next;
+    next = null;
+    return file ??
+        PickedFile(
+          name: path.split('/').last,
+          length: 0,
+          openRead: Stream.empty,
+          mimeType: isVideo ? 'video/mp4' : 'image/jpeg',
+          path: path,
+          isImage: !isVideo,
+          isVideo: isVideo,
+        );
   }
 }
 
@@ -32,12 +59,14 @@ PickedFile pickedFile(
   List<int> bytes, {
   String? mimeType,
   bool isImage = false,
+  bool isVideo = false,
 }) => PickedFile(
   name: name,
   length: bytes.length,
   openRead: () => Stream.value(bytes),
   mimeType: mimeType,
   isImage: isImage,
+  isVideo: isVideo,
 );
 
 /// A picked text file.

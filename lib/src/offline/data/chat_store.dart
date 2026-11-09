@@ -552,8 +552,9 @@ final class ChatStore {
     return (await outboxEntry(id))!;
   }
 
-  /// Replaces the attachment of entry [id], e.g. once it is uploaded. Does
-  /// nothing when the entry is gone.
+  /// Replaces the attachment of entry [id], e.g. once it is compressed or
+  /// uploaded, and the content that stands for it. Does nothing when the
+  /// entry is gone.
   Future<void> setOutboxAttachment(int id, OutgoingAttachment attachment) =>
       _db.transaction(() async {
         final entry = await outboxEntry(id);
@@ -563,7 +564,11 @@ final class ChatStore {
         await (_db.update(_db.outbox)..where((o) => o.id.equals(id))).write(
           OutboxCompanion(
             payload: Value(
-              jsonEncode({...entry.payload, 'attachment': attachment.toJson()}),
+              jsonEncode({
+                ...entry.payload,
+                'content': attachment.content.toJson(),
+                'attachment': attachment.toJson(),
+              }),
             ),
           ),
         );

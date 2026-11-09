@@ -22,6 +22,11 @@ part of 'chat_list_controller.dart';
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
 /// what came while the link was down.
 ///
+/// A chat's unread count leaves out what isn't an unread message (see
+/// `uncountedBy`), such as how a call ended, or a call that was answered
+/// or declined: as they arrive live, and for those that came as `pres
+/// msg`, which doesn't tell, once the cache has them.
+///
 /// It subscribes to the streams before loading, so nothing that arrives
 /// during the load is lost. Offline, the cached list stays as it is.
 
@@ -42,6 +47,11 @@ final chatListControllerProvider = ChatListControllerProvider._();
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
 /// what came while the link was down.
 ///
+/// A chat's unread count leaves out what isn't an unread message (see
+/// `uncountedBy`), such as how a call ended, or a call that was answered
+/// or declined: as they arrive live, and for those that came as `pres
+/// msg`, which doesn't tell, once the cache has them.
+///
 /// It subscribes to the streams before loading, so nothing that arrives
 /// during the load is lost. Offline, the cached list stays as it is.
 final class ChatListControllerProvider
@@ -59,6 +69,11 @@ final class ChatListControllerProvider
   /// It also tells the senders their messages reached this device (`note
   /// recv`): as they arrive, live or as `pres msg`, and after each sync for
   /// what came while the link was down.
+  ///
+  /// A chat's unread count leaves out what isn't an unread message (see
+  /// `uncountedBy`), such as how a call ended, or a call that was answered
+  /// or declined: as they arrive live, and for those that came as `pres
+  /// msg`, which doesn't tell, once the cache has them.
   ///
   /// It subscribes to the streams before loading, so nothing that arrives
   /// during the load is lost. Offline, the cached list stays as it is.
@@ -90,7 +105,7 @@ final class ChatListControllerProvider
 }
 
 String _$chatListControllerHash() =>
-    r'778e31e5d9468c3bf7ce06736ac86700e5b1e807';
+    r'88ca6ea744ac1a2dc2a4809c8cde248a4ae12a2e';
 
 /// The chat list of the logged-in user: shown from the cache first, then
 /// synced with the server, kept current from `me` presence and from the
@@ -105,6 +120,11 @@ String _$chatListControllerHash() =>
 /// It also tells the senders their messages reached this device (`note
 /// recv`): as they arrive, live or as `pres msg`, and after each sync for
 /// what came while the link was down.
+///
+/// A chat's unread count leaves out what isn't an unread message (see
+/// `uncountedBy`), such as how a call ended, or a call that was answered
+/// or declined: as they arrive live, and for those that came as `pres
+/// msg`, which doesn't tell, once the cache has them.
 ///
 /// It subscribes to the streams before loading, so nothing that arrives
 /// during the load is lost. Offline, the cached list stays as it is.

@@ -6,6 +6,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/application/attachment_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/application/file_download_controller.dart';
 import 'package:tinode_flutter_chat/src/attachments/application/outgoing_attachment_providers.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/attachment_progress.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/file_download_state.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
@@ -141,9 +142,9 @@ void main() {
           .read(activeSessionProvider)!
           .storedOutgoing(bob);
       final clientId = outgoing.single.clientId;
-      final progress = <double?>[];
+      final progress = <AttachmentProgress?>[];
       container.listen(
-        uploadProgressControllerProvider(bob, clientId),
+        attachmentProgressControllerProvider(bob, clientId),
         (_, next) => progress.add(next),
       );
       for (var i = 0; i < 10; i++) {
@@ -152,13 +153,16 @@ void main() {
 
       steps.add(1);
       await settle();
-      expect(progress.last, 0.2);
+      expect(
+        progress.last,
+        const AttachmentProgress(AttachmentPhase.uploading, 0.2),
+      );
 
       await steps.close();
       for (var i = 0; i < 10; i++) {
         await settle();
       }
-      expect(progress.last, 1);
+      expect(progress.last?.fraction, 1);
     });
   });
 }

@@ -7,13 +7,16 @@ import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_store.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/media_compressor.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/compressed_media.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/image_size.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/progress_throttle.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/tinode_attachment_limits.dart';
 import 'package:tinode_flutter_chat/src/offline/data/call_log.dart';
 import 'package:tinode_flutter_chat/src/offline/data/call_log_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
@@ -71,6 +74,13 @@ const _latestConcurrency = 4;
 /// the other. It starts from the calls already cached. Deletions reach it
 /// like they reach the cache, and a full chat list drops the calls of the
 /// chats no longer in it.
+///
+/// With a [MediaCompressor], photos and videos are queued as picked and
+/// compressed here, one at a time and whether online or not, before they
+/// are uploaded: the compressor reports `CompressProgress`, then the
+/// uploader `UploadProgress`. A video still over the attachment limits
+/// once compressed is not sent. An app closed meanwhile compresses again
+/// from the start.
 final class CachedTinodeSession implements ChatSession {
   CachedTinodeSession(
     this._remote,
@@ -79,10 +89,14 @@ final class CachedTinodeSession implements ChatSession {
     FileStore? files,
     CallLog? calls,
     TinodeCacheLimits limits = const TinodeCacheLimits(),
+    MediaCompressor? compressor,
+    TinodeAttachmentLimits attachmentLimits = const TinodeAttachmentLimits(),
     this.keepsPresence = true,
     this.latestDelay = const Duration(seconds: 1),
   }) : _files = files ?? MemoryFileStore(),
-       _calls = calls ?? CallLog(CallLogDatabase(NativeDatabase.memory())) {
+       _calls = calls ?? CallLog(CallLogDatabase(NativeDatabase.memory())),
+       _compressor = compressor,
+       _attachmentLimits = attachmentLimits {
     // Before the pruning, which drops the oldest cached calls.
     unawaited(_write(_seedCallLog));
     unawaited(_prune(limits));
@@ -94,6 +108,9 @@ final class CachedTinodeSession implements ChatSession {
     ];
     if (_remote.status is Connected) {
       scheduleMicrotask(_kick);
+    } else {
+      // Compressing needs no link.
+      scheduleMicrotask(() => unawaited(_runCompressions()));
     }
   }
 
@@ -101,6 +118,8 @@ final class CachedTinodeSession implements ChatSession {
   final ChatStore _store;
   final FileStore _files;
   final CallLog _calls;
+  final MediaCompressor? _compressor;
+  final TinodeAttachmentLimits _attachmentLimits;
 
   /// How many times each chat was forgotten, so that a page asked for
   /// before that doesn't put its calls back: unlike the cache, the log
@@ -138,6 +157,15 @@ final class CachedTinodeSession implements ChatSession {
   /// The message whose attachment is being uploaded, and how to stop it.
   String? _uploading;
   Completer<void>? _uploadAbort;
+
+  // Compressor state: one photo or video at a time, beside the uploader.
+  var _compressLoop = false;
+  var _compressAgain = false;
+
+  /// The message whose attachment is being compressed, and whether it was
+  /// stopped.
+  String? _compressing;
+  var _compressStopped = false;
 
   // Latest catch-up state: the chats to catch up, in order, and those
   // being caught up now.
@@ -778,24 +806,73 @@ final class CachedTinodeSession implements ChatSession {
     String caption = '',
   }) async {
     final limit = _remote.serverInfo.maxFileUploadSize;
-    if (limit != null && file.length > limit) {
+    final compressor = _compressor;
+    // A GIF would lose its motion.
+    final compress =
+        compressor != null &&
+        (file.isVideo || (file.isImage && file.mimeType != 'image/gif'));
+    if (!compress && limit != null && file.length > limit) {
       throw FileTooLargeException(limit);
     }
     final stagedId = await _files.stage(file.name, file.openRead());
     final staged = await _files.staged(stagedId);
-    final size = file.isImage && staged != null
-        ? imageSizeOf(await _header(staged))
-        : null;
+    int? width;
+    int? height;
+    Duration? duration;
+    Uint8List? poster;
+    if (file.isVideo && compressor != null && staged != null) {
+      final info = await _quietly<VideoInfo?>(
+        'Could not read a video',
+        () => compressor.videoInfo(staged),
+      );
+      if (info != null) {
+        final bytes = _attachmentLimits.videoBytesLimit(limit);
+        final estimate = _attachmentLimits.estimatedVideoBytes(
+          info.duration,
+          staged.length,
+        );
+        if (estimate > bytes) {
+          await _quietly(
+            'Could not delete a staged file',
+            () => _files.unstage(stagedId),
+          );
+          throw VideoTooLongException(
+            _attachmentLimits.maxVideoDurationFor(bytes),
+          );
+        }
+        (width, height, duration) = (info.width, info.height, info.duration);
+      }
+      poster = await _quietly<Uint8List?>(
+        'Could not take a video poster',
+        () => compressor.videoPoster(staged),
+      );
+      // A phone's portrait video may report its frame as stored, on its
+      // side; the poster is upright, as the compressed copy will be.
+      (width, height) = _upright(width, height, poster);
+    } else if (file.isImage && staged != null) {
+      final size = imageSizeOf(await _header(staged));
+      (width, height) = (size?.width, size?.height);
+      if (compress) {
+        poster = await _quietly<Uint8List?>(
+          'Could not take a photo poster',
+          () => compressor.imagePoster(staged, width: width, height: height),
+        );
+      }
+    }
     final attachment = OutgoingAttachment(
       stagedId: stagedId,
       name: file.name,
       size: staged?.length ?? file.length,
       mimeType: file.mimeType,
       isImage: file.isImage,
-      width: size?.width,
-      height: size?.height,
+      isVideo: file.isVideo,
+      width: width,
+      height: height,
       caption: caption.trim(),
       voice: file.voice,
+      duration: duration,
+      poster: poster,
+      pendingCompression: compress,
     );
     final entry = await _store.enqueuePublish(
       topic,
@@ -808,6 +885,20 @@ final class CachedTinodeSession implements ChatSession {
     _emit(OutgoingChanged(message));
     _kick();
     return message;
+  }
+
+  /// [width] by [height] turned to match [poster]'s orientation, when the
+  /// two disagree.
+  static (int?, int?) _upright(int? width, int? height, Uint8List? poster) {
+    final shown = poster == null ? null : imageSizeOf(poster);
+    if (width == null || height == null || shown == null) {
+      return (width, height);
+    }
+    final portrait = height > width;
+    final shownPortrait = shown.height > shown.width;
+    return portrait == shownPortrait || width == height
+        ? (width, height)
+        : (height, width);
   }
 
   @override
@@ -847,6 +938,9 @@ final class CachedTinodeSession implements ChatSession {
     if (entry != null && await _store.removeOutbox(entry.id)) {
       if (clientId == _uploading) {
         _abortUpload();
+      }
+      if (clientId == _compressing) {
+        _stopCompression();
       }
       if (entry.attachment case final attachment?) {
         await _quietly(
@@ -912,11 +1006,12 @@ final class CachedTinodeSession implements ChatSession {
     }
   }
 
-  /// Starts a drain and the uploader, unless they are running, in which
-  /// case they run again.
+  /// Starts a drain, the uploader and the compressor, unless they are
+  /// running, in which case they run again.
   void _kick() {
     unawaited(_drain());
     unawaited(_runUploads());
+    unawaited(_runCompressions());
   }
 
   Future<void> _drain() async {
@@ -1221,7 +1316,10 @@ final class CachedTinodeSession implements ChatSession {
       }
     }
     for (final entry in leaders.values) {
-      if (!entry.inFlight && (entry.attachment?.needsUpload(now) ?? false)) {
+      if (entry.attachment case final attachment?
+          when !entry.inFlight &&
+              !attachment.pendingCompression &&
+              attachment.needsUpload(now)) {
         return entry;
       }
     }
@@ -1301,6 +1399,175 @@ final class CachedTinodeSession implements ChatSession {
     if (_uploadAbort case final abort? when !abort.isCompleted) {
       abort.complete();
     }
+  }
+
+  // Compression.
+
+  /// Compresses the outbox's photos and videos one at a time, oldest
+  /// first, whether online or not. Runs again when asked during a run.
+  Future<void> _runCompressions() async {
+    if (_closed || _compressor == null) {
+      return;
+    }
+    if (_compressLoop) {
+      _compressAgain = true;
+      return;
+    }
+    _compressLoop = true;
+    try {
+      do {
+        _compressAgain = false;
+        while (!_closed) {
+          final next = await _nextCompression();
+          if (next == null) {
+            break;
+          }
+          await _compress(next);
+        }
+      } while (_compressAgain && !_closed);
+    } on Object catch (e, stackTrace) {
+      _log('The compressor stopped', e, stackTrace);
+    } finally {
+      _compressLoop = false;
+    }
+  }
+
+  /// The oldest entry whose photo or video waits to be compressed.
+  Future<OutboxEntry?> _nextCompression() async {
+    await _writes;
+    for (final entry in await _store.outbox()) {
+      if (!entry.failed && (entry.attachment?.pendingCompression ?? false)) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  /// Compresses [entry]'s photo or video and stages the result in place of
+  /// the original, or marks it failed: too large, or not compressible.
+  Future<void> _compress(OutboxEntry entry) async {
+    final compressor = _compressor!;
+    final attachment = entry.attachment!;
+    final clientId = entry.clientId!;
+    final staged = await _files.staged(attachment.stagedId);
+    if (staged == null) {
+      await _giveUp(entry, ChatFailure.unexpected);
+      return;
+    }
+    _compressing = clientId;
+    _compressStopped = false;
+    final throttle = ProgressThrottle();
+    _emit(
+      CompressProgress(entry.topic, clientId, attachment.isVideo ? 0 : null),
+    );
+    try {
+      final CompressedMedia output;
+      try {
+        output = attachment.isVideo
+            ? await compressor.compressVideo(
+                staged,
+                _attachmentLimits,
+                onProgress: (fraction) {
+                  final step = (fraction.clamp(0, 1) * 1000).round();
+                  if (!_compressStopped &&
+                      throttle.admit(step, 1000, clock.now())) {
+                    _emit(CompressProgress(entry.topic, clientId, fraction));
+                  }
+                },
+              )
+            : await compressor.compressImage(
+                staged,
+                _attachmentLimits,
+                width: attachment.width,
+                height: attachment.height,
+              );
+      } on CompressionCancelledException {
+        return;
+      }
+      try {
+        if (_compressStopped) {
+          return;
+        }
+        await _adoptCompressed(entry, output);
+      } finally {
+        await _quietly('Could not delete a compressed file', output.delete);
+      }
+    } on Object catch (e, stackTrace) {
+      _log('Could not compress an attachment', e, stackTrace);
+      if (!_compressStopped && await _store.outboxEntry(entry.id) != null) {
+        await _giveUp(entry, ChatFailure.unexpected);
+      }
+    } finally {
+      _compressing = null;
+    }
+  }
+
+  /// Stages [output], [entry]'s compressed photo or video, in place of the
+  /// original; a video still over the limit is not sent.
+  Future<void> _adoptCompressed(
+    OutboxEntry entry,
+    CompressedMedia output,
+  ) async {
+    final attachment = entry.attachment!;
+    final serverLimit = _remote.serverInfo.maxFileUploadSize;
+    final limit = attachment.isVideo
+        ? _attachmentLimits.videoBytesLimit(serverLimit)
+        : serverLimit;
+    if (limit != null && output.length > limit) {
+      await _giveUp(entry, ChatFailure.tooLarge);
+      return;
+    }
+    final stagedId = await _files.stage(
+      _withExtension(attachment.name, output.extension),
+      output.openRead(),
+    );
+    var (width, height) = (output.width, output.height);
+    if (attachment.isImage) {
+      if (await _files.staged(stagedId) case final staged?) {
+        final size = imageSizeOf(await _header(staged));
+        (width, height) = (size?.width, size?.height);
+      }
+    }
+    final compressed = attachment.compressed(
+      stagedId: stagedId,
+      name: _withExtension(attachment.name, output.extension),
+      size: output.length,
+      mimeType: output.mimeType,
+      width: width,
+      height: height,
+    );
+    final current = await _store.outboxEntry(entry.id);
+    if (current == null || _compressStopped) {
+      // Discarded meanwhile.
+      await _quietly(
+        'Could not delete a staged file',
+        () => _files.unstage(stagedId),
+      );
+      return;
+    }
+    await _store.setOutboxAttachment(entry.id, compressed);
+    await _quietly(
+      'Could not delete a staged file',
+      () => _files.unstage(attachment.stagedId),
+    );
+    if (await _store.outboxEntry(entry.id) case final updated?) {
+      _emit(OutgoingChanged(updated.toOutgoing()));
+    }
+    unawaited(_runUploads());
+    unawaited(_drain());
+  }
+
+  /// [name] with its extension replaced by [extension].
+  static String _withExtension(String name, String extension) {
+    final dot = name.lastIndexOf('.');
+    return '${dot > 0 ? name.substring(0, dot) : name}$extension';
+  }
+
+  void _stopCompression() {
+    _compressStopped = true;
+    unawaited(
+      _quietly('Could not stop a compression', () => _compressor!.cancel()),
+    );
   }
 
   Future<int> _newestSeq(String topic) async {
@@ -1585,6 +1852,10 @@ final class CachedTinodeSession implements ChatSession {
         when (await _store.outboxByClientId(uploading))?.topic == topic) {
       _abortUpload();
     }
+    if (_compressing case final compressing?
+        when (await _store.outboxByClientId(compressing))?.topic == topic) {
+      _stopCompression();
+    }
     final stored = await _store.messagesInRanges(topic);
     final dropped = await _store.deleteChat(topic);
     await _forgetKeptFiles(stored);
@@ -1712,6 +1983,9 @@ final class CachedTinodeSession implements ChatSession {
     _retry?.cancel();
     _uploadRetry?.cancel();
     _abortUpload();
+    if (_compressing != null) {
+      _stopCompression();
+    }
     for (final timer in _latestTimers.values) {
       timer.cancel();
     }
@@ -1742,14 +2016,16 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   /// File and call log chores must not stop the rest: a failure is logged.
-  static Future<void> _quietly(
+  /// What [action] gives; null, logged as [message], when it fails.
+  static Future<T?> _quietly<T>(
     String message,
-    Future<void> Function() action,
+    Future<T> Function() action,
   ) async {
     try {
-      await action();
+      return await action();
     } on Object catch (e, stackTrace) {
       _log(message, e, stackTrace);
+      return null;
     }
   }
 

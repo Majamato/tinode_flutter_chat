@@ -3,6 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/attachment_picker.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/file_opener.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/gallery_saver.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/media_compressor.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
@@ -14,6 +16,7 @@ import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import 'fake_attachment_picker.dart';
 import 'fake_call_media.dart';
+import 'fake_media_compressor.dart';
 import 'fake_network_monitor.dart';
 import 'fake_system_calls.dart';
 import 'fake_tinode_session.dart';
@@ -36,6 +39,8 @@ Future<void> pumpTinodeChat(
   MemoryFileStoreOpener? fileStoreOpener,
   FileOpener? fileOpener,
   AttachmentPicker? attachmentPicker,
+  MediaCompressor? mediaCompressor,
+  GallerySaver? gallerySaver,
   VoiceRecorderFactory? voiceRecorder,
   VoicePlayerFactory? voicePlayer,
   VoidCallback? onLoggedOut,
@@ -79,6 +84,8 @@ Future<void> pumpTinodeChat(
         fileStoreOpener: fileStoreOpener ?? MemoryFileStoreOpener(),
         fileOpener: fileOpener ?? (_, {mimeType}) async => false,
         attachmentPicker: attachmentPicker ?? FakeAttachmentPicker(),
+        mediaCompressor: mediaCompressor ?? FakeMediaCompressor(),
+        gallerySaver: gallerySaver ?? (_, {required isVideo}) async {},
         network: network ?? FakeNetworkMonitor(),
         callMedia: callMedia ?? FakeCallMedia.new,
         systemCalls: systemCalls ?? FakeSystemCalls(),

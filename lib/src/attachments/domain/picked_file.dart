@@ -3,11 +3,16 @@ import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
 
 /// Where the user picks what to send.
 enum AttachmentSource {
-  /// A photo from the gallery, sent as an image.
+  /// A photo from the gallery, sent as an image, scaled down as picked.
   gallery,
 
-  /// A new photo from the camera, sent as an image.
+  /// A new photo from the system's camera, sent as an image, scaled down as
+  /// taken.
   camera,
+
+  /// A photo or a video from the gallery (Photos on iOS), as picked; the
+  /// chat compresses it before it goes.
+  media,
 
   /// Any file, sent as a file.
   file,
@@ -23,6 +28,7 @@ final class PickedFile {
     this.mimeType,
     this.path,
     this.isImage = false,
+    this.isVideo = false,
     this.voice,
   });
 
@@ -38,8 +44,13 @@ final class PickedFile {
   /// Where it is on disk, for a preview; null when it isn't a plain file.
   final String? path;
 
-  /// Sent as an image shown in the message, rather than as a file.
+  /// Sent as an image shown in the message, rather than as a file. It is
+  /// compressed before it goes.
   final bool isImage;
+
+  /// Sent as a video played in the message, rather than as a file. It is
+  /// compressed before it goes, and must fit `TinodeAttachmentLimits`.
+  final bool isVideo;
 
   /// Set for a voice message: sent as a recording to play, rather than as
   /// a file.

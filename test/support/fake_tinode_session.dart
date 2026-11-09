@@ -188,6 +188,10 @@ final class FakeTinodeSession implements TinodeSession {
   /// Whether `publish` echoes the message back like the server does.
   bool echo = true;
 
+  /// When set, `publish` echoes the message back at once but holds its
+  /// ack until this completes, as the real server's echo can beat its ack.
+  Completer<void>? holdAck;
+
   /// Whether a login succeeded, which `upload` and `download` need, like
   /// the client; set by the logins and by [comeOnline].
   bool loggedIn = false;
@@ -642,6 +646,9 @@ final class FakeTinodeSession implements TinodeSession {
       content,
       head: head == null ? null : MessageHead.fromJson(head),
     );
+    if (holdAck case final hold?) {
+      await hold.future;
+    }
     if (loseNextAck case final error?) {
       loseNextAck = null;
       throw error;

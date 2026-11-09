@@ -67,6 +67,21 @@ final class UploadProgress extends OutboxEvent {
   List<Object?> get props => [topic, clientId, sent, total];
 }
 
+/// The attachment of message [clientId] is being compressed on this
+/// device, [fraction] (0 to 1) of the way; null when the compressor can't
+/// tell. Reported a few times a second at most, never stored.
+final class CompressProgress extends OutboxEvent {
+  const CompressProgress(this.topic, this.clientId, this.fraction);
+
+  @override
+  final String topic;
+  final String clientId;
+  final double? fraction;
+
+  @override
+  List<Object?> get props => [topic, clientId, fraction];
+}
+
 /// Messages of [topic] were deleted, here or elsewhere. When [restored],
 /// a deletion of this user's failed and the messages are back: reload.
 final class TopicDeletion with ValueObject {

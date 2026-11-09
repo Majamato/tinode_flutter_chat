@@ -64,16 +64,22 @@ lib/
       domain/                     findQuery, SearchResult, FindState, NewGroup
       application/                FindController(scope), NewGroupController
       presentation/               search and new group screens, the chat list's new chat button
-    attachments/                  sending and showing images, files and recordings
+    attachments/                  sending and showing images, videos, files and recordings
       domain/                     MessageAttachment, OutgoingAttachment, PickedFile, LocalFile,
-                                  FileDownloadState, ProgressThrottle, imageSizeOf
+                                  FileDownloadState, ProgressThrottle, imageSizeOf,
+                                  TinodeAttachmentLimits, AttachmentProgress, CompressedMedia,
+                                  VideoInfo, CameraCapture
       data/                       FileStore (IoFileStore, MemoryFileStore), FileStoreOpener,
                                   AttachmentPicker (image_picker, file_picker), FileOpener
-                                  (open_filex)
-      application/                attachmentFile, FileDownloadController, UploadProgressController,
-                                  stagedFile, fileStoreOpener, attachmentPicker, fileOpener
-      presentation/               image and file bubbles, image viewer, attach sheet, preview
-                                  screen, outgoing attachment view, upload progress ring
+                                  (open_filex), MediaCompressor (v_video_compressor,
+                                  flutter_image_compress), GallerySaver (gal)
+      application/                attachmentFile, FileDownloadController,
+                                  AttachmentProgressController, stagedFile, fileStoreOpener,
+                                  attachmentPicker, fileOpener, mediaCompressor, gallerySaver,
+                                  tinodeAttachmentLimits
+      presentation/               image, video and file bubbles, image viewer, video player,
+                                  in-app camera (CamerAwesome), attach sheet, preview screen,
+                                  outgoing attachment view, progress ring and overlay
     voice/                        recording and playing voice messages
       domain/                     VoiceNote, voicePreviewOf, voiceBars, liveBarOf, VoiceRecorderState,
                                   VoicePlayback, VoiceSource, VoiceFailure, the VoiceRecorder
@@ -338,6 +344,18 @@ cache. `CachedTinodeSession` decorates the server session:
   files of its voice recordings, as does forgetting a chat. A message pruned from the chat cache
   before it is deleted leaves its file until logout. A store that can't be opened falls back to
   memory.
+- **Compression.** With a `MediaCompressor` (always, in the app), `sendAttachment` stages a
+  photo or video as picked and queues it `pendingCompression`, so its bubble shows at once. A
+  video first has its length, size and a small JPEG poster read; one whose length alone can't
+  fit `TinodeAttachmentLimits` (or the server's limit, when lower) once compressed is refused
+  there with `VideoTooLongException`. A **compressor** loop runs beside the uploader, whether
+  online or not, one entry at a time, oldest first: it re-encodes a video (H.264 MP4 at the
+  limits' bitrates, reporting `CompressProgress`) or scales a photo down to a JPEG (no
+  progress), stages the result in place of the original and emits `OutgoingChanged`. A video
+  still over the limit fails as `tooLarge`; a compression error as `unexpected`. The uploader
+  and the drain hold an entry until it is compressed, so its chat keeps its order. Discarding
+  the entry, forgetting its chat or closing the session stops the compression; an app closed
+  meanwhile compresses again from the start. GIFs and files go as they are.
 - **Uploads.** `sendAttachment` copies the picked file into staging (picker files can vanish),
   reads an image's size from its header, and queues a `publish` whose payload holds the
   attachment. An **uploader** runs beside the drain, one upload at a time: it uploads an entry's
@@ -599,14 +617,30 @@ during a call doesn't end the call.
 chat shows it with a clock until the server numbers it, or with an error mark if it refuses it.
 Only a local failure (no session) keeps the text and shows a snack bar.
 
-**Sending and receiving files.** The composer's attach button opens `AttachSheet` with `showChatSheet` (Photo, Camera
-where `cameraAvailable`, File; the profile photo reuses it without File), `SendController.pick` asks the `AttachmentPicker`, and
-`AttachmentPreviewScreen` takes a caption; `SendController.sendAttachment` queues it (a file over
-`maxFileUploadSize` is refused there, naming the limit). The outgoing bubble shows the staged
-copy (`stagedFile`) and an `UploadProgressRing`, the only widget that watches
-`UploadProgressController` (fed by the outbox's `UploadProgress` events, at most a few a second).
-On receipt, `ChatMessage.attachments` reads the Drafty images and files (`AU`/`VD` as files) and
-`caption` the text; `MessageBubble` shows them through `AttachmentMessageBody`.
+**Sending and receiving files.** The composer's attach button opens `AttachSheet` with
+`showChatSheet`: Photos (iOS and macOS) or Gallery (elsewhere) for a photo or a video, Camera
+where `cameraAvailable`, File; the profile photo reuses it for photos only, without File.
+`SendController.pick` asks the `AttachmentPicker`; Camera opens `MediaCameraScreen`, the in-app
+camera with its own photo and video switch, whose capture `SendController.captured` turns into
+a file and saves to the device's photos (`GallerySaver`). `AttachmentPreviewScreen` takes a
+caption (a video plays there); `SendController.sendAttachment` queues it (a file over
+`maxFileUploadSize`, or a video too long to fit, is refused there, naming the limit). The
+outgoing bubble shows the poster (`MediaCompressor.imagePoster` or `videoPoster`, taken when
+it is queued; a photo without one shows its staged copy, `stagedFile`) under an
+`AttachmentProgressOverlay` ("Compressing… 42%", then "Uploading… 67%"); its
+`AttachmentProgressRing` is the only widget that watches `AttachmentProgressController` (fed by
+the outbox's `CompressProgress` and `UploadProgress` events, at most a few a second). The
+compression and the upload belong to the session, so leaving the chat doesn't stop them.
+The picture never blinks out on the way: `OutgoingAttachmentView` keeps the last one shown while
+the next loads, over the placeholder's grey, and leaves it in `SentStandIns` by client ID. The
+sent message carries the same client ID, whether the server's echo reaches the chat first (it
+usually does) or the ack, so `MessageBubble` passes it down and, until their own picture has its
+first frame, `ImageBubbleContent` and `VideoBubbleContent` show the stand-in under that picture
+(`StandInPicture`); it was decoded at the same size, so it paints at once.
+On receipt, `ChatMessage.attachments` reads the Drafty images, videos and files (`AU` as files)
+and `caption` the text; `MessageBubble` shows them through `AttachmentMessageBody`.
+`VideoBubbleContent` shows a video's poster, length and a play button; a tap downloads it
+through `FileDownloadController.fetch` and plays it in `VideoPlayerScreen` (`video_player`).
 `ImageBubbleContent` keeps the image's space from its size, shows inline bytes at once, else
 watches `attachmentFile(ref)` (an error loads again on `Connected`), decodes at display size and
 opens `ImageViewerScreen`. `FileBubbleContent` watches `FileDownloadController(ref)`: a tap

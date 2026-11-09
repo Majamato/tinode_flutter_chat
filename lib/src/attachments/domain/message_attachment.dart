@@ -5,7 +5,7 @@ import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
 
-/// An image, file or recording in a received message. It comes either
+/// An image, video, file or recording in a received message. It comes either
 /// inline ([bytes]) or as a [ref] to download.
 sealed class MessageAttachment with ValueObject {
   const MessageAttachment({
@@ -16,13 +16,16 @@ sealed class MessageAttachment with ValueObject {
     this.mimeType,
   });
 
-  /// The message's images, then its files and recordings (`AU`), in the
-  /// order their spans give. Audio sent as a file (`EX`) stays a file.
+  /// The message's images, then its videos, then its files and
+  /// recordings (`AU`), in the order their spans give. Audio sent as a file
+  /// (`EX`) stays a file.
   static List<MessageAttachment> listFrom(MessageContent content) =>
       switch (content) {
         DraftyContent(:final drafty) => [
           for (final image in drafty.images)
             if (_usable(image)) ImageAttachment.from(image),
+          for (final video in drafty.videos)
+            if (_usable(video)) VideoAttachment.from(video),
           for (final file in drafty.files)
             if (_usable(file))
               switch (file) {
@@ -88,6 +91,59 @@ final class ImageAttachment extends MessageAttachment {
 
   @override
   List<Object?> get props => [ref, bytes, name, size, mimeType, width, height];
+}
+
+/// A video shown as its [poster] with a play button, in the space its size
+/// asks for; it downloads and plays full screen.
+final class VideoAttachment extends MessageAttachment {
+  const VideoAttachment({
+    super.ref,
+    super.bytes,
+    super.name,
+    super.size,
+    super.mimeType,
+    this.width,
+    this.height,
+    this.duration,
+    this.poster,
+  });
+
+  factory VideoAttachment.from(DraftyVideo video) => VideoAttachment(
+    ref: video.ref,
+    bytes: video.bytes,
+    name: video.name,
+    size: video.size,
+    mimeType: video.mimeType,
+    width: video.width,
+    height: video.height,
+    duration: video.duration,
+    poster: video.preview,
+  );
+
+  final int? width;
+  final int? height;
+
+  /// How long it plays, as the sender gave it.
+  final Duration? duration;
+
+  /// A still of it, sent inline; null when the sender gave none.
+  final Uint8List? poster;
+
+  /// Width over height; `ImageAttachment.defaultAspectRatio` when unknown.
+  double get aspectRatio => imageAspectRatio(width, height);
+
+  @override
+  List<Object?> get props => [
+    ref,
+    bytes,
+    name,
+    size,
+    mimeType,
+    width,
+    height,
+    duration,
+    poster,
+  ];
 }
 
 /// A file shown as its name and size, to download and open.

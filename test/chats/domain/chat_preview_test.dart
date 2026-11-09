@@ -60,6 +60,22 @@ void main() {
     expect(photo.photo, bytes);
   });
 
+  test('a video by its caption, else as a video', () {
+    final video = preview(
+      drafty(
+        bob,
+        3,
+        Drafty.video(const DraftyVideo(ref: '/f/v'), caption: 'goal!'),
+      ),
+    )!;
+    expect((video.kind, video.text), (ChatPreviewKind.video, 'goal!'));
+
+    final bare = preview(
+      drafty(bob, 4, Drafty.video(const DraftyVideo(ref: '/f/v'))),
+    )!;
+    expect((bare.kind, bare.text), (ChatPreviewKind.video, ''));
+  });
+
   test('a file by its name, a voice note by its audio type', () {
     final file = preview(
       drafty(

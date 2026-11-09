@@ -83,6 +83,12 @@ final class TinodeImageViewerScreen extends TinodeScreen {
   const TinodeImageViewerScreen();
 }
 
+/// A video full screen, playing.
+final class TinodeVideoPlayerScreen extends TinodeScreen {
+  /// The video player.
+  const TinodeVideoPlayerScreen();
+}
+
 /// Resetting a forgotten password, before logging in.
 final class TinodePasswordResetScreen extends TinodeScreen {
   /// The password reset screen.

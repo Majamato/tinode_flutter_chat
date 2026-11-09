@@ -19,6 +19,17 @@ final class FileTooLargeException implements Exception {
   String toString() => 'FileTooLargeException($limit)';
 }
 
+/// A video plays too long to fit the size limit once compressed; it was
+/// not queued. [max] is the longest that fits.
+final class VideoTooLongException implements Exception {
+  const VideoTooLongException(this.max);
+
+  final Duration max;
+
+  @override
+  String toString() => 'VideoTooLongException($max)';
+}
+
 /// What went wrong, in terms the UI can explain to the user.
 enum ChatFailure {
   unreachable,
@@ -28,7 +39,8 @@ enum ChatFailure {
   rejected,
   unexpected,
 
-  /// A file over the server's size limit.
+  /// A file over the server's size limit, or a video too large once
+  /// compressed.
   tooLarge,
 
   /// The login is someone else's already.
@@ -56,7 +68,9 @@ enum ChatFailure {
   static ChatFailure of(Object error) => switch (error) {
     ServerUnreachableException() => unreachable,
     ConnectionLostException() || ConnectionClosedException() => connectionLost,
-    FileTooLargeException() || ServerException(code: 413) => tooLarge,
+    FileTooLargeException() ||
+    VideoTooLongException() ||
+    ServerException(code: 413) => tooLarge,
     ServerException(code: 401) => badCredentials,
     CredentialsRequiredException() => credentialsRequired,
     ServerException() => rejected,

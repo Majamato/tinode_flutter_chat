@@ -1,5 +1,32 @@
 ## Unreleased
 
+- **New:** videos. The attach menu's first row, Photos on iOS and Gallery elsewhere, picks a
+  photo or a video, and Camera opens an in-app camera that takes either (CamerAwesome), saving
+  what it takes to the device's photos. Videos are sent as Tinode's `VD` with an inline poster,
+  their length and size, and show as their poster with a play button; a tap downloads and plays
+  them full screen.
+- **New:** photos and videos are compressed on the device before they go: photos to a 2048 px
+  JPEG, videos to an H.264 MP4 at about 720p. A video must fit 20 MiB once compressed (or the
+  server's limit, when lower); one that clearly can't is refused at once, naming the longest that
+  fits. `TinodeChat.attachmentLimits` (`TinodeAttachmentLimits`) adjusts all of it.
+- **New:** the bubble of a photo or video shows at once, with "Compressing… 42%" and then
+  "Uploading… 67%" over it. Compression is part of the outbox: it carries on when the user leaves
+  the chat, works offline, and starts again if the app is closed meanwhile.
+- **Fix:** sending a photo or video no longer jumps. A photo's bubble shows a small poster from
+  the start, as a video's does, and keeps it through compression and upload. The sent bubble
+  shows the same picture until its own is ready, and a portrait video stored on its side gets an
+  upright bubble from the start. In the preview, the photo fades in, the video's controls are in
+  place from the start, and the caption keyboard no longer opens by itself.
+- **Breaking:** `TinodeChatStrings.attachPhoto` is gone, for `attachPhotos` and `attachGallery`;
+  there are new strings for videos, compression and the camera.
+- **New:** `TinodeVideoPlayerScreen`, for `appBarBuilder`.
+- **Fix:** on Android, Gallery (in the chat and for the profile photo) opens the system photo
+  picker over the app, not the file picker, and what's picked comes back. A picker that fails
+  again says so again.
+- **Hosts:** set `MainActivity` to `android:launchMode="singleTask"`, not `singleInstance`. With
+  `singleInstance`, Android opens the photo and file pickers as a separate app and reports them
+  cancelled at once. The example and the README now use `singleTask`.
+
 - **Fix:** every screen that can go back shows the same glass back button. Profile, the password
   change, chat info, a new group, the attachment preview, the image viewer, password reset and
   email confirmation had a plain arrow; Profile showed none of the "‹ Settings" the account and
