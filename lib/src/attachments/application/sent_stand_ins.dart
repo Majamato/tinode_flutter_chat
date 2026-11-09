@@ -8,7 +8,9 @@ part 'sent_stand_ins.g.dart';
 /// or the staged copy), by their message's client ID. The sent message
 /// carries the same ID, whether the server's echo or its ack came first,
 /// so its bubble finds the picture at once and shows it until its own is
-/// ready: the picture never blinks out. Keeps the latest [capacity] only.
+/// ready: the picture never blinks out. That bubble removes it once its
+/// own is on screen; one that never gets there leaves it, so it keeps the
+/// latest [capacity] only.
 final class SentStandIns {
   /// How many it keeps: more than can be sent at once.
   static const capacity = 32;
@@ -28,6 +30,10 @@ final class SentStandIns {
       _pictures.remove(_pictures.keys.first);
     }
   }
+
+  /// Forgets message [clientId]'s picture, which its sent bubble no longer
+  /// needs.
+  void remove(String clientId) => _pictures.remove(clientId);
 }
 
 /// The stand-ins outgoing bubbles leave for their sent ones.

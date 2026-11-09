@@ -636,7 +636,9 @@ the next loads, over the placeholder's grey, and leaves it in `SentStandIns` by 
 sent message carries the same client ID, whether the server's echo reaches the chat first (it
 usually does) or the ack, so `MessageBubble` passes it down and, until their own picture has its
 first frame, `ImageBubbleContent` and `VideoBubbleContent` show the stand-in under that picture
-(`StandInPicture`); it was decoded at the same size, so it paints at once.
+(`StandInPicture`); it was decoded at the same size, so it paints at once. After that first
+frame `OwnPicture` removes the stand-in, without a rebuild; one whose picture never loads stays
+until 32 newer ones push it out.
 On receipt, `ChatMessage.attachments` reads the Drafty images, videos and files (`AU` as files)
 and `caption` the text; `MessageBubble` shows them through `AttachmentMessageBody`.
 `VideoBubbleContent` shows a video's poster, length and a play button; a tap downloads it

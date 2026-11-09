@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/application/sent_stand_ins.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/compressed_media.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
@@ -12,6 +14,7 @@ import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_prev
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_viewer_screen.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/outgoing_attachment_view.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/own_picture.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/stand_in_picture.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/ref_photo_avatar.dart';
@@ -432,6 +435,119 @@ void main() {
     final sent = find.byType(VideoBubbleContent);
     expect(sent, findsOneWidget);
     expect(standInIn(tester, sent)?.bytes, pngBytes);
+  });
+
+  /// The stand-ins of the app around [of].
+  SentStandIns standInsAround(WidgetTester tester, Finder of) =>
+      ProviderScope.containerOf(tester.element(of)).read(sentStandInsProvider);
+
+  /// Checks that the stand-in of [clientId] outlasts the decoding of [sent]'s
+  /// own picture, and goes with the frame that draws it, rebuilding nothing.
+  Future<void> expectStandInGoesWithFirstFrame(
+    WidgetTester tester,
+    Finder sent,
+    String clientId,
+  ) async {
+    final standIns = standInsAround(tester, sent);
+    expect(standIns[clientId], isNotNull);
+
+    final own = find.descendant(of: sent, matching: find.byType(OwnPicture));
+    final picture = tester.widget<Image>(
+      find.descendant(of: own, matching: find.byType(Image)),
+    );
+    await tester.runAsync(
+      () => precacheImage(picture.image, tester.element(own)),
+    );
+    // Decoded, but no frame has drawn it yet.
+    expect(standIns[clientId], isNotNull);
+
+    await tester.pump();
+    expect(standIns[clientId], isNull);
+    expect(tester.binding.hasScheduledFrame, isFalse);
+  }
+
+  testWidgets("a sent photo drops its stand-in once it's drawn, not before", (
+    tester,
+  ) async {
+    await openBob(tester);
+    compressor.imagePosterBytes = Uint8List.fromList(pngBytes);
+    picker.next = pickedFile(
+      'sunset.png',
+      // Its own bytes: the image cache may already hold other tests' photo.
+      Uint8List.fromList(pngBytes),
+      mimeType: 'image/png',
+      isImage: true,
+    );
+    final uploading = session.uploadSteps = StreamController<int>();
+    await chooseFromMenu(tester, 'Gallery');
+    await tester.tap(find.byIcon(icons.send));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(OutgoingAttachmentView), findsOneWidget);
+
+    await uploading.close();
+    await tester.pumpAndSettle();
+    final sent = find.byType(ImageBubbleContent);
+    await expectStandInGoesWithFirstFrame(
+      tester,
+      sent,
+      tester.widget<ImageBubbleContent>(sent).clientId!,
+    );
+  });
+
+  testWidgets("a sent video drops its stand-in once it's drawn, not before", (
+    tester,
+  ) async {
+    await openBob(tester);
+    picker.next = pickedFile(
+      'clip.mov',
+      List.filled(100, 1),
+      mimeType: 'video/quicktime',
+      isVideo: true,
+    );
+    final uploading = session.uploadSteps = StreamController<int>();
+    await chooseFromMenu(tester, 'Gallery');
+    await tester.tap(find.byIcon(icons.send));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(OutgoingAttachmentView), findsOneWidget);
+
+    await uploading.close();
+    await tester.pumpAndSettle();
+    final sent = find.byType(VideoBubbleContent);
+    await expectStandInGoesWithFirstFrame(
+      tester,
+      sent,
+      tester.widget<VideoBubbleContent>(sent).clientId!,
+    );
+  });
+
+  testWidgets('a sent video with no poster of its own keeps its stand-in', (
+    tester,
+  ) async {
+    await openBob(tester);
+    compressor.poster = null;
+    picker.next = pickedFile(
+      'clip.mov',
+      List.filled(100, 1),
+      mimeType: 'video/quicktime',
+      isVideo: true,
+    );
+    await chooseFromMenu(tester, 'Gallery');
+    await tester.tap(find.byIcon(icons.send));
+    await tester.pumpAndSettle();
+
+    final sent = find.byType(VideoBubbleContent);
+    expect(
+      find.descendant(of: sent, matching: find.byType(OwnPicture)),
+      findsNothing,
+    );
+    final clientId = tester.widget<VideoBubbleContent>(sent).clientId!;
+    final standIns = standInsAround(tester, sent)
+      ..leave(clientId, LocalFile.inMemory(pngBytes));
+
+    await tester.pump();
+    expect(standIns[clientId], isNotNull);
   });
 
   testWidgets('the menu offers photos and videos, and the camera', (

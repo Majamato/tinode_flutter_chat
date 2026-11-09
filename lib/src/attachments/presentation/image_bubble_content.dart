@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/attachments/application/sent_stand_ins.d
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_viewer_screen.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/local_image.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/own_picture.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/stand_in_picture.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
@@ -70,14 +71,10 @@ class ImageBubbleContent extends ConsumerWidget {
                 fit: StackFit.expand,
                 children: [
                   StandInPicture(standIn: standIn, cacheWidth: cacheWidth),
-                  Image(
-                    image: ResizeImage.resizeIfNeeded(
-                      cacheWidth,
-                      null,
-                      provider,
-                    ),
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
+                  OwnPicture(
+                    image: provider,
+                    cacheWidth: cacheWidth,
+                    clientId: clientId,
                   ),
                 ],
               ),

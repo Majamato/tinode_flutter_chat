@@ -17,6 +17,8 @@
 - **New:** the bubble of a photo or video shows at once, with "Compressing… 42%" and then
   "Uploading… 67%" over it. Compression is part of the outbox: it carries on when the user leaves
   the chat, works offline, and starts again if the app is closed meanwhile.
+- **Fix:** the picture a sent photo or video shows until its own is ready is freed as soon as its
+  own is on screen, instead of staying in memory until 32 newer ones replace it.
 - **Fix:** sending a photo or video no longer jumps. A photo's bubble shows a small poster from
   the start, as a video's does, and keeps it through compression and upload. The sent bubble
   shows the same picture until its own is ready, and a portrait video stored on its side gets an

@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/attachments/application/sent_stand_ins.d
 import 'package:tinode_flutter_chat/src/attachments/domain/file_download_state.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_bubble_content.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/own_picture.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/stand_in_picture.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_duration_chip.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_play_glyph.dart';
@@ -64,14 +65,10 @@ class VideoBubbleContent extends ConsumerWidget {
                 // is under it shows.
                 StandInPicture(standIn: standIn, cacheWidth: cacheWidth),
                 if (poster != null)
-                  Image(
-                    image: ResizeImage.resizeIfNeeded(
-                      cacheWidth,
-                      null,
-                      MemoryImage(poster),
-                    ),
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
+                  OwnPicture(
+                    image: MemoryImage(poster),
+                    cacheWidth: cacheWidth,
+                    clientId: clientId,
                   ),
                 Center(
                   child: VideoPlayGlyph(
