@@ -28,7 +28,7 @@ class AccountMenuButton extends StatelessWidget {
           padding: EdgeInsets.zero,
           icon: Icon(
             TinodeChatIcons.of(context).account,
-            color: TinodeChatTheme.of(context).linkColor,
+            color: TinodeChatTheme.of(context).iconColor,
           ),
           itemBuilder: (_) => [
             PopupMenuItem(

@@ -37,7 +37,7 @@ class SettingsTile extends StatelessWidget {
     final colors = theme.colorScheme;
     final color = destructive
         ? colors.error
-        : TinodeChatTheme.of(context).linkColor;
+        : TinodeChatTheme.of(context).iconColor;
     final icon = this.icon;
     return InkWell(
       onTap: onTap,
@@ -79,7 +79,7 @@ class SettingsTile extends StatelessWidget {
               else if (!destructive && onTap != null)
                 Icon(
                   TinodeChatIcons.of(context).disclosure,
-                  color: colors.outline,
+                  color: TinodeChatTheme.of(context).iconPassiveColor,
                 ),
             ],
           ),

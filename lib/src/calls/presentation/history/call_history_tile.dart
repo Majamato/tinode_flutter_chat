@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
@@ -11,6 +10,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
@@ -46,7 +46,7 @@ class CallHistoryTile extends ConsumerWidget {
     final theme = Theme.of(context);
     final chat = TinodeChatTheme.of(context);
     final muted = theme.colorScheme.outline;
-    final accent = entry.missed ? chat.missedCallColor : muted;
+    final accent = entry.missed ? chat.missedCallColor : chat.iconPassiveColor;
     final call = entry.call;
     final kind = call.audioOnly ? strings.voiceCall : strings.videoCall;
     final how = '$kind · ${call.status(strings, outgoing: entry.outgoing)}';
@@ -104,7 +104,7 @@ class CallHistoryTile extends ConsumerWidget {
                                         TinodeChatIcons.of(context),
                                         outgoing: entry.outgoing,
                                       ),
-                                      size: 16,
+                                      size: ChatIconSize.small,
                                       color: accent,
                                     ),
                                     Flexible(
@@ -132,7 +132,7 @@ class CallHistoryTile extends ConsumerWidget {
                           ),
                           IconButton(
                             tooltip: strings.openChat,
-                            color: chat.linkColor,
+                            color: chat.iconColor,
                             onPressed: () => ChatScreen.open(context, id.topic),
                             icon: Icon(TinodeChatIcons.of(context).openChat),
                           ),

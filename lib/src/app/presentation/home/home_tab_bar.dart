@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:ui' show SemanticsRole;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tinode_flutter_chat/src/app/domain/home_tab.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/home/home_unread_badge.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
@@ -167,7 +167,7 @@ class _Tab extends StatelessWidget {
           borderRadius: BorderRadius.circular(27),
           child: TweenAnimationBuilder<Color?>(
             tween: ColorTween(
-              end: selected ? chat.linkColor : theme.colorScheme.outline,
+              end: selected ? chat.linkColor : chat.iconPassiveColor,
             ),
             duration: chat.fadeDuration,
             builder: (context, color, _) => Column(
@@ -178,7 +178,7 @@ class _Tab extends StatelessWidget {
                   children: [
                     Icon(
                       selected ? selectedIcon : icon,
-                      size: 24,
+                      size: ChatIconSize.standard,
                       color: color,
                     ),
                     if (tab == HomeTab.chats)

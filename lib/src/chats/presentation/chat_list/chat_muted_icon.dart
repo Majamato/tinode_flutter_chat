@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// A muted speaker after a muted chat's name, so muting doesn't show by
 /// the badge's colour alone. Nothing otherwise.
@@ -23,8 +25,8 @@ class ChatMutedIcon extends ConsumerWidget {
       padding: const EdgeInsetsDirectional.only(start: 6),
       child: Icon(
         TinodeChatIcons.of(context).muted,
-        size: 15,
-        color: Theme.of(context).colorScheme.outline,
+        size: ChatIconSize.small,
+        color: TinodeChatTheme.of(context).iconPassiveColor,
         semanticLabel: TinodeChatStrings.of(context).chatMuted,
       ),
     );

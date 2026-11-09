@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/photo_time_chip.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 
 /// How long a video plays, over its poster: a camera glyph and the time,
@@ -19,7 +20,7 @@ class VideoDurationChip extends StatelessWidget {
         children: [
           Icon(
             TinodeChatIcons.of(context).video,
-            size: 13,
+            size: ChatIconSize.tiny,
             color: PhotoTimeChip.footerColor,
           ),
           if (duration != null) ...[

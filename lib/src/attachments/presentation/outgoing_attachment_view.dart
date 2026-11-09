@@ -12,6 +12,7 @@ import 'package:tinode_flutter_chat/src/attachments/presentation/image_bubble_co
 import 'package:tinode_flutter_chat/src/attachments/presentation/local_image.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_duration_chip.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_play_glyph.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
@@ -95,7 +96,7 @@ class _OutgoingAttachmentViewState
                   : Icon(
                       TinodeChatIcons.of(context).file,
                       color: color,
-                      size: 32,
+                      size: ChatIconSize.xlarge,
                     ),
             ),
           ),

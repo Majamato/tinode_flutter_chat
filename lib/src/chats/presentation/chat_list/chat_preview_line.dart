@@ -5,6 +5,7 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_preview_controlle
 import 'package:tinode_flutter_chat/src/chats/application/message_runs.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_preview.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_indicator.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
@@ -20,7 +21,6 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_th
 class ChatPreviewLine extends ConsumerWidget {
   const ChatPreviewLine({required this.topic, super.key});
 
-  static const _iconSize = 15.0;
   static const _thumbnailSize = 18.0;
 
   final String topic;
@@ -54,12 +54,12 @@ class ChatPreviewLine extends ConsumerWidget {
     };
     final call = preview.call;
     final (icon, iconColor) = switch (preview.kind) {
-      ChatPreviewKind.voice => (icons.microphone, theme.linkColor),
-      ChatPreviewKind.video => (icons.video, theme.linkColor),
-      ChatPreviewKind.file => (icons.file, theme.linkColor),
+      ChatPreviewKind.voice => (icons.microphone, theme.iconPassiveColor),
+      ChatPreviewKind.video => (icons.video, theme.iconPassiveColor),
+      ChatPreviewKind.file => (icons.file, theme.iconPassiveColor),
       ChatPreviewKind.call => (
         call?.audioOnly ?? true ? icons.voiceCall : icons.videoCall,
-        preview.isMissedCall ? theme.missedCallColor : theme.linkColor,
+        preview.isMissedCall ? theme.missedCallColor : theme.iconPassiveColor,
       ),
       ChatPreviewKind.text || ChatPreviewKind.photo => (null, null),
     };
@@ -104,8 +104,8 @@ class ChatPreviewLine extends ConsumerWidget {
                     ),
                     null => Icon(
                       icons.photo,
-                      size: _iconSize,
-                      color: theme.linkColor,
+                      size: ChatIconSize.small,
+                      color: theme.iconPassiveColor,
                     ),
                   },
                 ),
@@ -114,7 +114,7 @@ class ChatPreviewLine extends ConsumerWidget {
           if (icon != null)
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 5),
-              child: Icon(icon, size: _iconSize, color: iconColor),
+              child: Icon(icon, size: ChatIconSize.small, color: iconColor),
             ),
           Expanded(
             child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis),

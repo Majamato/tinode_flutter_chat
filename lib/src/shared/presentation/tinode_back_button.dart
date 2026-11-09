@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_icon_button.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// The way back from a screen: a chevron in the link colour on a glass
+/// The way back from a screen: a chevron in the icon colour on a glass
 /// pill, for `TinodeAppBar.leading`. It pops the route it is on.
 ///
-/// [label] names the screen it goes back to, on one line, in the link
+/// [label] names the screen it goes back to, on one line, in the icon
 /// colour; without it the button is only the chevron, the default. Every
 /// screen of the chat that can go back uses one; a host
 /// that replaces a bar in `TinodeChat.appBarBuilder` can too:
@@ -43,7 +44,7 @@ class TinodeBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TinodeBackButton(:label, :badge) = this;
-    final color = TinodeChatTheme.of(context).linkColor;
+    final color = TinodeChatTheme.of(context).iconColor;
     final message =
         tooltip ?? MaterialLocalizations.of(context).backButtonTooltip;
     return Tooltip(
@@ -84,7 +85,7 @@ class TinodeBackButton extends StatelessWidget {
                       children: [
                         Icon(
                           TinodeChatIcons.of(context).back,
-                          size: 24,
+                          size: ChatIconSize.standard,
                           color: color,
                         ),
                         ?badge,

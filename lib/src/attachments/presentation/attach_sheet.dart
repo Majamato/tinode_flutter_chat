@@ -6,7 +6,6 @@ import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet_action.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// Where to pick an attachment from, as rows: Photos (Gallery off Apple's
 /// platforms), Camera (where the device has one) and, with [files], File.
@@ -23,16 +22,10 @@ class AttachSheet extends ConsumerWidget {
   /// profile photo).
   final bool files;
 
-  /// The rows' tints, from `senderNameColors`: blue, pink and purple.
-  static const _photoTint = 4;
-  static const _cameraTint = 1;
-  static const _fileTint = 2;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
-    final chat = TinodeChatTheme.of(context);
     final hasCamera = ref.watch(cameraAvailableProvider);
     final apple = switch (Theme.of(context).platform) {
       TargetPlatform.iOS || TargetPlatform.macOS => true,
@@ -45,7 +38,6 @@ class AttachSheet extends ConsumerWidget {
           icon: icons.gallery,
           label: apple ? strings.attachPhotos : strings.attachGallery,
           subtitle: files ? strings.attachMediaSubtitle : null,
-          tint: chat.senderNameColor(_photoTint),
           onTap: () => _choose(
             context,
             files ? AttachmentSource.media : AttachmentSource.gallery,
@@ -56,14 +48,12 @@ class AttachSheet extends ConsumerWidget {
             icon: icons.camera,
             label: strings.attachCamera,
             subtitle: files ? strings.attachCameraSubtitle : null,
-            tint: chat.senderNameColor(_cameraTint),
             onTap: () => _choose(context, AttachmentSource.camera),
           ),
         if (files)
           ChatSheetAction(
             icon: icons.file,
             label: strings.attachFile,
-            tint: chat.senderNameColor(_fileTint),
             onTap: () => _choose(context, AttachmentSource.file),
           ),
       ],

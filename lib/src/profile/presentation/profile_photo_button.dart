@@ -51,6 +51,7 @@ class ProfilePhotoButton extends ConsumerWidget {
           bottom: 0,
           child: IconButton.filledTonal(
             tooltip: TinodeChatStrings.of(context).changePhoto,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
             onPressed: busy ? null : () => unawaited(_change(context, ref)),
             icon: Icon(TinodeChatIcons.of(context).camera),
           ),

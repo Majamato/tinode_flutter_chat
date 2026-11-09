@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/send_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
@@ -132,9 +133,12 @@ class _Face extends StatelessWidget {
         child: Icon(
           arrow ? icons.send : icons.microphone,
           key: ValueKey(arrow),
-          color: filled
-              ? theme.onActionColor
-              : Theme.of(context).colorScheme.onSurfaceVariant,
+          size: ChatIconSize.standard,
+          color: switch (face) {
+            _FaceKind.send => theme.onActionColor,
+            _FaceKind.mic => theme.iconColor,
+            _FaceKind.resting => theme.iconPassiveColor,
+          },
         ),
       ),
     );

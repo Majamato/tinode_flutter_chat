@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/message_receipt.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
@@ -17,8 +18,6 @@ class MessageStatusIcon extends StatelessWidget {
     this.readColor,
     super.key,
   });
-
-  static const _size = 14.0;
 
   final OutgoingStatus? status;
 
@@ -62,6 +61,11 @@ class MessageStatusIcon extends StatelessWidget {
         Theme.of(context).colorScheme.error,
       ),
     };
-    return Icon(icon, size: _size, color: tint, semanticLabel: label);
+    return Icon(
+      icon,
+      size: ChatIconSize.tiny,
+      color: tint,
+      semanticLabel: label,
+    );
   }
 }

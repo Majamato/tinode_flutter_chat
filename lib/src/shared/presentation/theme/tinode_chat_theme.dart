@@ -35,6 +35,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.glassEdgeColor,
     required this.glassShadowColor,
     required this.linkColor,
+    required this.iconColor,
+    required this.iconPassiveColor,
     required this.unreadBadgeColor,
     required this.onUnreadBadgeColor,
     required this.mutedBadgeColor,
@@ -96,6 +98,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       glassEdgeColor: colors.outlineVariant,
       glassShadowColor: colors.shadow.withValues(alpha: 0.14),
       linkColor: colors.primary,
+      iconColor: colors.onSurface,
+      iconPassiveColor: colors.onSurfaceVariant,
       unreadBadgeColor: colors.primary,
       onUnreadBadgeColor: colors.onPrimary,
       mutedBadgeColor: colors.outline,
@@ -179,6 +183,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       glassEdgeColor: neutrals.glassEdge,
       glassShadowColor: neutrals.glassShadow,
       linkColor: dark ? palette.onDark : palette.ink,
+      iconColor: neutrals.text,
+      iconPassiveColor: neutrals.muted,
       unreadBadgeColor: primary,
       onUnreadBadgeColor: onPrimary,
       mutedBadgeColor: neutrals.mutedBadge,
@@ -349,6 +355,12 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// Links and text buttons in the brand's hue.
   final Color linkColor;
 
+  /// Icons you can tap: app bars, the composer, rows.
+  final Color iconColor;
+
+  /// Icons that only inform: chevrons, field hints, message previews.
+  final Color iconPassiveColor;
+
   /// Background of the unread counter in the chat list.
   final Color unreadBadgeColor;
 
@@ -484,6 +496,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     Color? glassEdgeColor,
     Color? glassShadowColor,
     Color? linkColor,
+    Color? iconColor,
+    Color? iconPassiveColor,
     Color? unreadBadgeColor,
     Color? onUnreadBadgeColor,
     Color? mutedBadgeColor,
@@ -540,6 +554,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     glassEdgeColor: glassEdgeColor ?? this.glassEdgeColor,
     glassShadowColor: glassShadowColor ?? this.glassShadowColor,
     linkColor: linkColor ?? this.linkColor,
+    iconColor: iconColor ?? this.iconColor,
+    iconPassiveColor: iconPassiveColor ?? this.iconPassiveColor,
     unreadBadgeColor: unreadBadgeColor ?? this.unreadBadgeColor,
     onUnreadBadgeColor: onUnreadBadgeColor ?? this.onUnreadBadgeColor,
     mutedBadgeColor: mutedBadgeColor ?? this.mutedBadgeColor,
@@ -612,6 +628,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       glassEdgeColor: color(glassEdgeColor, other.glassEdgeColor),
       glassShadowColor: color(glassShadowColor, other.glassShadowColor),
       linkColor: color(linkColor, other.linkColor),
+      iconColor: color(iconColor, other.iconColor),
+      iconPassiveColor: color(iconPassiveColor, other.iconPassiveColor),
       unreadBadgeColor: color(unreadBadgeColor, other.unreadBadgeColor),
       onUnreadBadgeColor: color(onUnreadBadgeColor, other.onUnreadBadgeColor),
       mutedBadgeColor: color(mutedBadgeColor, other.mutedBadgeColor),

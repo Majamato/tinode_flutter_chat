@@ -4,6 +4,7 @@ import 'package:tinode_flutter_chat/src/attachments/application/file_download_co
 import 'package:tinode_flutter_chat/src/attachments/domain/file_download_state.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
@@ -58,7 +59,7 @@ class FileBubbleContent extends ConsumerWidget {
                   _ => Icon(
                     _iconFor(TinodeChatIcons.of(context), file.mimeType),
                     color: color,
-                    size: 32,
+                    size: ChatIconSize.xlarge,
                   ),
                 },
               ),

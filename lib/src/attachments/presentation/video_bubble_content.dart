@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/attachments/application/file_download_controller.dart';
@@ -11,6 +10,7 @@ import 'package:tinode_flutter_chat/src/attachments/presentation/stand_in_pictur
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_duration_chip.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_play_glyph.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_player_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
@@ -87,7 +87,7 @@ class VideoBubbleContent extends ConsumerWidget {
                       DownloadFailed() => Icon(
                         TinodeChatIcons.of(context).retry,
                         color: Colors.white,
-                        size: 26,
+                        size: ChatIconSize.large,
                       ),
                       _ => null,
                     },

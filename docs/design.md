@@ -75,6 +75,31 @@ Timers and durations use tabular figures.
 24 px [Phosphor](https://phosphoricons.com) strokes (`TinodeChatIcons`), never emoji: Regular,
 Fill for the current tab, play, pause and hang up, Bold for the small ticks and the send arrow.
 
+Icons are drawn in one of three roles, from `TinodeChatTheme`:
+
+| Role | Color | For |
+|---|---|---|
+| Action | `iconColor` (`onSurface`) | Anything you can tap: back, app bars, the composer, rows |
+| Passive | `iconPassiveColor` (`onSurfaceVariant`) | What only informs: chevrons, field hints, previews, the muted mark |
+| Selected or primary | `linkColor` with the Fill glyph, or on a filled `actionColor` | The current tab, a tonal main action, Send |
+
+Color means state, so brand color stays off the chrome. Unchanged by role: white on media, the
+call screens' own colors, `colorScheme.error` for what destroys, `missedCallColor`, read ticks and
+icons on a filled surface. `ChatThemeScope` makes the action color and 24 px the default of every
+icon and icon button in the chat, whatever `ThemeData` the host has.
+
+Sizes are `ChatIconSize`, never a number:
+
+| Name | Px | For |
+|---|---|---|
+| `tiny` | 14 | Ticks, chips on media |
+| `small` | 16 | Indicators in a line of text |
+| `label` | 18 | Beside a label or a field's hint |
+| `standard` | 24 | App bars, the composer, tabs, tiles, rows |
+| `large` | 28 | Alone in a large round control: calls, play, retry |
+| `xlarge` | 32 | File icons in a bubble |
+| `hero` | 64 | The one thing on a screen |
+
 ## Bubbles
 
 - Fully rounded, at most 78% of the width. The last bubble of a run has a tail at its bottom
@@ -140,7 +165,7 @@ them.
 - **App bar** (`TinodeAppBar`): a 44 px row 6 px under the status bar, 8 px from the sides,
   its pieces 8 px apart: a leading capsule (the back button on every screen that can go back),
   the title (`titleLarge`, centred, or a capsule of
-  its own), round 44 px buttons (`GlassIconButton`, 22 px icons in `onSurface`), then an
+  its own), round 44 px buttons (`GlassIconButton`, 24 px icons in `iconColor`), then an
   optional bottom row such as a search pill. Buttons that belong together share one island of
   glass instead, 40 px wide each with 2 px at its ends (the chat's search and calls), leaving
   the title more room. Behind it an **edge fade** (`EdgeFade`) of the
@@ -155,7 +180,7 @@ them.
   times at most. Every screen with an app bar uses it; a host wraps or replaces it with
   `TinodeChat.appBarBuilder`, which gets the `TinodeScreen`.
 - **Back button** (`TinodeBackButton`): a 44 px glass capsule, its 24 px chevron and its label
-  (`titleMedium`, 600) in `linkColor`, at most 45 % of the screen wide. The chevron alone is the
+  (`titleMedium`, 600) in `iconColor`, at most 45 % of the screen wide. The chevron alone is the
   default. Only Profile, Account, Appearance and Change password add a label, cut with an
   ellipsis, naming the screen they go back to ("‹ Settings", "‹ Chats", "‹ Account"). The chat
   itself has the chevron and its unread count. A bar whose title is a field (find people,
@@ -183,7 +208,7 @@ them.
   in `linkColor` while unread, else `outline`); then the preview (`bodyMedium` in `outline`) and
   the unread badge (a 22 px stadium in `unreadBadgeColor`, `mutedBadgeColor` when muted). The
   divider (`outlineVariant`) runs under the text only.
-- Preview icons, 15 px in `linkColor`: a mic for voice, a doc for files, a phone or camera for
+- Preview icons, 16 px in `iconPassiveColor`: a mic for voice, a doc for files, a phone or camera for
   calls (`missedCallColor` when missed); a photo shows its inline thumbnail (18 px, radius 4).
   In groups the sender comes first, in `onSurface` 600.
 - The first rows fade up 14 px over 420 ms, 40 ms apart, once per screen. Reduce motion shows
@@ -206,7 +231,7 @@ them.
   background in under the system's own bars instead, solid from the screen's edge to their
   middle and clear at their top; touches there stop. A lens (`tabBarLensColor`: `primary` at 10 % in light, white at 14 % in dark,
   radius 27) slides under the current tab on `springCurve`. Each tab is a 24 px icon over an
-  11/700 label, in `linkColor` when current, else `outline`. The chats tab carries the unread
+  11/700 label, in `linkColor` when current, else `iconPassiveColor`. The chats tab carries the unread
   count of chats that aren't muted (an 18 px `unreadBadgeColor` stadium, "99+" above 99). A
   pick ticks the haptics; screen readers hear the tabs as tabs, the current one selected, and the
   unread count.
@@ -220,7 +245,7 @@ them.
   48 px avatar, the chat's name (`missedCallColor` when the user missed the call), then the
   direction arrow (bent when the call didn't happen), the kind and how it went ("Voice call ·
   4:12", "Video call · Missed") in `outline`, the time as in the chat list, and a button to the
-  chat in `linkColor`. A tap calls back, by the same kind, or the other when the host leaves that
+  chat in `iconColor`. A tap calls back, by the same kind, or the other when the host leaves that
   one out. Pull to fetch again.
 - "Calls" turns into the reconnecting title while the link is down, as on the chat list.
   Settings and Appearance don't show it.
@@ -233,12 +258,12 @@ them.
   status" with an adaptive switch (disabled while the profile can't be read or the change
   saves; a failed save shows a snack bar) and a footer (`bodySmall` in `outline`) saying that
   other Tinode apps may still show it; Log out in `colorScheme.error`. Rows are at least 52 px,
-  with a `linkColor` icon and a chevron, or a trailing switch instead.
+  with an `iconColor` icon and an `iconPassiveColor` chevron, or a trailing switch instead.
 - Section labels are `labelMedium`, upper case, in `outline` (`SettingsLabel`).
 
 ## Appearance
 
-- Under a glass app bar, a "‹ Settings" pill in `linkColor` and "Appearance": a preview card (radius
+- Under a glass app bar, a "‹ Settings" pill in `iconColor` and "Appearance": a preview card (radius
   24) with the wallpaper and two bubbles with tails, the answer naming the
   palette and popping in again from its tail (.6 → 1.06 → 1, 380 ms) when it changes.
 - **Color** (when the host offers more than one palette): five swatches to a row on a card,
@@ -258,11 +283,10 @@ them.
   (`titleLarge`) and subtitle (`bodySmall` in `outline`) sit under the handle, 24 px in. Rows that
   pass the height Material allows scroll inside.
 - **Rows** (`ChatSheetAction`): at least 56 px, the ripple a rounded pill 8 px in from the sides
-  (`buttonRadius`); a 40 px rounded square (radius 12) in the row's tint @ 12 % behind a 22 px
-  icon in the tint, then the label (`bodyLarge` 600). The tint is `linkColor` unless the row sets
-  one: Attach tints Photos (or Gallery), Camera and File with `senderNameColors` blue, pink and
-  purple, the first two with a subtitle. What
-  deletes or discards is `destructive`: icon, square and label in `colorScheme.error`. A tap
+  (`buttonRadius`); a 40 px rounded square (radius 12) in `colorScheme.surfaceContainer` behind a
+  24 px icon in `iconColor`, then the label (`bodyLarge` 600). What
+  deletes or discards is `destructive`: icon and label in `colorScheme.error`, the square that
+  color @ 12 %. A tap
   ticks the haptics.
 - Read by lists the members under its title, with "Delivered to" as an upper-case
   `labelMedium` label in `outline`.

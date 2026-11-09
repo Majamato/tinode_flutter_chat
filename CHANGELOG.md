@@ -1,5 +1,10 @@
 ## Unreleased
 
+- **Behaviour change:** icons follow one standard. What you can tap is near-black, what only
+  informs is grey, and the brand color marks only what is selected or primary. The back button,
+  settings rows and sheet rows lose their brand or multicolored tints, and chrome icons are all
+  24 px.
+- **Breaking:** `TinodeChatTheme`'s constructor requires `iconColor` and `iconPassiveColor`.
 - **New:** videos. The attach menu's first row, Photos on iOS and Gallery elsewhere, picks a
   photo or a video, and Camera opens an in-app camera that takes either (CamerAwesome), saving
   what it takes to the device's photos. Videos are sent as Tinode's `VD` with an inline poster,

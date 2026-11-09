@@ -35,7 +35,7 @@ void main() {
 
   Color iconColor(WidgetTester tester) => tester.widget<Icon>(chevron()).color!;
 
-  testWidgets('names the screen it goes back to, in the link colour', (
+  testWidgets('names the screen it goes back to, in the icon colour', (
     tester,
   ) async {
     await pumpOnRoute(tester, const TinodeBackButton(label: Text('Settings')));
@@ -43,9 +43,9 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(chevron(), findsOneWidget);
     final context = tester.element(find.text('Settings'));
-    final link = TinodeChatTheme.of(context).linkColor;
-    expect(iconColor(tester), link);
-    expect(DefaultTextStyle.of(context).style.color, link);
+    final color = TinodeChatTheme.of(context).iconColor;
+    expect(iconColor(tester), color);
+    expect(DefaultTextStyle.of(context).style.color, color);
     expect(tester.getSize(find.byType(TinodeBackButton)).height, 44);
   });
 

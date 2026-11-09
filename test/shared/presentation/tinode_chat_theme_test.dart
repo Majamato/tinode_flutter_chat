@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_neutrals.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 const _white = Color(0xFFFFFFFF);
@@ -25,6 +26,8 @@ void main() {
       expect(theme.readReceiptColor, palette.primary);
       expect(theme.unreadBadgeColor, palette.primary);
       expect(theme.linkColor, palette.ink);
+      expect(theme.iconColor, ChatNeutrals.light.text);
+      expect(theme.iconPassiveColor, ChatNeutrals.light.muted);
       expect(theme.wallpaperColor, palette.lightWallpaper);
     });
 
@@ -39,6 +42,8 @@ void main() {
       expect(theme.actionColor, palette.night);
       expect(theme.unreadBadgeColor, palette.night);
       expect(theme.linkColor, palette.onDark);
+      expect(theme.iconColor, ChatNeutrals.dark.text);
+      expect(theme.iconPassiveColor, ChatNeutrals.dark.muted);
       expect(theme.wallpaperColor, isNot(palette.soft));
     });
 
@@ -259,6 +264,8 @@ final List<(String, Object? Function(TinodeChatTheme))> _fields = [
   ('glassColor', (t) => t.glassColor),
   ('glassEdgeColor', (t) => t.glassEdgeColor),
   ('linkColor', (t) => t.linkColor),
+  ('iconColor', (t) => t.iconColor),
+  ('iconPassiveColor', (t) => t.iconPassiveColor),
   ('unreadBadgeColor', (t) => t.unreadBadgeColor),
   ('onUnreadBadgeColor', (t) => t.onUnreadBadgeColor),
   ('mutedBadgeColor', (t) => t.mutedBadgeColor),

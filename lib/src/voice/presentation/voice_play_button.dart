@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
@@ -39,7 +40,7 @@ class VoicePlayButton extends StatelessWidget {
       face = Icon(
         playing ? icons.pause : icons.play,
         color: iconColor,
-        size: 26,
+        size: ChatIconSize.large,
       );
     }
     return Semantics(

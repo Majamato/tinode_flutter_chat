@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// A round [GlassSurface] button with an icon in [color] (`onSurface` by
-/// default), as in the app bar and the composer. [tonal] makes it a solid
-/// `primaryContainer` circle with the icon in `onPrimaryContainer`, for a
-/// screen's main action. [onPressed] null disables it. [onGlass] leaves
-/// out its own glass, for buttons sharing one island of glass (the chat's
-/// app bar actions). Watches nothing.
+/// A round [GlassSurface] button with an icon in [color] (the theme's
+/// `iconColor` by default), as in the app bar and the composer. [tonal]
+/// makes it a solid `primaryContainer` circle with the icon in
+/// `onPrimaryContainer`, for a screen's main action. [onPressed] null
+/// disables it. [onGlass] leaves out its own glass, for buttons sharing one
+/// island of glass (the chat's app bar actions). Watches nothing.
 class GlassIconButton extends StatelessWidget {
   const GlassIconButton({
     required this.icon,
@@ -41,16 +43,17 @@ class GlassIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final chat = TinodeChatTheme.of(context);
     final button = IconButton(
       onPressed: onPressed,
       tooltip: tooltip,
-      color: color ?? (tonal ? colors.onPrimaryContainer : colors.onSurface),
+      color: color ?? (tonal ? colors.onPrimaryContainer : chat.iconColor),
       padding: EdgeInsets.zero,
       constraints: BoxConstraints.tightFor(
         width: onGlass ? islandWidth : size,
         height: size,
       ),
-      icon: Icon(icon, size: 22),
+      icon: Icon(icon, size: ChatIconSize.standard),
     );
     return onGlass ? button : GlassSurface(tonal: tonal, child: button);
   }

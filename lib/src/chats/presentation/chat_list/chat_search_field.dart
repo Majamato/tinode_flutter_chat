@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// What looks like a search field under the chat list's app bar: a pill
 /// that opens the search for people and groups, filled like an input in
@@ -29,7 +31,11 @@ class ChatSearchField extends StatelessWidget implements PreferredSizeWidget {
         child: Row(
           children: [
             const SizedBox(width: 14),
-            Icon(TinodeChatIcons.of(context).search, size: 18, color: muted),
+            Icon(
+              TinodeChatIcons.of(context).search,
+              size: ChatIconSize.label,
+              color: TinodeChatTheme.of(context).iconPassiveColor,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

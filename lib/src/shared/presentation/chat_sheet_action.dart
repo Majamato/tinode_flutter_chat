@@ -1,20 +1,19 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// One row of a `ChatSheet`: the [icon] in [tint] (the link colour by
-/// default) on a rounded square of the same tint, the [label] and an
-/// optional [subtitle]. A [destructive] row is in the error colour. A tap
-/// ticks the haptics, then runs [onTap]. Watches nothing.
+/// One row of a `ChatSheet`: the [icon] in the icon colour on a neutral
+/// rounded square, the [label] and an optional [subtitle]. A [destructive]
+/// row is in the error colour, on a square of that tint. A tap ticks the
+/// haptics, then runs [onTap]. Watches nothing.
 class ChatSheetAction extends StatelessWidget {
   const ChatSheetAction({
     required this.icon,
     required this.label,
     required this.onTap,
     this.subtitle,
-    this.tint,
     this.destructive = false,
     super.key,
   });
@@ -23,7 +22,6 @@ class ChatSheetAction extends StatelessWidget {
   final String label;
   final String? subtitle;
   final VoidCallback onTap;
-  final Color? tint;
   final bool destructive;
 
   @override
@@ -31,7 +29,7 @@ class ChatSheetAction extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final chat = TinodeChatTheme.of(context);
-    final tint = destructive ? colors.error : this.tint ?? chat.linkColor;
+    final iconColor = destructive ? colors.error : chat.iconColor;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: MergeSemantics(
@@ -51,12 +49,18 @@ class ChatSheetAction extends StatelessWidget {
                   children: [
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        color: tint.withValues(alpha: 0.12),
+                        color: destructive
+                            ? colors.error.withValues(alpha: 0.12)
+                            : colors.surfaceContainer,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: SizedBox.square(
                         dimension: 40,
-                        child: Icon(icon, size: 22, color: tint),
+                        child: Icon(
+                          icon,
+                          size: ChatIconSize.standard,
+                          color: iconColor,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 14),

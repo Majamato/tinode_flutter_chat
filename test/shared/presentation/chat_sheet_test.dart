@@ -37,16 +37,14 @@ void main() {
     return result;
   }
 
-  Widget action(String label, {Color? tint, bool destructive = false}) =>
-      Builder(
-        builder: (context) => ChatSheetAction(
-          icon: Icons.star,
-          label: label,
-          tint: tint,
-          destructive: destructive,
-          onTap: () => Navigator.of(context).pop(label),
-        ),
-      );
+  Widget action(String label, {bool destructive = false}) => Builder(
+    builder: (context) => ChatSheetAction(
+      icon: Icons.star,
+      label: label,
+      destructive: destructive,
+      onTap: () => Navigator.of(context).pop(label),
+    ),
+  );
 
   testWidgets('is a docked Material sheet with a drag handle', (tester) async {
     await open(tester, ChatSheet(children: [action('One')]));
@@ -75,25 +73,34 @@ void main() {
     expect(find.byType(ChatSheet), findsNothing);
   });
 
-  testWidgets('a row takes its tint; a destructive one the error colour', (
+  testWidgets('a row is neutral; a destructive one in the error colour', (
     tester,
   ) async {
     await open(
       tester,
       ChatSheet(
-        children: [
-          action('Keep', tint: Colors.teal),
-          action('Delete', destructive: true),
-        ],
+        children: [action('Keep'), action('Delete', destructive: true)],
       ),
     );
-    final error = Theme.of(
-      tester.element(find.text('Delete')),
-    ).colorScheme.error;
+    final context = tester.element(find.text('Delete'));
+    final colors = Theme.of(context).colorScheme;
+    final error = colors.error;
     final icons = tester.widgetList<Icon>(find.byIcon(Icons.star)).toList();
+    final squares = tester
+        .widgetList<DecoratedBox>(
+          find.ancestor(
+            of: find.byIcon(Icons.star),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .map((box) => (box.decoration as BoxDecoration).color)
+        .toList();
 
-    expect(icons.first.color, Colors.teal);
+    expect(icons.first.color, TinodeChatTheme.of(context).iconColor);
+    expect(icons.first.size, 24);
     expect(icons.last.color, error);
+    expect(squares, contains(colors.surfaceContainer));
+    expect(squares, contains(error.withValues(alpha: 0.12)));
     expect(tester.widget<Text>(find.text('Delete')).style?.color, error);
     expect(tester.widget<Text>(find.text('Keep')).style?.color, isNot(error));
   });

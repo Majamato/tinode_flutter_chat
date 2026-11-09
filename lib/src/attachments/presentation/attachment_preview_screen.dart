@@ -1,11 +1,11 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_player_view.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
@@ -87,7 +87,7 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
                     : Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(icons.file, size: 64),
+                          Icon(icons.file, size: ChatIconSize.hero),
                           const SizedBox(height: 8),
                           Text(file.name, textAlign: TextAlign.center),
                           Text(fileSizeLabel(file.length)),

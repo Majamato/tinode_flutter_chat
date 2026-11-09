@@ -87,6 +87,9 @@ business logic in UI files. Flutter's own guidance is in
   (`voiceCall`, not `phone`) with a Phosphor default for a new icon; an on or selected state gets
   its own field (`chatsTabSelected`). Only `tinode_chat_icons.dart` imports Phosphor. Helpers
   that pick an icon outside `build` take the `TinodeChatIcons`, as `CallRecordTexts.icon` does.
+- Icon colors are roles: leave an icon you can tap to `iconColor`, the default, and use
+  `iconPassiveColor` for one that only informs (docs/design.md). Sizes are `ChatIconSize`, never a
+  number; `test/architecture/icon_size_test.dart` enforces it.
 - No hard-coded colors: use `TinodeChatTheme.of(context)` or `Theme.of(context).colorScheme`. Add a
   field to `TinodeChatTheme` (and to `copyWith`, `lerp`, `fallback`) for new chat-specific colors.
 - Widgets must work at phone width and in dark mode.

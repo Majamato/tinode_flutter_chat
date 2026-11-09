@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 
 /// The round play mark over a video's poster, or [busy] in its place (a
@@ -26,7 +27,7 @@ class VideoPlayGlyph extends StatelessWidget {
               Icon(
                 TinodeChatIcons.of(context).play,
                 color: Colors.white,
-                size: 28,
+                size: ChatIconSize.large,
               ),
         ),
       ),

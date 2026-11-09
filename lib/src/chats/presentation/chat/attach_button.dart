@@ -26,7 +26,6 @@ class AttachButton extends ConsumerWidget {
     return GlassIconButton(
       tooltip: TinodeChatStrings.of(context).attach,
       icon: TinodeChatIcons.of(context).attach,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
       onPressed: () => unawaited(_attach(context, ref)),
     );
   }

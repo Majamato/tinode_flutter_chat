@@ -4,6 +4,7 @@ import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_minimized.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/call_status_text.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
@@ -80,7 +81,7 @@ class _Bar extends ConsumerWidget {
                     children: [
                       Icon(
                         call.video ? icons.videoCall : icons.voiceCall,
-                        size: 18,
+                        size: ChatIconSize.label,
                         color: colors.onPrimary,
                       ),
                       const SizedBox(width: 8),

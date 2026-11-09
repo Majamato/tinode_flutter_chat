@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// What a [CallRoundButton] looks like.
@@ -71,7 +72,7 @@ class CallRoundButton extends StatelessWidget {
             : null,
       ),
       child: IconTheme.merge(
-        data: IconThemeData(color: foreground, size: 26),
+        data: IconThemeData(color: foreground, size: ChatIconSize.large),
         child: Center(child: icon),
       ),
     );
