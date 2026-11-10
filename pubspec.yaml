@@ -9,8 +9,8 @@ topics:
   - ui
 
 environment:
-  sdk: ^3.10.7
-  flutter: ">=3.38.0"
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
 
 dependencies:
   camerawesome: ^2.5.0
@@ -43,7 +43,7 @@ dependencies:
   super_sliver_list: ^0.4.1
   tinode_dart_client:
     path: ../tinode_dart_client
-  v_video_compressor: ^2.2.1
+  v_video_compressor: ^2.2.3
   video_player: ^2.11.1
   web_socket: ^1.0.1
   webrtc_interface: ^1.5.1
@@ -58,3 +58,4 @@ dev_dependencies:
     sdk: flutter
   riverpod_generator: 4.0.0+1
   very_good_analysis: 10.1.0
+  video_player_platform_interface: ^6.9.0

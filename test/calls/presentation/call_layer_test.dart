@@ -272,7 +272,7 @@ void main() {
     );
     expect(
       tester.getSemantics(find.bySemanticsLabel('Mute')),
-      containsSemantics(hasToggledState: true, isToggled: false),
+      isSemantics(hasToggledState: true, isToggled: false),
     );
 
     await tester.tap(find.text('Mute'));
@@ -281,11 +281,11 @@ void main() {
     expect(media.last.log, containsAll(['mic off', 'speaker on']));
     expect(
       tester.getSemantics(find.bySemanticsLabel('Unmute')),
-      containsSemantics(hasToggledState: true, isToggled: true),
+      isSemantics(hasToggledState: true, isToggled: true),
     );
     expect(
       tester.getSemantics(find.bySemanticsLabel('Turn speaker off')),
-      containsSemantics(hasToggledState: true, isToggled: true),
+      isSemantics(hasToggledState: true, isToggled: true),
     );
 
     await tester.tap(find.text('End'));

@@ -1,4 +1,5 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/compressed_media.dart';
 
 /// An open session ended without the user closing it.
 final class ConnectionLostException implements Exception {
@@ -19,15 +20,14 @@ final class FileTooLargeException implements Exception {
   String toString() => 'FileTooLargeException($limit)';
 }
 
-/// A video plays too long to fit the size limit once compressed; it was
-/// not queued. [max] is the longest that fits.
+/// A picked video plays longer than [limit]; it was not copied in.
 final class VideoTooLongException implements Exception {
-  const VideoTooLongException(this.max);
+  const VideoTooLongException(this.limit);
 
-  final Duration max;
+  final Duration limit;
 
   @override
-  String toString() => 'VideoTooLongException($max)';
+  String toString() => 'VideoTooLongException($limit)';
 }
 
 /// What went wrong, in terms the UI can explain to the user.
@@ -63,7 +63,10 @@ enum ChatFailure {
   wrongCode,
 
   /// The chat was deleted, or the user is no longer in it.
-  gone;
+  gone,
+
+  /// A video this device can't decode, so it can't be compressed.
+  unsupportedFormat;
 
   static ChatFailure of(Object error) => switch (error) {
     ServerUnreachableException() => unreachable,
@@ -71,6 +74,7 @@ enum ChatFailure {
     FileTooLargeException() ||
     VideoTooLongException() ||
     ServerException(code: 413) => tooLarge,
+    UnsupportedVideoFormatException() => unsupportedFormat,
     ServerException(code: 401) => badCredentials,
     CredentialsRequiredException() => credentialsRequired,
     ServerException() => rejected,

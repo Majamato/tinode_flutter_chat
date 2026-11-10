@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -14,6 +15,10 @@ final class FakeAttachmentPicker implements AttachmentPicker {
   /// What the next pick returns; null as if the user cancelled.
   PickedFile? next;
 
+  /// When set, a pick waits for it and returns what it brings, as a slow
+  /// picker would; else it returns [next] at once.
+  Completer<PickedFile?>? hold;
+
   /// What every pick throws while set, as a broken picker would.
   Exception? failWith;
 
@@ -28,6 +33,9 @@ final class FakeAttachmentPicker implements AttachmentPicker {
     picks.add(source);
     if (failWith case final error?) {
       throw error;
+    }
+    if (hold case final hold?) {
+      return hold.future;
     }
     final file = next;
     next = null;

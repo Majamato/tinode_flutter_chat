@@ -360,6 +360,14 @@ void main() {
       expect(limits.maxVideoDuration.inSeconds, 92);
     });
 
+    test('a compressed video may weigh 10% more, within the server limit', () {
+      expect(limits.compressedVideoBytesLimit(null), 22 * 1024 * 1024);
+      expect(
+        limits.compressedVideoBytesLimit(21 * 1024 * 1024),
+        21 * 1024 * 1024,
+      );
+    });
+
     test('the server lowers the limit, never raises it', () {
       expect(limits.videoBytesLimit(null), 20 * 1024 * 1024);
       expect(limits.videoBytesLimit(8 * 1024 * 1024), 8 * 1024 * 1024);

@@ -22,9 +22,10 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
 - Sends plain text and marks what the user sees as read.
 - Sends and shows images, videos and files: an attach button offers Photos (Gallery on Android)
   for a photo or a video, Camera (an in-app camera that takes either, and saves what it takes to
-  the device's photos) and File, then a preview with a caption. Photos and videos are compressed
-  on the device before they go, and a video must fit 20 MiB once compressed (see
-  `TinodeAttachmentLimits`). Their bubble shows at once, with the compression's and then the
+  the device's photos) and File, then a preview with a caption. Photos are compressed on the
+  device before they go; a video within 20 MiB goes as it is, and one over it is compressed to
+  fit (see `TinodeAttachmentLimits`). The preview trims a video, and one too long to fit opens
+  with as much as fits chosen. Their bubble shows at once, with the compression's and then the
   upload's progress in numbers; both carry on when the user leaves the chat, and wait in the
   outbox like any message. Images show in the chat and open full screen; videos show their poster
   and length, and play full screen; files show their name and size, and a tap downloads and opens
@@ -421,20 +422,25 @@ TinodeChat(
 Message search finds only what the cache keeps, so `messagesPerChat` is also how far back it
 reaches. Files waiting to be sent never count and are never pruned.
 
-Photos and videos shrink before they are sent, and a video must fit a size limit once compressed:
+Photos shrink before they are sent, and a video must fit a size limit, compressed first only if
+it is over:
 
 ```dart
 TinodeChat(
   config: config,
   attachmentLimits: const TinodeAttachmentLimits(
     maxVideoBytes: 20 * 1024 * 1024, // the default; the server's limit wins when lower
-    videoBitrate: 1500000, // bits per second, at about 720p
+    videoBitrate: 1500000, // bits per second, at about 720p; asked again, at 480p, if overshot
+    maxSourceVideoBytes: 500 * 1024 * 1024, // the default: larger picked videos are refused
+    maxSourceVideoDuration: Duration(minutes: 10), // the default, likewise
     maxPhotoSide: 2048, // pixels, JPEG at photoQuality 85
   ),
 )
 ```
 
-The server must accept files that large too (`max_file_upload_size` in `tinode.conf`).
+A compressed video may come out up to 10% over `maxVideoBytes` (22 MiB by default), as some
+encoders miss their bitrate, so the server must accept files that large too
+(`max_file_upload_size` in `tinode.conf`); when its limit is lower, that wins.
 
 The calls history is built from the cache too. Each time the calls tab shows, it fetches the
 newest messages of the direct chats the cache is behind on (at most 30, three at a time), so

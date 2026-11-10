@@ -7,8 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/compressed_media.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/tinode_attachment_limits.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/video_trim.dart';
 import 'package:tinode_flutter_chat/src/offline/data/cached_tinode_session.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
@@ -33,6 +35,12 @@ void main() {
   /// A 3 MB limit: at the default bitrates, about 13 seconds of video.
   const limits = TinodeAttachmentLimits(maxVideoBytes: 3 * 1024 * 1024);
 
+  /// Just too large to go as it is, so it has to be compressed.
+  final overLimit = limits.maxVideoBytes + 1;
+
+  /// Just too large once compressed, even with the encoder's tolerance.
+  final overCeiling = limits.compressedVideoBytesLimit(null) + 1;
+
   CachedTinodeSession open() {
     final session = CachedTinodeSession(
       remote,
@@ -52,7 +60,8 @@ void main() {
       ..loggedIn = true;
     files = MemoryFileStore();
     database = ChatDatabase(NativeDatabase.memory());
-    compressor = FakeMediaCompressor(poster: Uint8List.fromList([7, 7, 7]));
+    compressor = FakeMediaCompressor(poster: Uint8List.fromList([7, 7, 7]))
+      ..videoLength = 1000;
     events = [];
     session = open();
   });
@@ -64,9 +73,9 @@ void main() {
     }
   }
 
-  PickedFile video({int length = 1000}) => pickedFile(
+  PickedFile video({int? length}) => pickedFile(
     'clip.mov',
-    List.filled(length, 1),
+    List.filled(length ?? overLimit, 1),
     mimeType: 'video/quicktime',
     isVideo: true,
   );
@@ -82,7 +91,7 @@ void main() {
       await session.sendAttachment(bob, video(), caption: 'Look');
       await idle();
 
-      expect(compressor.calls, ['video 1000']);
+      expect(compressor.calls, ['video $overLimit']);
       expect(
         remote.calls,
         containsAllInOrder(['upload clip.mp4', 'publish $bob   Look']),
@@ -164,16 +173,16 @@ void main() {
       expect(remote.histories[bob], hasLength(1));
     });
 
-    test('too long to fit is refused before it is queued', () async {
+    test("that can't fit is refused by size before it is queued", () async {
       compressor.info = const VideoInfo(duration: Duration(minutes: 3));
 
       await expectLater(
-        session.sendAttachment(bob, video(length: 50 * 1024 * 1024)),
+        session.sendAttachment(bob, video()),
         throwsA(
-          isA<VideoTooLongException>().having(
-            (e) => e.max,
-            'max',
-            limits.maxVideoDuration,
+          isA<FileTooLargeException>().having(
+            (e) => e.limit,
+            'limit',
+            limits.maxVideoBytes,
           ),
         ),
       );
@@ -182,24 +191,289 @@ void main() {
       expect(compressor.calls, isEmpty);
     });
 
-    test('small enough as it is passes the estimate, however long', () async {
-      compressor.info = const VideoInfo(duration: Duration(minutes: 3));
+    PickedFile picked({required int length}) => PickedFile(
+      name: 'clip.mov',
+      length: length,
+      openRead: () => Stream.value(const [1, 2, 3]),
+      path: '/picked/clip.mov',
+      isVideo: true,
+    );
+
+    test('as long and large as can be picked is staged', () async {
+      compressor.info = VideoInfo(duration: limits.maxSourceVideoDuration);
+
+      final staged = await session.stageAttachment(
+        picked(length: limits.maxSourceVideoBytes),
+      );
+
+      expect(files.stagedIds, [staged.stagedId]);
+      expect(staged.duration, limits.maxSourceVideoDuration);
+      expect(await session.storedOutgoing(bob), isEmpty);
+    });
+
+    test('larger than can be picked is refused before it is copied', () async {
+      await expectLater(
+        session.stageAttachment(picked(length: limits.maxSourceVideoBytes + 1)),
+        throwsA(
+          isA<FileTooLargeException>().having(
+            (e) => e.limit,
+            'limit',
+            limits.maxSourceVideoBytes,
+          ),
+        ),
+      );
+      expect(files.stagedIds, isEmpty);
+    });
+
+    test('longer than can be picked is refused before it is copied', () async {
+      compressor.info = VideoInfo(
+        duration: limits.maxSourceVideoDuration + const Duration(seconds: 1),
+      );
+
+      await expectLater(
+        session.stageAttachment(picked(length: overLimit)),
+        throwsA(
+          isA<VideoTooLongException>().having(
+            (e) => e.limit,
+            'limit',
+            limits.maxSourceVideoDuration,
+          ),
+        ),
+      );
+      expect(files.stagedIds, isEmpty);
+    });
+
+    group('trimmed', () {
+      const minute = Duration(minutes: 1);
+      final trim = VideoTrim(minute, minute * 2);
+
+      Future<OutgoingAttachment> staged() {
+        compressor.info = const VideoInfo(duration: Duration(minutes: 30));
+        return session.stageAttachment(video());
+      }
+
+      test('compressed again, smaller, keeps its part', () async {
+        compressor
+          ..videoLength = overCeiling
+          ..smallerVideoLength = 1000;
+        final trimmed = await session.trimStaged(await staged(), trim);
+
+        await session.sendStaged(bob, trimmed);
+        await idle();
+
+        expect(compressor.calls.last, startsWith('smaller video'));
+        expect(compressor.trims, [trim, trim]);
+        expect(remote.histories[bob], hasLength(1));
+      });
+
+      test('compresses only its part, and says how long that is', () async {
+        final trimmed = await session.trimStaged(await staged(), trim);
+
+        await session.sendStaged(bob, trimmed);
+        await idle();
+
+        expect(compressor.trims, [trim]);
+        final sent = (remote.histories[bob]!.single.content as DraftyContent)
+            .drafty
+            .videos
+            .single;
+        expect(sent.duration, minute);
+      });
+
+      test('however long the video, is not refused', () async {
+        final trimmed = await session.trimStaged(await staged(), trim);
+
+        await expectLater(session.sendStaged(bob, trimmed), completes);
+      });
+
+      test('within the limit still has to be cut', () async {
+        compressor.info = const VideoInfo(duration: Duration(minutes: 5));
+        final whole = await session.stageAttachment(video(length: 1000));
+        expect(whole.pendingCompression, isFalse);
+
+        final trimmed = await session.trimStaged(whole, trim);
+        await session.sendStaged(bob, trimmed);
+        await idle();
+
+        expect(compressor.calls, ['video 1000']);
+        expect(compressor.trims, [trim]);
+      });
+
+      test('takes a new poster from where its part starts', () async {
+        final original = await staged();
+        compressor.poster = Uint8List.fromList([9, 9]);
+
+        final trimmed = await session.trimStaged(original, trim);
+
+        expect(compressor.posterTimes, [Duration.zero, minute]);
+        expect(trimmed.poster, [9, 9]);
+      });
+
+      test('from the very start keeps the poster it has', () async {
+        final trimmed = await session.trimStaged(
+          await staged(),
+          const VideoTrim(Duration.zero, minute),
+        );
+
+        expect(compressor.posterTimes, [Duration.zero]);
+        expect(trimmed.poster, [7, 7, 7]);
+      });
+
+      test('an app closed while compressing cuts the same part', () async {
+        final folder = Directory.systemTemp.createTempSync('outbox');
+        addTearDown(() => folder.deleteSync(recursive: true));
+        final file = File('${folder.path}/chat.sqlite');
+        FakeTinodeSession link() =>
+            FakeTinodeSession(chats: [chat(bob, name: 'Bob')])..loggedIn = true;
+        await session.close();
+        remote = link();
+        database = ChatDatabase(NativeDatabase(file));
+        session = open();
+        compressor.videoSteps = StreamController<double>();
+        final trimmed = await session.trimStaged(await staged(), trim);
+        await session.sendStaged(bob, trimmed);
+        await idle();
+        await session.close();
+        await compressor.videoSteps!.close();
+        compressor.videoSteps = null;
+
+        remote = link();
+        database = ChatDatabase(NativeDatabase(file));
+        session = open();
+        await idle();
+
+        expect(compressor.trims, [trim, trim]);
+        expect(remote.histories[bob], hasLength(1));
+      });
+    });
+
+    test('within the limit goes as it is, however long', () async {
+      compressor.info = const VideoInfo(
+        duration: Duration(minutes: 5),
+        width: 1280,
+        height: 720,
+      );
+
+      final queued = await session.sendAttachment(bob, video(length: 1000));
+      expect(queued.attachment!.pendingCompression, isFalse);
+      expect(queued.attachment!.poster, [7, 7, 7]);
+      expect(queued.attachment!.duration, const Duration(minutes: 5));
+      await idle();
+
+      expect(compressor.calls, isEmpty);
+      expect(events.whereType<CompressProgress>(), isEmpty);
+      expect(callsStarting('upload'), ['upload clip.mov']);
+      final sent = (remote.histories[bob]!.single.content as DraftyContent)
+          .drafty
+          .videos
+          .single;
+      expect(sent.mimeType, 'video/quicktime');
+      expect(sent.preview, [7, 7, 7]);
+      expect((sent.width, sent.height), (1280, 720));
+    });
+
+    test('exactly at the limit goes as it is', () async {
+      await session.sendAttachment(bob, video(length: limits.maxVideoBytes));
+      await idle();
+
+      expect(compressor.calls, isEmpty);
+      expect(remote.histories[bob], hasLength(1));
+    });
+
+    test('a lower server limit counts', () async {
+      remote.serverInfo = const ServerInfo(
+        version: '0.25',
+        maxFileUploadSize: 2 * 1024 * 1024 + 500000,
+      );
+      compressor.videoLength = 1000;
+
+      await session.sendAttachment(
+        bob,
+        video(length: 2 * 1024 * 1024 + 500001),
+      );
+      await idle();
+
+      expect(compressor.calls, ['video ${2 * 1024 * 1024 + 500001}']);
+    });
+
+    test('over the limit once compressed is compressed again, smaller, at '
+        'a bitrate cut by as much as the encoder overshot, and sent', () async {
+      // As an encoder that won't go below a minimum quality does.
+      compressor
+        ..videoLength = overCeiling
+        ..smallerVideoLength = 1000;
 
       await session.sendAttachment(bob, video());
       await idle();
 
+      final bitrate = limits.secondPassVideoBitrate(
+        asked: limits.videoBitrate,
+        outputBytes: overCeiling,
+        duration: const Duration(seconds: 10),
+        limitBytes: limits.maxVideoBytes,
+      );
+      expect(bitrate, lessThan(limits.videoBitrate));
+      expect(compressor.calls, [
+        'video $overLimit',
+        'smaller video $overLimit at $bitrate',
+      ]);
+      expect(callsStarting('upload'), ['upload clip.mp4']);
       expect(remote.histories[bob], hasLength(1));
+      expect(await session.storedOutgoing(bob), isEmpty);
     });
 
-    test('still too large once compressed is not sent', () async {
+    test('compressed again, its progress starts over', () async {
+      compressor
+        ..videoLength = overCeiling
+        ..smallerVideoLength = 1000;
+      await session.sendAttachment(bob, video());
+      await idle();
+
+      expect(events.whereType<CompressProgress>().map((e) => e.fraction), [
+        0,
+        0,
+      ]);
+    });
+
+    test('a little over the limit once compressed is still sent', () async {
+      // An encoder that missed its bitrate, within the tolerance.
       compressor.videoLength = limits.maxVideoBytes + 1;
 
       await session.sendAttachment(bob, video());
       await idle();
 
+      expect(compressor.calls, ['video $overLimit']);
+      expect(callsStarting('upload'), ['upload clip.mp4']);
+    });
+
+    test('within the limit once compressed is not compressed again', () async {
+      await session.sendAttachment(bob, video());
+      await idle();
+
+      expect(compressor.calls, ['video $overLimit']);
+    });
+
+    test('still too large compressed smaller is not sent', () async {
+      compressor.videoLength = overCeiling;
+
+      await session.sendAttachment(bob, video());
+      await idle();
+
+      expect(compressor.calls.last, startsWith('smaller video'));
       final outgoing = (await session.storedOutgoing(bob)).single;
       expect(outgoing.status, OutgoingStatus.failed);
       expect(outgoing.failure, ChatFailure.tooLarge);
+      expect(callsStarting('upload'), isEmpty);
+    });
+
+    test("a format the device can't decode fails as such", () async {
+      compressor.failure = const UnsupportedVideoFormatException('audio/ac3');
+
+      await session.sendAttachment(bob, video());
+      await idle();
+
+      final outgoing = (await session.storedOutgoing(bob)).single;
+      expect(outgoing.failure, ChatFailure.unsupportedFormat);
       expect(callsStarting('upload'), isEmpty);
     });
 
@@ -222,7 +496,7 @@ void main() {
       await session.discard(queued.clientId);
       await idle();
 
-      expect(compressor.calls, ['video 1000', 'cancel']);
+      expect(compressor.calls, ['video $overLimit', 'cancel']);
       expect(await session.storedOutgoing(bob), isEmpty);
       expect(files.stagedIds, isEmpty);
       expect(callsStarting('upload'), isEmpty);
@@ -233,7 +507,7 @@ void main() {
       await session.sendAttachment(bob, video());
       await idle();
 
-      expect(compressor.calls, ['video 1000']);
+      expect(compressor.calls, ['video $overLimit']);
       final outgoing = (await session.storedOutgoing(bob)).single;
       expect(outgoing.attachment!.pendingCompression, isFalse);
       expect(outgoing.attachment!.name, 'clip.mp4');

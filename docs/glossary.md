@@ -409,14 +409,14 @@ the text beside it is the **caption** (`ChatMessage.caption`).
 
 **Video**
 A video in a message: its poster (a small JPEG sent inline as `preview`), its length and its size
-in pixels, with a play button; a tap downloads it and plays it full screen. One the user sends is
-compressed first and must fit the **attachment limits**.
+in pixels, with a play button; a tap downloads it and plays it full screen. One the user sends
+must fit the **attachment limits**, compressed first only if it is over them.
 *In code:* `VideoAttachment`, `DraftyVideo`, `VideoBubbleContent`, `VideoPlayerScreen`.
 
 **Poster**
 A small upright JPEG of a photo or video the user sends, at most 640 px on its longer side, taken
-when it is queued: its bubble shows it while it compresses and uploads. Only a video's is sent,
-inline as `preview`. GIFs get none, so their bubble shows them moving.
+when it is staged (a trimmed video's again, from the start of its part): its bubble shows it while
+it compresses and uploads. Only a video's is sent, inline as `preview`. GIFs get none, so their bubble shows them moving.
 *In code:* `OutgoingAttachment.poster`, `MediaCompressor.imagePoster`, `videoPoster`.
 
 **Stand-in**
@@ -426,18 +426,29 @@ picture is ready.
 
 **Compression**
 Shrinking a photo or video the user sends, on the device, before its upload: a photo scaled down
-to a JPEG, a video re-encoded as H.264 MP4. Part of the outbox, one at a time and whether online
+to a JPEG, a video re-encoded as H.264 MP4, once more and smaller when the encoder overshot the
+limit. Part of the outbox, one at a time and whether online
 or not; its bubble shows meanwhile. An app closed during it compresses again from the start. GIFs
 and files are not compressed.
 *In code:* `MediaCompressor`, `OutgoingAttachment.pendingCompression`, `CachedTinodeSession`
 (`_runCompressions`).
 
 **Attachment limits**
-How photos and videos shrink and how large a video may be once compressed (20 MiB by default,
-or the server's limit when lower). A video whose length alone says it can't fit is refused
-before it is queued, naming the longest that fits; one still too large once compressed is not
-sent. *In code:* `TinodeAttachmentLimits`, `TinodeChat.attachmentLimits`,
-`VideoTooLongException`.
+How photos and videos shrink and how large a video may be (20 MiB by default, or the server's
+limit when lower). A video within the limit goes as it is. One over it is compressed; of one
+that can't fit at the limits' bitrates only a part can be sent, the **video trim**. One still too
+large once compressed, past a 10% tolerance (22 MiB), is compressed again, smaller (about 480p),
+and not sent if it still is. A
+picked video over 500 MiB or 10 minutes is refused before it is copied in; one the device can't
+decode fails as `unsupportedFormat`. *In code:* `TinodeAttachmentLimits`,
+`TinodeChat.attachmentLimits`, `FileTooLargeException`.
+
+**Video trim**
+The part of a video the user chooses to send, in its preview: a window over the video's frames,
+as long as the **attachment limits** allow. It is cut when the video is compressed, so a video
+within the limit is compressed too once trimmed, and is sent without going over the bitrate it
+came with. *In code:* `VideoTrim`, `OutgoingAttachment.trim`, `VideoTrimBar`,
+`TinodeAttachmentLimits.maxClip`.
 
 **Media camera**
 The in-app camera the attach menu's Camera opens: it takes a photo or records a video, with its
@@ -456,8 +467,9 @@ chat, beside the drain that sends messages. *In code:* `CachedTinodeSession` (`_
 
 **Staged file**
 A copy of a file the user picked, kept in the app's own folder until the server has the message:
-picker files can vanish. A photo or video is staged as picked, then its compressed copy takes its
-place. *In code:* `FileStore.stage`, `OutgoingAttachment.stagedId`.
+picker files can vanish. A photo or video is staged as picked, while its preview shows, then its
+compressed copy, if it needs one, takes its place. *In code:* `FileStore.stage`,
+`ChatSession.stageAttachment`, `OutgoingAttachment.stagedId`.
 
 **File cache**
 Downloaded files, and files the user sent, kept by their URL in the OS's cache folder (which the

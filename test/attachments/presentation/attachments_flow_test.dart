@@ -7,9 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/application/sent_stand_ins.dart';
+import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/compressed_media.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/video_trim.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_preview_screen.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_bubble_content.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/image_viewer_screen.dart';
@@ -17,13 +19,18 @@ import 'package:tinode_flutter_chat/src/attachments/presentation/outgoing_attach
 import 'package:tinode_flutter_chat/src/attachments/presentation/own_picture.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/stand_in_picture.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_bubble_content.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/video_player_view.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/video_trim_bar.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/send_button.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/ref_photo_avatar.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 import '../../support/back_button.dart';
 import '../../support/fake_attachment_picker.dart';
 import '../../support/fake_media_compressor.dart';
 import '../../support/fake_tinode_session.dart';
+import '../../support/fake_video_player.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
 
@@ -243,9 +250,8 @@ void main() {
     picker.next = pickedText('notes.txt', 'hello');
 
     await chooseFromMenu(tester, 'File');
-    await tester.tap(find.byIcon(icons.send));
-    await tester.pumpAndSettle();
 
+    expect(find.byType(AttachmentPreviewScreen), findsNothing);
     expect(
       find.text('The file is too large to send: the limit is 4 B.'),
       findsOneWidget,
@@ -581,10 +587,11 @@ void main() {
   ) async {
     await openBob(tester);
     final compressing = compressor.videoSteps = StreamController<double>();
+    compressor.videoLength = 100;
     final uploading = session.uploadSteps = StreamController<int>();
     picker.next = pickedFile(
       'clip.mov',
-      List.filled(100, 1),
+      List.filled(21 * 1024 * 1024, 1),
       mimeType: 'video/quicktime',
       isVideo: true,
     );
@@ -624,7 +631,7 @@ void main() {
     expect(session.calls, contains('upload clip.mp4'));
   });
 
-  testWidgets('a video too long to send is refused, naming the longest', (
+  testWidgets("a video that can't fit is refused, naming the limit", (
     tester,
   ) async {
     compressor.info = const VideoInfo(duration: Duration(minutes: 5));
@@ -639,11 +646,422 @@ void main() {
     await tester.tap(find.byIcon(icons.send));
     await tester.pumpAndSettle();
 
+    expect(find.byType(AttachmentPreviewScreen), findsNothing);
     expect(
-      find.text('The video is too long to send: it can last up to 1:32.'),
+      find.text('The file is too large to send: the limit is 20 MB.'),
       findsOneWidget,
     );
     expect(find.byType(OutgoingAttachmentView), findsNothing);
+  });
+
+  testWidgets('a video within the limit only uploads', (tester) async {
+    await openBob(tester);
+    final uploading = session.uploadSteps = StreamController<int>();
+    picker.next = pickedFile(
+      'clip.mov',
+      List.filled(100, 1),
+      mimeType: 'video/quicktime',
+      isVideo: true,
+    );
+    await chooseFromMenu(tester, 'Gallery');
+    await tester.tap(find.byIcon(icons.send));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Uploading…'), findsOneWidget);
+    expect(find.text('Compressing…'), findsNothing);
+
+    await uploading.close();
+    await tester.pumpAndSettle();
+    expect(session.calls, contains('upload clip.mov'));
+    expect(compressor.calls, isEmpty);
+  });
+
+  group('while what was picked is on its way', () {
+    /// Chooses from the menu with the picker held open: the spinner never
+    /// settles.
+    Future<void> chooseHeld(WidgetTester tester) async {
+      await tester.tap(find.byIcon(icons.attach));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Gallery'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+    }
+
+    IconButton previewSend(WidgetTester tester) => tester.widget<IconButton>(
+      find.descendant(
+        of: find.byType(AttachmentPreviewScreen),
+        matching: find.widgetWithIcon(IconButton, icons.send),
+      ),
+    );
+
+    PickedFile clip() => pickedFile(
+      'clip.mov',
+      List.filled(100, 1),
+      mimeType: 'video/quicktime',
+      isVideo: true,
+    );
+
+    testWidgets('the preview waits with a spinner, then shows it', (
+      tester,
+    ) async {
+      await openBob(tester);
+      final hold = picker.hold = Completer<PickedFile?>();
+
+      await chooseHeld(tester);
+
+      expect(find.byType(AttachmentPreviewScreen), findsOneWidget);
+      expect(find.text('Preparing…'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(previewSend(tester).onPressed, isNull);
+
+      hold.complete(pickedText('notes.txt', 'hello'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Preparing…'), findsNothing);
+      expect(find.text('5 B'), findsOneWidget);
+      expect(previewSend(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('cancelling the picker leaves at once', (tester) async {
+      await openBob(tester);
+      final hold = picker.hold = Completer<PickedFile?>();
+      await chooseHeld(tester);
+
+      hold.complete(null);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(AttachmentPreviewScreen), findsNothing);
+      expect(session.calls, isNot(contains(startsWith('upload'))));
+    });
+
+    testWidgets('back ignores the file that comes later', (tester) async {
+      await openBob(tester);
+      final hold = picker.hold = Completer<PickedFile?>();
+      await chooseHeld(tester);
+
+      await tester.tap(backButton());
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(AttachmentPreviewScreen), findsNothing);
+
+      hold.complete(pickedText('notes.txt', 'hello'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AttachmentPreviewScreen), findsNothing);
+      expect(session.calls, isNot(contains(startsWith('upload'))));
+    });
+
+    testWidgets('Send pressed early waits in the preview, spinning there', (
+      tester,
+    ) async {
+      await openBob(tester);
+      final poster = compressor.holdPoster = Completer<void>();
+      picker.next = clip();
+
+      await tester.tap(find.byIcon(icons.attach));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Gallery'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(icons.send));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      final preview = find.byType(AttachmentPreviewScreen);
+      expect(preview, findsOneWidget);
+      expect(
+        find.descendant(
+          of: preview,
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(SendButton, skipOffstage: false),
+          matching: find.byType(CircularProgressIndicator, skipOffstage: false),
+        ),
+        findsNothing,
+      );
+      expect(session.calls, isNot(contains(startsWith('upload'))));
+
+      poster.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AttachmentPreviewScreen), findsNothing);
+      expect(find.byType(VideoBubbleContent), findsOneWidget);
+    });
+
+    testWidgets('leaving the preview deletes the staged copy', (tester) async {
+      final stores = MemoryFileStoreOpener();
+      await pumpTinodeChat(
+        tester,
+        session,
+        credentials: TinodeCredentials.token(session.token),
+        attachmentPicker: picker,
+        mediaCompressor: compressor,
+        fileStoreOpener: stores,
+      );
+      await tester.tap(find.text('Bob'));
+      await tester.pumpAndSettle();
+      picker.next = clip();
+      await chooseFromMenu(tester, 'Gallery');
+      final store = stores.stores.values.single;
+      expect(store.stagedIds, hasLength(1));
+
+      await tester.tap(backButton());
+      await tester.pumpAndSettle();
+
+      expect(store.stagedIds, isEmpty);
+    });
+
+    testWidgets('the composer never spins for an attachment', (tester) async {
+      await openBob(tester);
+      final uploading = session.uploadSteps = StreamController<int>();
+      picker.next = clip();
+      await chooseFromMenu(tester, 'Gallery');
+      await tester.tap(find.byIcon(icons.send));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(OutgoingAttachmentView), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(SendButton),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsNothing,
+      );
+      await uploading.close();
+      await tester.pumpAndSettle();
+    });
+  });
+
+  group('a video that plays in the preview', () {
+    late FakeVideoPlayerPlatform player;
+    const mib = 1024 * 1024;
+    const limits = TinodeAttachmentLimits();
+
+    setUp(() {
+      final previous = VideoPlayerPlatform.instance;
+      addTearDown(() => VideoPlayerPlatform.instance = previous);
+      VideoPlayerPlatform.instance = player = FakeVideoPlayerPlatform();
+      compressor.videoLength = 100;
+    });
+
+    PickedFile video({required int length}) => PickedFile(
+      name: 'clip.mov',
+      length: length,
+      openRead: () => Stream.value(List.filled(100, 1)),
+      mimeType: 'video/quicktime',
+      path: '/picked/clip.mov',
+      isVideo: true,
+    );
+
+    Future<void> preview(WidgetTester tester, PickedFile file) async {
+      await openBob(tester);
+      picker.next = file;
+      await chooseFromMenu(tester, 'Gallery');
+    }
+
+    testWidgets('longer than can be picked is refused, naming the limit', (
+      tester,
+    ) async {
+      compressor.info = const VideoInfo(duration: Duration(minutes: 11));
+      await preview(tester, video(length: 100));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AttachmentPreviewScreen), findsNothing);
+      expect(
+        find.text('The video is too long to send: the limit is 10:00.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('larger than can be picked is refused, naming the limit', (
+      tester,
+    ) async {
+      await preview(tester, video(length: limits.maxSourceVideoBytes + 1));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AttachmentPreviewScreen), findsNothing);
+      expect(
+        find.text('The file is too large to send: the limit is 500 MB.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("whose format can't be decoded says so on its bubble", (
+      tester,
+    ) async {
+      compressor.failure = const UnsupportedVideoFormatException('audio/ac3');
+      player.duration = const Duration(minutes: 1);
+      await preview(tester, video(length: 64 * mib));
+      await tester.tap(find.byIcon(icons.send));
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.byType(OutgoingAttachmentView));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text("This video's format can't be sent from this device."),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('sits on black, whatever the theme, so its controls show', (
+      tester,
+    ) async {
+      await preview(tester, video(length: 100));
+
+      final player = find.byType(VideoPlayerView);
+      expect(Theme.of(tester.element(player)).brightness, Brightness.light);
+      expect(
+        tester
+            .widget<ColoredBox>(
+              find
+                  .ancestor(of: player, matching: find.byType(ColoredBox))
+                  .first,
+            )
+            .color,
+        Colors.black,
+      );
+      expect(find.byIcon(icons.play), findsOneWidget);
+    });
+
+    testWidgets('too long to send opens with as much as fits chosen', (
+      tester,
+    ) async {
+      player.duration = const Duration(minutes: 5);
+      await preview(tester, video(length: 200 * mib));
+
+      expect(find.byType(VideoTrimBar), findsOneWidget);
+      expect(find.text('1:32'), findsOneWidget);
+
+      await tester.tap(find.byIcon(icons.send));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsNothing);
+      expect(compressor.trims, [
+        VideoTrim(Duration.zero, limits.maxVideoDuration),
+      ]);
+      expect(find.byType(VideoBubbleContent), findsOneWidget);
+    });
+
+    testWidgets('sends the part chosen, with a poster from its start', (
+      tester,
+    ) async {
+      player.duration = const Duration(minutes: 5);
+      await preview(tester, video(length: 200 * mib));
+      final bar = tester.widget<VideoTrimBar>(find.byType(VideoTrimBar));
+      const chosen = Duration(minutes: 2);
+
+      bar.clip.value = bar.clip.value!.movedTo(chosen, total: bar.total);
+      await tester.pump();
+      expect(player.seeks.last, chosen);
+      expect(player.pauses, greaterThan(0));
+
+      await tester.tap(find.byIcon(icons.send));
+      await tester.pumpAndSettle();
+
+      expect(compressor.trims.single!.start, chosen);
+      expect(compressor.posterTimes.last, chosen);
+    });
+
+    testWidgets('within the limit and left whole goes as it is', (
+      tester,
+    ) async {
+      player.duration = const Duration(minutes: 5);
+      await preview(tester, video(length: 15 * mib));
+
+      expect(find.text('5:00'), findsOneWidget);
+      await tester.tap(find.byIcon(icons.send));
+      await tester.pumpAndSettle();
+
+      expect(compressor.calls, isEmpty);
+      expect(session.calls, contains('upload clip.mov'));
+    });
+
+    testWidgets('within the limit but cut is compressed', (tester) async {
+      player.duration = const Duration(minutes: 5);
+      await preview(tester, video(length: 15 * mib));
+      final bar = tester.widget<VideoTrimBar>(find.byType(VideoTrimBar));
+
+      bar.clip.value = bar.clip.value!.withEnd(
+        const Duration(minutes: 2),
+        total: bar.total,
+        maxLength: bar.maxLength,
+      );
+      await tester.pump();
+      await tester.tap(find.byIcon(icons.send));
+      await tester.pumpAndSettle();
+
+      expect(compressor.trims.single, isNotNull);
+      expect(session.calls, contains('upload clip.mp4'));
+    });
+
+    testWidgets('that cannot be read still sends, without a bar', (
+      tester,
+    ) async {
+      player.fails = true;
+      await preview(tester, video(length: 100));
+
+      expect(find.byType(VideoTrimBar), findsNothing);
+      await tester.tap(find.byIcon(icons.send));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AttachmentPreviewScreen), findsNothing);
+      expect(session.calls, contains('upload clip.mov'));
+    });
+  });
+
+  testWidgets('the X on a bubble stops it and drops the message', (
+    tester,
+  ) async {
+    await openBob(tester);
+    final uploading = session.uploadSteps = StreamController<int>();
+    picker.next = pickedFile(
+      'sunset.png',
+      pngBytes,
+      mimeType: 'image/png',
+      isImage: true,
+    );
+    await chooseFromMenu(tester, 'Gallery');
+    await tester.tap(find.byIcon(icons.send));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    final outgoing = find.byType(OutgoingAttachmentView);
+    expect(outgoing, findsOneWidget);
+
+    await tester.tap(
+      find.descendant(of: outgoing, matching: find.byIcon(icons.close)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(OutgoingAttachmentView), findsNothing);
+    await uploading.close();
+    await tester.pumpAndSettle();
+    expect(session.calls, isNot(contains(startsWith('publish'))));
+  });
+
+  testWidgets('a file on its way has the X too', (tester) async {
+    await openBob(tester);
+    final uploading = session.uploadSteps = StreamController<int>();
+    picker.next = pickedText('notes.txt', 'hello');
+    await chooseFromMenu(tester, 'File');
+    await tester.tap(find.byIcon(icons.send));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    final outgoing = find.byType(OutgoingAttachmentView);
+    expect(
+      find.descendant(of: outgoing, matching: find.byIcon(icons.close)),
+      findsOneWidget,
+    );
+    await uploading.close();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('a received video shows its poster and length', (tester) async {

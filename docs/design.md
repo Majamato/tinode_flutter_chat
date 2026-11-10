@@ -307,6 +307,10 @@ them.
   (`composerRadius`, transparent inside, 44 px for one line, up to five) and the round send
   button. A read-only chat shows a glass pill instead. The messages are padded by the
   composer's height, keyboard included, in the same frame it changes.
+- In a video's preview the player sits on black, whatever the theme, and a trim bar takes the
+  scrubber's place, 44 px tall: ten frames, the chosen part framed in 2 px of white between two
+  12 px white handles (each a 44 px touch target), the rest under 60 % black. Left to right in
+  every language. Frames not yet taken are white at 12 %.
 - On every screen, a touch outside the field closes the keyboard, and a touch that starts a
   scroll counts. The composer's buttons count as its field, so sending leaves the keyboard open.
 - While the field is blank the send button rests on the microphone (in `onSurfaceVariant`),

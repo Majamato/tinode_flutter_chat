@@ -9,9 +9,9 @@ class _Link extends ReconnectingNotice {
   @override
   bool build() => false;
 
-  bool get down => state;
-
-  set down(bool value) => state = value;
+  // A setter would be a public notifier property (riverpod_lint).
+  // ignore: use_setters_to_change_properties
+  void lower({required bool down}) => state = down;
 }
 
 void main() {
@@ -42,8 +42,9 @@ void main() {
   }
 
   void setDown({required bool down}) =>
-      (container.read(reconnectingNoticeProvider.notifier) as _Link).down =
-          down;
+      (container.read(reconnectingNoticeProvider.notifier) as _Link).lower(
+        down: down,
+      );
 
   /// The spring's lift and growth on the incoming title, if any.
   Iterable<Transform> springs(WidgetTester tester) => tester

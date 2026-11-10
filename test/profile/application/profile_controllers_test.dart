@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
-import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/account/application/change_password_controller.dart';
 import 'package:tinode_flutter_chat/src/account/application/delete_account_controller.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_controller.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_photo_controller.dart';
 import 'package:tinode_flutter_chat/src/profile/application/profile_save_controller.dart';

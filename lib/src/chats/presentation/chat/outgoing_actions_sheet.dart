@@ -6,12 +6,13 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/chat_sheet_action.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// What the user can do with a message not sent yet: retry it once it
-/// failed, or discard it unless it is on its way; for an attachment
-/// waiting to upload, discarding cancels the upload.
+/// failed, under why it failed, or discard it unless it is on its way; for
+/// an attachment waiting to upload, discarding cancels the upload.
 class OutgoingActionsSheet extends ConsumerWidget {
   const OutgoingActionsSheet({
     required this.topic,
@@ -26,15 +27,19 @@ class OutgoingActionsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final icons = TinodeChatIcons.of(context);
     final strings = TinodeChatStrings.of(context);
-    final (status, hasAttachment) = ref.watch(
+    final (status, failure, hasAttachment) = ref.watch(
       outgoingMessageProvider(
         topic,
         clientId,
-      ).select((m) => (m?.status, m?.attachment != null)),
+      ).select((m) => (m?.status, m?.failure, m?.attachment != null)),
     );
     final chat = ref.read(chatControllerProvider(topic).notifier);
 
     return ChatSheet(
+      // Why it failed: the bubble only shows that it did.
+      title: status == OutgoingStatus.failed && failure != null
+          ? failureMessage(strings, failure)
+          : null,
       children: [
         if (status == OutgoingStatus.failed)
           ChatSheetAction(

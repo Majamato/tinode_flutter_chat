@@ -39,7 +39,7 @@ class AttachButton extends ConsumerWidget {
       return;
     }
     final send = ref.read(sendControllerProvider(topic).notifier);
-    final PickedFile? file;
+    final Future<PickedFile?> picked;
     if (source == AttachmentSource.camera) {
       final capture = await MediaCameraScreen.open(
         context,
@@ -47,17 +47,30 @@ class AttachButton extends ConsumerWidget {
             .read(tinodeAttachmentLimitsProvider)
             .maxVideoDuration,
       );
-      file = capture == null ? null : await send.captured(capture);
+      final file = capture == null ? null : await send.captured(capture);
+      if (file == null || !context.mounted) {
+        return;
+      }
+      picked = Future.value(file);
     } else {
-      file = await send.pick(source);
+      // Nothing says when the user has chosen and the system is fetching
+      // the file, so the preview waits behind the picker from the start.
+      picked = send.pick(source);
     }
-    if (file == null || !context.mounted) {
+    final previewed = await AttachmentPreviewScreen.open(
+      context,
+      picked: picked,
+      actions: AttachmentPreviewActions(
+        stage: send.stage,
+        discard: send.discardStaged,
+        trim: send.trim,
+        maxClip: send.maxClip,
+        frames: send.canTrimVideos() ? send.videoFrames : null,
+      ),
+    );
+    if (previewed == null) {
       return;
     }
-    final caption = await AttachmentPreviewScreen.open(context, file);
-    if (caption == null) {
-      return;
-    }
-    await send.sendAttachment(file, caption: caption);
+    await send.sendStaged(previewed.attachment, caption: previewed.caption);
   }
 }

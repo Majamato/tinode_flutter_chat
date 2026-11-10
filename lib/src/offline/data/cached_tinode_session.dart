@@ -17,6 +17,7 @@ import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.d
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/progress_throttle.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/tinode_attachment_limits.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/video_trim.dart';
 import 'package:tinode_flutter_chat/src/offline/data/call_log.dart';
 import 'package:tinode_flutter_chat/src/offline/data/call_log_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
@@ -89,14 +90,12 @@ final class CachedTinodeSession implements ChatSession {
     FileStore? files,
     CallLog? calls,
     TinodeCacheLimits limits = const TinodeCacheLimits(),
-    MediaCompressor? compressor,
-    TinodeAttachmentLimits attachmentLimits = const TinodeAttachmentLimits(),
+    this._compressor,
+    this._attachmentLimits = const TinodeAttachmentLimits(),
     this.keepsPresence = true,
     this.latestDelay = const Duration(seconds: 1),
   }) : _files = files ?? MemoryFileStore(),
-       _calls = calls ?? CallLog(CallLogDatabase(NativeDatabase.memory())),
-       _compressor = compressor,
-       _attachmentLimits = attachmentLimits {
+       _calls = calls ?? CallLog(CallLogDatabase(NativeDatabase.memory())) {
     // Before the pruning, which drops the oldest cached calls.
     unawaited(_write(_seedCallLog));
     unawaited(_prune(limits));
@@ -805,15 +804,24 @@ final class CachedTinodeSession implements ChatSession {
     PickedFile file, {
     String caption = '',
   }) async {
+    return sendStaged(topic, await stageAttachment(file), caption: caption);
+  }
+
+  @override
+  Future<OutgoingAttachment> stageAttachment(PickedFile file) async {
     final limit = _remote.serverInfo.maxFileUploadSize;
     final compressor = _compressor;
-    // A GIF would lose its motion.
+    final videoLimit = _attachmentLimits.videoBytesLimit(limit);
+    // A video that already fits goes as it is. A GIF would lose its motion.
     final compress =
         compressor != null &&
-        (file.isVideo || (file.isImage && file.mimeType != 'image/gif'));
+        (file.isVideo
+            ? file.length > videoLimit
+            : file.isImage && file.mimeType != 'image/gif');
     if (!compress && limit != null && file.length > limit) {
       throw FileTooLargeException(limit);
     }
+    final pickedInfo = file.isVideo ? await _refuseUnfitSource(file) : null;
     final stagedId = await _files.stage(file.name, file.openRead());
     final staged = await _files.staged(stagedId);
     int? width;
@@ -821,25 +829,13 @@ final class CachedTinodeSession implements ChatSession {
     Duration? duration;
     Uint8List? poster;
     if (file.isVideo && compressor != null && staged != null) {
-      final info = await _quietly<VideoInfo?>(
-        'Could not read a video',
-        () => compressor.videoInfo(staged),
-      );
+      final info =
+          pickedInfo ??
+          await _quietly<VideoInfo?>(
+            'Could not read a video',
+            () => compressor.videoInfo(staged),
+          );
       if (info != null) {
-        final bytes = _attachmentLimits.videoBytesLimit(limit);
-        final estimate = _attachmentLimits.estimatedVideoBytes(
-          info.duration,
-          staged.length,
-        );
-        if (estimate > bytes) {
-          await _quietly(
-            'Could not delete a staged file',
-            () => _files.unstage(stagedId),
-          );
-          throw VideoTooLongException(
-            _attachmentLimits.maxVideoDurationFor(bytes),
-          );
-        }
         (width, height, duration) = (info.width, info.height, info.duration);
       }
       poster = await _quietly<Uint8List?>(
@@ -859,7 +855,7 @@ final class CachedTinodeSession implements ChatSession {
         );
       }
     }
-    final attachment = OutgoingAttachment(
+    return OutgoingAttachment(
       stagedId: stagedId,
       name: file.name,
       size: staged?.length ?? file.length,
@@ -868,23 +864,120 @@ final class CachedTinodeSession implements ChatSession {
       isVideo: file.isVideo,
       width: width,
       height: height,
-      caption: caption.trim(),
       voice: file.voice,
       duration: duration,
       poster: poster,
       pendingCompression: compress,
     );
+  }
+
+  @override
+  Future<OutgoingMessage> sendStaged(
+    String topic,
+    OutgoingAttachment attachment, {
+    String caption = '',
+  }) async {
+    await _refuseUnfitVideo(attachment);
+    final captioned = attachment.withCaption(caption.trim());
     final entry = await _store.enqueuePublish(
       topic,
       newClientId(),
-      attachment.content,
+      captioned.content,
       clock.now().toUtc(),
-      attachment: attachment,
+      attachment: captioned,
     );
     final message = entry.toOutgoing();
     _emit(OutgoingChanged(message));
     _kick();
     return message;
+  }
+
+  @override
+  Future<void> discardStaged(OutgoingAttachment attachment) => _quietly(
+    'Could not delete a staged file',
+    () => _files.unstage(attachment.stagedId),
+  );
+
+  @override
+  bool get canTrimVideos => _compressor != null;
+
+  @override
+  Stream<Uint8List?> videoFrames(
+    PickedFile file, {
+    required int count,
+    required Duration duration,
+  }) {
+    final compressor = _compressor;
+    final path = file.path;
+    if (compressor == null || path == null) {
+      return const Stream.empty();
+    }
+    return compressor.videoFrames(
+      LocalFile.atPath(path, length: file.length),
+      count: count,
+      duration: duration,
+    );
+  }
+
+  @override
+  Future<OutgoingAttachment> trimStaged(
+    OutgoingAttachment attachment,
+    VideoTrim trim,
+  ) async {
+    final compressor = _compressor;
+    Uint8List? poster;
+    if (compressor != null && trim.start > Duration.zero) {
+      if (await _files.staged(attachment.stagedId) case final staged?) {
+        poster = await _quietly<Uint8List?>(
+          'Could not take a video poster',
+          () => compressor.videoPoster(staged, at: trim.start),
+        );
+      }
+    }
+    return attachment.trimmed(trim, poster: poster);
+  }
+
+  /// Refuses a picked video over [TinodeAttachmentLimits.maxSourceVideoBytes]
+  /// or [TinodeAttachmentLimits.maxSourceVideoDuration], before it is
+  /// copied in; returns what it read of it, when it could.
+  Future<VideoInfo?> _refuseUnfitSource(PickedFile file) async {
+    final limits = _attachmentLimits;
+    if (file.length > limits.maxSourceVideoBytes) {
+      throw FileTooLargeException(limits.maxSourceVideoBytes);
+    }
+    final compressor = _compressor;
+    final path = file.path;
+    if (compressor == null || path == null) {
+      return null;
+    }
+    final info = await _quietly<VideoInfo?>(
+      'Could not read a video',
+      () => compressor.videoInfo(LocalFile.atPath(path, length: file.length)),
+    );
+    if (info != null && info.duration > limits.maxSourceVideoDuration) {
+      throw VideoTooLongException(limits.maxSourceVideoDuration);
+    }
+    return info;
+  }
+
+  /// Refuses a whole video, its staged copy deleted, that can't fit the
+  /// limit even compressed: a long one must come with its part chosen.
+  Future<void> _refuseUnfitVideo(OutgoingAttachment attachment) async {
+    if (!attachment.isVideo ||
+        !attachment.pendingCompression ||
+        attachment.trim != null) {
+      return;
+    }
+    final duration = attachment.duration;
+    final limit = _attachmentLimits.videoBytesLimit(
+      _remote.serverInfo.maxFileUploadSize,
+    );
+    if (duration != null &&
+        _attachmentLimits.estimatedVideoBytes(duration, attachment.size) >
+            limit) {
+      await discardStaged(attachment);
+      throw FileTooLargeException(limit);
+    }
   }
 
   /// [width] by [height] turned to match [poster]'s orientation, when the
@@ -1456,7 +1549,6 @@ final class CachedTinodeSession implements ChatSession {
     }
     _compressing = clientId;
     _compressStopped = false;
-    final throttle = ProgressThrottle();
     _emit(
       CompressProgress(entry.topic, clientId, attachment.isVideo ? 0 : null),
     );
@@ -1464,17 +1556,7 @@ final class CachedTinodeSession implements ChatSession {
       final CompressedMedia output;
       try {
         output = attachment.isVideo
-            ? await compressor.compressVideo(
-                staged,
-                _attachmentLimits,
-                onProgress: (fraction) {
-                  final step = (fraction.clamp(0, 1) * 1000).round();
-                  if (!_compressStopped &&
-                      throttle.admit(step, 1000, clock.now())) {
-                    _emit(CompressProgress(entry.topic, clientId, fraction));
-                  }
-                },
-              )
+            ? await _compressVideo(compressor, staged, entry)
             : await compressor.compressImage(
                 staged,
                 _attachmentLimits,
@@ -1495,24 +1577,89 @@ final class CachedTinodeSession implements ChatSession {
     } on Object catch (e, stackTrace) {
       _log('Could not compress an attachment', e, stackTrace);
       if (!_compressStopped && await _store.outboxEntry(entry.id) != null) {
-        await _giveUp(entry, ChatFailure.unexpected);
+        await _giveUp(entry, switch (e) {
+          UnsupportedVideoFormatException() => ChatFailure.unsupportedFormat,
+          _ => ChatFailure.unexpected,
+        });
       }
     } finally {
       _compressing = null;
     }
   }
 
+  /// [entry]'s video, [staged], compressed. Some encoders won't go as low
+  /// as the bitrate asked (Android's minimum quality, on some phones), so
+  /// one over the limit is compressed once more, smaller and at a bitrate
+  /// cut by as much as it overshot; its progress starts over.
+  Future<CompressedMedia> _compressVideo(
+    MediaCompressor compressor,
+    LocalFile staged,
+    OutboxEntry entry,
+  ) async {
+    final attachment = entry.attachment!;
+    final first = await compressor.compressVideo(
+      staged,
+      _attachmentLimits,
+      trim: attachment.trim,
+      onProgress: _compressProgress(entry),
+    );
+    final limit = _compressedLimit(attachment);
+    final asked = first.videoBitrate;
+    final duration = attachment.duration;
+    if (_compressStopped ||
+        limit == null ||
+        first.length <= limit ||
+        asked == null ||
+        duration == null) {
+      return first;
+    }
+    await _quietly('Could not delete a compressed file', first.delete);
+    _emit(CompressProgress(entry.topic, entry.clientId!, 0));
+    return compressor.compressVideo(
+      staged,
+      _attachmentLimits,
+      trim: attachment.trim,
+      videoBitrate: _attachmentLimits.secondPassVideoBitrate(
+        asked: asked,
+        outputBytes: first.length,
+        duration: duration,
+        // Aims at the limit, not at its tolerance.
+        limitBytes: _attachmentLimits.videoBytesLimit(
+          _remote.serverInfo.maxFileUploadSize,
+        ),
+      ),
+      smaller: true,
+      onProgress: _compressProgress(entry),
+    );
+  }
+
+  /// Reports a video's compression of [entry], at most every so often.
+  void Function(double fraction) _compressProgress(OutboxEntry entry) {
+    final throttle = ProgressThrottle();
+    return (fraction) {
+      final step = (fraction.clamp(0, 1) * 1000).round();
+      if (!_compressStopped && throttle.admit(step, 1000, clock.now())) {
+        _emit(CompressProgress(entry.topic, entry.clientId!, fraction));
+      }
+    };
+  }
+
+  /// The most [attachment] may weigh once compressed; null when unknown.
+  int? _compressedLimit(OutgoingAttachment attachment) {
+    final serverLimit = _remote.serverInfo.maxFileUploadSize;
+    return attachment.isVideo
+        ? _attachmentLimits.compressedVideoBytesLimit(serverLimit)
+        : serverLimit;
+  }
+
   /// Stages [output], [entry]'s compressed photo or video, in place of the
-  /// original; a video still over the limit is not sent.
+  /// original; one still over the limit is not sent.
   Future<void> _adoptCompressed(
     OutboxEntry entry,
     CompressedMedia output,
   ) async {
     final attachment = entry.attachment!;
-    final serverLimit = _remote.serverInfo.maxFileUploadSize;
-    final limit = attachment.isVideo
-        ? _attachmentLimits.videoBytesLimit(serverLimit)
-        : serverLimit;
+    final limit = _compressedLimit(attachment);
     if (limit != null && output.length > limit) {
       await _giveUp(entry, ChatFailure.tooLarge);
       return;

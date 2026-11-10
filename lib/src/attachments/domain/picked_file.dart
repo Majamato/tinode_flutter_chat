@@ -48,8 +48,8 @@ final class PickedFile {
   /// compressed before it goes.
   final bool isImage;
 
-  /// Sent as a video played in the message, rather than as a file. It is
-  /// compressed before it goes, and must fit `TinodeAttachmentLimits`.
+  /// Sent as a video played in the message, rather than as a file. It must
+  /// fit `TinodeAttachmentLimits`, compressed first only if it is over.
   final bool isVideo;
 
   /// Set for a voice message: sent as a recording to play, rather than as

@@ -5,6 +5,7 @@ import 'package:tinode_flutter_chat/src/attachments/application/outgoing_attachm
 import 'package:tinode_flutter_chat/src/attachments/application/sent_stand_ins.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_cancel_button.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_progress_overlay.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/attachment_progress_ring.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/file_size_label.dart';
@@ -19,9 +20,10 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_th
 /// The image, video or file of a message still in the outbox. A photo or
 /// video shows from its poster (a photo without one from its staged copy),
 /// under the compression's and then the upload's progress while
-/// [uploading]; a file shows a progress ring in place of its icon. It
-/// leaves its picture as the sent bubble's stand-in. Watches the staged
-/// file of a photo without a poster.
+/// [uploading]; a file shows a progress ring in place of its icon. While
+/// [uploading], an X stops it ([onCancel]). It leaves its picture as the
+/// sent bubble's stand-in. Watches the staged file of a photo without a
+/// poster.
 ///
 /// The picture never blinks out: the last one shown stays while the next
 /// loads, over the placeholder's grey.
@@ -32,6 +34,7 @@ class OutgoingAttachmentView extends ConsumerStatefulWidget {
     required this.attachment,
     required this.uploading,
     required this.color,
+    required this.onCancel,
     super.key,
   });
 
@@ -44,6 +47,9 @@ class OutgoingAttachmentView extends ConsumerStatefulWidget {
 
   /// Text color of the bubble.
   final Color color;
+
+  /// Stops the compression or upload and drops the message.
+  final VoidCallback onCancel;
 
   @override
   ConsumerState<OutgoingAttachmentView> createState() =>
@@ -122,6 +128,8 @@ class _OutgoingAttachmentViewState
               ],
             ),
           ),
+          if (uploading)
+            AttachmentCancelButton(onCancel: widget.onCancel, color: color),
         ],
       );
     }
@@ -168,6 +176,7 @@ class _OutgoingAttachmentViewState
                 topic: topic,
                 clientId: clientId,
                 compress: attachment.pendingCompression,
+                onCancel: widget.onCancel,
               ),
           ],
         ),

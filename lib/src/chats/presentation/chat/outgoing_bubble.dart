@@ -27,7 +27,8 @@ import 'package:tinode_flutter_chat/src/voice/presentation/voice_bubble_content.
 /// A message of the user's still in the outbox, with its status; an
 /// image, video, file or recording shows from its staged copy (a video from
 /// its poster) while it compresses and uploads (a recording plays from
-/// it). One just sent pops in. A long press offers to retry or discard it.
+/// it). One just sent pops in. An X on an attachment on its way stops it; a
+/// long press offers to retry or discard it.
 class OutgoingBubble extends ConsumerWidget {
   const OutgoingBubble({
     required this.topic,
@@ -41,6 +42,14 @@ class OutgoingBubble extends ConsumerWidget {
 
   final String topic;
   final String clientId;
+
+  /// Stops the message on its way; a failure leaves the bubble as it is.
+  void _cancel(WidgetRef ref) => unawaited(
+    ref
+        .read(chatControllerProvider(topic).notifier)
+        .discard(clientId)
+        .then((_) {}, onError: (_) {}),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -103,6 +112,7 @@ class OutgoingBubble extends ConsumerWidget {
               attachment: attachment,
               uploading: message.status == OutgoingStatus.queued,
               color: foreground,
+              onCancel: () => _cancel(ref),
             ),
             PositionedDirectional(
               end: 6,
@@ -121,6 +131,7 @@ class OutgoingBubble extends ConsumerWidget {
               attachment: attachment,
               uploading: message.status == OutgoingStatus.queued,
               color: foreground,
+              onCancel: () => _cancel(ref),
             ),
             Padding(
               padding: attachment.isMedia

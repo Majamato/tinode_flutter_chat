@@ -151,11 +151,17 @@ class TinodeChatStrings {
     this.attachCameraSubtitle = 'Take a photo or video',
     this.attachFile = 'File',
     this.captionHint = 'Add a caption',
+    this.preparingAttachment = 'Preparing…',
+    this.trimStart = 'Start of the part to send',
+    this.trimEnd = 'End of the part to send',
     this.compressing = 'Compressing…',
     this.uploading = 'Uploading…',
     this.cancelUpload = 'Cancel',
     this.fileTooLarge = 'The file is too large to send.',
     this.fileTooLargeLimit = _fileTooLargeLimit,
+    this.videoTooLongLimit = _videoTooLongLimit,
+    this.unsupportedVideoFormat =
+        "This video's format can't be sent from this device.",
     this.downloadFailed = 'The file could not be downloaded.',
     this.cannotOpenFile = 'No app on this device opens this file.',
     this.openFile = 'Open',
@@ -163,7 +169,6 @@ class TinodeChatStrings {
     this.playVideo = 'Play video',
     this.pauseVideo = 'Pause video',
     this.videoFailed = 'The video could not be played.',
-    this.videoTooLong = _videoTooLong,
     this.cameraPhoto = 'Photo',
     this.cameraVideo = 'Video',
     this.closeCamera = 'Close camera',
@@ -396,11 +401,17 @@ class TinodeChatStrings {
     this.attachCameraSubtitle = 'Toma una foto o un video',
     this.attachFile = 'Archivo',
     this.captionHint = 'Añade una descripción',
+    this.preparingAttachment = 'Preparando…',
+    this.trimStart = 'Inicio de la parte a enviar',
+    this.trimEnd = 'Fin de la parte a enviar',
     this.compressing = 'Comprimiendo…',
     this.uploading = 'Subiendo…',
     this.cancelUpload = 'Cancelar',
     this.fileTooLarge = 'El archivo es demasiado grande para enviarlo.',
     this.fileTooLargeLimit = _fileTooLargeLimitEs,
+    this.videoTooLongLimit = _videoTooLongLimitEs,
+    this.unsupportedVideoFormat =
+        'El formato de este video no se puede enviar desde este dispositivo.',
     this.downloadFailed = 'No se pudo descargar el archivo.',
     this.cannotOpenFile =
         'Ninguna app de este dispositivo puede abrir este archivo.',
@@ -409,7 +420,6 @@ class TinodeChatStrings {
     this.playVideo = 'Reproducir video',
     this.pauseVideo = 'Pausar video',
     this.videoFailed = 'No se pudo reproducir el video.',
-    this.videoTooLong = _videoTooLongEs,
     this.cameraPhoto = 'Foto',
     this.cameraVideo = 'Video',
     this.closeCamera = 'Cerrar cámara',
@@ -644,11 +654,17 @@ class TinodeChatStrings {
     this.attachCameraSubtitle = 'Prendre une photo ou une vidéo',
     this.attachFile = 'Fichier',
     this.captionHint = 'Ajouter une légende',
+    this.preparingAttachment = 'Préparation…',
+    this.trimStart = 'Début de la partie à envoyer',
+    this.trimEnd = 'Fin de la partie à envoyer',
     this.compressing = 'Compression…',
     this.uploading = 'Envoi…',
     this.cancelUpload = 'Annuler',
     this.fileTooLarge = 'Le fichier est trop volumineux pour être envoyé.',
     this.fileTooLargeLimit = _fileTooLargeLimitFr,
+    this.videoTooLongLimit = _videoTooLongLimitFr,
+    this.unsupportedVideoFormat =
+        'Le format de cette vidéo ne peut pas être envoyé depuis cet appareil.',
     this.downloadFailed = "Le fichier n'a pas pu être téléchargé.",
     this.cannotOpenFile =
         'Aucune app de cet appareil ne peut ouvrir ce fichier.',
@@ -657,7 +673,6 @@ class TinodeChatStrings {
     this.playVideo = 'Lire la vidéo',
     this.pauseVideo = 'Mettre la vidéo en pause',
     this.videoFailed = "La vidéo n'a pas pu être lue.",
-    this.videoTooLong = _videoTooLongFr,
     this.cameraPhoto = 'Photo',
     this.cameraVideo = 'Vidéo',
     this.closeCamera = "Fermer l'appareil photo",
@@ -1190,6 +1205,15 @@ class TinodeChatStrings {
   /// Hint of the caption field before sending an image or a file.
   final String captionHint;
 
+  /// Shown in the preview while what was picked is being fetched.
+  final String preparingAttachment;
+
+  /// Read out for the handle at the start of a video's chosen part.
+  final String trimStart;
+
+  /// Read out for the handle at the end of a video's chosen part.
+  final String trimEnd;
+
   /// Shown while a photo or a video is made smaller before it goes.
   final String compressing;
 
@@ -1204,6 +1228,14 @@ class TinodeChatStrings {
 
   /// [fileTooLarge] with the server's limit, e.g. `32 MB`.
   final String Function(String limit) fileTooLargeLimit;
+
+  /// A picked video is longer than can be sent, with the limit, e.g.
+  /// `10:00`.
+  final String Function(String limit) videoTooLongLimit;
+
+  /// A video this device can't decode, e.g. a movie with Dolby sound on
+  /// most Android phones.
+  final String unsupportedVideoFormat;
 
   /// A received file could not be fetched.
   final String downloadFailed;
@@ -1225,10 +1257,6 @@ class TinodeChatStrings {
 
   /// A video could not be fetched or played.
   final String videoFailed;
-
-  /// A video too long to send once compressed, with the longest that fits,
-  /// e.g. `1:32`.
-  final String Function(String max) videoTooLong;
 
   /// The camera's switch to taking photos.
   final String cameraPhoto;
@@ -1510,8 +1538,8 @@ String _typingMany(int count) => '$count people are typing…';
 String _fileTooLargeLimit(String limit) =>
     'The file is too large to send: the limit is $limit.';
 
-String _videoTooLong(String max) =>
-    'The video is too long to send: it can last up to $max.';
+String _videoTooLongLimit(String limit) =>
+    'The video is too long to send: the limit is $limit.';
 
 String _removeMemberConfirm(String name) => 'Remove $name from the group?';
 
@@ -1537,8 +1565,8 @@ String _typingManyEs(int count) => '$count personas están escribiendo…';
 String _fileTooLargeLimitEs(String limit) =>
     'El archivo es demasiado grande para enviarlo: el límite es $limit.';
 
-String _videoTooLongEs(String max) =>
-    'El video es demasiado largo para enviarlo: puede durar hasta $max.';
+String _videoTooLongLimitEs(String limit) =>
+    'El video es demasiado largo para enviarlo: el límite es $limit.';
 
 String _removeMemberConfirmEs(String name) => '¿Quitar a $name del grupo?';
 
@@ -1565,9 +1593,9 @@ String _fileTooLargeLimitFr(String limit) =>
     'Le fichier est trop volumineux pour être envoyé\u00A0: la limite est '
     'de $limit.';
 
-String _videoTooLongFr(String max) =>
-    'La vidéo est trop longue pour être envoyée\u00A0: elle peut durer '
-    "jusqu'à $max.";
+String _videoTooLongLimitFr(String limit) =>
+    'La vidéo est trop longue pour être envoyée\u00A0: la limite est de '
+    '$limit.';
 
 String _removeMemberConfirmFr(String name) => 'Retirer $name du groupe\u00A0?';
 

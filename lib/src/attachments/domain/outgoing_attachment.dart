@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/video_trim.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
 
@@ -27,6 +28,7 @@ final class OutgoingAttachment with ValueObject {
     this.duration,
     this.poster,
     this.pendingCompression = false,
+    this.trim,
     this.ref,
     this.expires,
   });
@@ -66,6 +68,13 @@ final class OutgoingAttachment with ValueObject {
         null => null,
       },
       pendingCompression: get('raw') ?? false,
+      trim: switch ((get<int>('trimStart'), get<int>('trimEnd'))) {
+        (final start?, final end?) => VideoTrim(
+          Duration(milliseconds: start),
+          Duration(milliseconds: end),
+        ),
+        _ => null,
+      },
       ref: get('ref'),
       expires: switch (get<String>('expires')) {
         final time? => DateTime.tryParse(time),
@@ -98,7 +107,7 @@ final class OutgoingAttachment with ValueObject {
   /// Set for a voice message, sent as a recording rather than a file.
   final VoiceNote? voice;
 
-  /// How long a video plays.
+  /// How long a video plays; the chosen part's length when [trim] is set.
   final Duration? duration;
 
   /// A small JPEG of the photo or video, for its bubble while it is sent;
@@ -107,6 +116,9 @@ final class OutgoingAttachment with ValueObject {
 
   /// The staged copy is the photo or video as picked, still to compress.
   final bool pendingCompression;
+
+  /// The part of the staged video to send, cut when it is compressed.
+  final VideoTrim? trim;
   final String? ref;
   final DateTime? expires;
 
@@ -147,24 +159,44 @@ final class OutgoingAttachment with ValueObject {
     poster: poster,
   );
 
-  OutgoingAttachment _copy({String? ref, DateTime? expires}) =>
-      OutgoingAttachment(
-        stagedId: stagedId,
-        name: name,
-        size: size,
-        mimeType: mimeType,
-        isImage: isImage,
-        isVideo: isVideo,
-        width: width,
-        height: height,
-        caption: caption,
-        voice: voice,
-        duration: duration,
-        poster: poster,
-        pendingCompression: pendingCompression,
-        ref: ref ?? this.ref,
-        expires: expires ?? this.expires,
-      );
+  /// This attachment, sent with [caption].
+  OutgoingAttachment withCaption(String caption) => _copy(caption: caption);
+
+  /// Only the [trim] part of this video, which is cut when it is
+  /// compressed, with [poster] when it has a new one.
+  OutgoingAttachment trimmed(VideoTrim trim, {Uint8List? poster}) => _copy(
+    duration: trim.length,
+    poster: poster,
+    pendingCompression: true,
+    trim: trim,
+  );
+
+  OutgoingAttachment _copy({
+    String? caption,
+    Duration? duration,
+    Uint8List? poster,
+    bool? pendingCompression,
+    VideoTrim? trim,
+    String? ref,
+    DateTime? expires,
+  }) => OutgoingAttachment(
+    stagedId: stagedId,
+    name: name,
+    size: size,
+    mimeType: mimeType,
+    isImage: isImage,
+    isVideo: isVideo,
+    width: width,
+    height: height,
+    caption: caption ?? this.caption,
+    voice: voice,
+    duration: duration ?? this.duration,
+    poster: poster ?? this.poster,
+    pendingCompression: pendingCompression ?? this.pendingCompression,
+    trim: trim ?? this.trim,
+    ref: ref ?? this.ref,
+    expires: expires ?? this.expires,
+  );
 
   /// The message: the image or video above its caption, the file below
   /// it, or the recording. Its entity carries [ref] once uploaded.
@@ -228,6 +260,8 @@ final class OutgoingAttachment with ValueObject {
     'videoMs': ?duration?.inMilliseconds,
     if (poster case final poster?) 'poster': base64.encode(poster),
     if (pendingCompression) 'raw': true,
+    'trimStart': ?trim?.start.inMilliseconds,
+    'trimEnd': ?trim?.end.inMilliseconds,
     'ref': ?ref,
     'expires': ?expires?.toUtc().toIso8601String(),
   };
@@ -255,6 +289,7 @@ final class OutgoingAttachment with ValueObject {
     duration,
     poster,
     pendingCompression,
+    trim,
     ref,
     expires,
   ];

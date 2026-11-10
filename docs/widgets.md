@@ -57,7 +57,8 @@ business logic in UI files. Flutter's own guidance is in
   rebuilds nothing else). Images keep their
   space from the sender's width and height, so the list doesn't jump when they load, and decode
   at display size (`ResizeImage`). The attach menu (`AttachSheet`), the caption screen
-  (`AttachmentPreviewScreen`) and the full-screen `ImageViewerScreen` watch nothing but the
+  (`AttachmentPreviewScreen`, which `AttachButton` gives its `AttachmentPreviewActions`) and the
+  full-screen `ImageViewerScreen` watch nothing but the
   camera's availability.
 - **`select` scalars:** `ref.watch(chatSummaryProvider(topic).select((c) => c?.unread ?? 0))`.
 - **Buttons own their state.** `SendButton` alone watches whether a send is running (and the text

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math' show max, min;
+
 import 'dart:typed_data';
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -8,7 +9,9 @@ import 'package:tinode_flutter_chat/src/attachments/domain/compressed_media.dart
 import 'package:tinode_flutter_chat/src/attachments/domain/image_size.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/tinode_attachment_limits.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/video_trim.dart';
 import 'package:v_video_compressor/v_video_compressor.dart';
+import 'package:v_video_compressor/v_video_compressor_method_channel.dart';
 
 /// Shrinks photos and videos before they are sent, and reads what a video
 /// is. One compression runs at a time: the outbox asks for no more.
@@ -16,21 +19,37 @@ abstract interface class MediaCompressor {
   /// How long [video] plays and its size; null when it can't be read.
   Future<VideoInfo?> videoInfo(LocalFile video);
 
-  /// A small JPEG still of [video], at most 640 px on its longer side;
-  /// null when none can be taken.
-  Future<Uint8List?> videoPoster(LocalFile video);
+  /// A small JPEG still of [video] from [at], at most 640 px on its longer
+  /// side; null when none can be taken.
+  Future<Uint8List?> videoPoster(
+    LocalFile video, {
+    Duration at = Duration.zero,
+  });
+
+  /// [count] tiny JPEG stills of [video], of [duration], evenly spread, one
+  /// after the other as they are taken; null for one that can't be.
+  Stream<Uint8List?> videoFrames(
+    LocalFile video, {
+    required int count,
+    required Duration duration,
+  });
 
   /// A small upright JPEG of [image], at most 640 px on its longer side,
   /// for its bubble while it is sent; null when none can be made. [width]
   /// and [height], when known, are its size as shown.
   Future<Uint8List?> imagePoster(LocalFile image, {int? width, int? height});
 
-  /// [video] re-encoded as MP4 at the [limits]' bitrates, reporting how far
-  /// it got to [onProgress] (0 to 1). Throws
-  /// [CompressionCancelledException] after [cancel].
+  /// [video], or only its [trim] part, re-encoded as MP4 at about 720p,
+  /// or 480p when [smaller], and at the [limits]' bitrates, or
+  /// [videoBitrate] for the picture when given. Reports how far it got to
+  /// [onProgress] (0 to 1). Throws [CompressionCancelledException] after
+  /// [cancel].
   Future<CompressedMedia> compressVideo(
     LocalFile video,
     TinodeAttachmentLimits limits, {
+    VideoTrim? trim,
+    int? videoBitrate,
+    bool smaller = false,
     void Function(double fraction)? onProgress,
   });
 
@@ -58,6 +77,9 @@ final class PluginMediaCompressor implements MediaCompressor {
   static const _posterSide = 640;
   static const _posterQuality = 60;
 
+  /// A frame's longer side, in pixels: it shows about 40 px tall.
+  static const _frameSide = 96;
+
   @override
   Future<VideoInfo?> videoInfo(LocalFile video) async {
     final info = await _videos.getVideoInfo(await _pathOf(video, '.mp4'));
@@ -72,13 +94,17 @@ final class PluginMediaCompressor implements MediaCompressor {
   }
 
   @override
-  Future<Uint8List?> videoPoster(LocalFile video) async {
+  Future<Uint8List?> videoPoster(
+    LocalFile video, {
+    Duration at = Duration.zero,
+  }) async {
     // The plugin draws iOS stills at the screen's scale (3x on most
     // iPhones), so it gives a lossless frame and the size is set here,
     // where both platforms draw at 1x.
     final frame = await _videos.getVideoThumbnail(
       await _pathOf(video, '.mp4'),
-      const VVideoThumbnailConfig(
+      VVideoThumbnailConfig(
+        timeMs: at.inMilliseconds,
         maxWidth: _posterSide,
         maxHeight: _posterSide,
         format: VThumbnailFormat.png,
@@ -100,6 +126,36 @@ final class PluginMediaCompressor implements MediaCompressor {
       );
     } finally {
       await _deleteQuietly(file);
+    }
+  }
+
+  @override
+  Stream<Uint8List?> videoFrames(
+    LocalFile video, {
+    required int count,
+    required Duration duration,
+  }) async* {
+    final path = await _pathOf(video, '.mp4');
+    for (var i = 0; i < count; i++) {
+      final frame = await _videos.getVideoThumbnail(
+        path,
+        VVideoThumbnailConfig(
+          timeMs: duration.inMilliseconds * (2 * i + 1) ~/ (2 * count),
+          maxWidth: _frameSide,
+          maxHeight: _frameSide,
+          quality: _posterQuality,
+        ),
+      );
+      if (frame == null) {
+        yield null;
+        continue;
+      }
+      final file = File(frame.thumbnailPath);
+      try {
+        yield await file.readAsBytes();
+      } finally {
+        await _deleteQuietly(file);
+      }
     }
   }
 
@@ -131,36 +187,57 @@ final class PluginMediaCompressor implements MediaCompressor {
   Future<CompressedMedia> compressVideo(
     LocalFile video,
     TinodeAttachmentLimits limits, {
+    VideoTrim? trim,
+    int? videoBitrate,
+    bool smaller = false,
     void Function(double fraction)? onProgress,
   }) async {
     _cancelled = false;
-    final result = await _videos.compressVideo(
-      await _pathOf(video, '.mp4'),
-      VVideoCompressionConfig.medium(
-        // The receiver must be able to play it: always H.264 in MP4.
-        fallbackToOriginalIfNotSmaller: false,
-        advanced: VVideoAdvancedConfig(
-          videoBitrate: limits.videoBitrate,
-          audioBitrate: limits.audioBitrate,
-          videoCodec: VVideoCodec.h264,
-          audioCodec: VAudioCodec.aac,
-          // Media3 already turns the frames by the video's rotation, so on
-          // Android this would turn a portrait video on its side.
-          autoCorrectOrientation: Platform.isIOS,
-        ),
-      ),
-      onProgress: onProgress,
+    final path = await _pathOf(video, '.mp4');
+    var bitrate = videoBitrate ?? limits.videoBitrate;
+    if (videoBitrate == null && trim != null) {
+      if (await _videos.getVideoInfo(path) case final source?) {
+        bitrate = limits.trimmedVideoBitrate(
+          video.length,
+          Duration(milliseconds: source.durationMillis),
+        );
+      }
+    }
+    final advanced = VVideoAdvancedConfig(
+      videoBitrate: bitrate,
+      audioBitrate: limits.audioBitrate,
+      videoCodec: VVideoCodec.h264,
+      audioCodec: VAudioCodec.aac,
+      // Media3 already turns the frames by the video's rotation, so on
+      // Android this would turn a portrait video on its side.
+      autoCorrectOrientation: Platform.isIOS,
+      trimStartMs: trim?.start.inMilliseconds,
+      trimEndMs: trim?.end.inMilliseconds,
+    );
+    // The receiver must be able to play it: always H.264 in MP4.
+    final compressedPath = await _compressOnChannel(
+      path,
+      smaller
+          ? VVideoCompressionConfig.low(
+              fallbackToOriginalIfNotSmaller: false,
+              advanced: advanced,
+            )
+          : VVideoCompressionConfig.medium(
+              fallbackToOriginalIfNotSmaller: false,
+              advanced: advanced,
+            ),
+      onProgress,
     );
     if (_cancelled) {
-      if (result != null) {
-        await _deleteQuietly(File(result.compressedFilePath));
+      if (compressedPath != null) {
+        await _deleteQuietly(File(compressedPath));
       }
       throw const CompressionCancelledException();
     }
-    if (result == null) {
+    if (compressedPath == null) {
       throw StateError('The video could not be compressed.');
     }
-    final file = File(result.compressedFilePath);
+    final file = File(compressedPath);
     final info = await _videos.getVideoInfo(file.path);
     return CompressedMedia(
       length: await file.length(),
@@ -170,7 +247,57 @@ final class PluginMediaCompressor implements MediaCompressor {
       delete: () => _deleteQuietly(file),
       width: (info?.width ?? 0) > 0 ? info!.width : null,
       height: (info?.height ?? 0) > 0 ? info!.height : null,
+      videoBitrate: bitrate,
     );
+  }
+
+  /// The plugin's own channels, as `VVideoCompressor.compressVideo` uses
+  /// them: that one logs a failure and returns null, so it can't say a
+  /// video's format can't be decoded.
+  static final _channels = MethodChannelVVideoCompressor();
+
+  /// Compresses the video at [path] with [config], reporting to
+  /// [onProgress]; the compressed file's path, null when none came.
+  /// Throws [UnsupportedVideoFormatException] when the device can't decode
+  /// or encode it.
+  static Future<String?> _compressOnChannel(
+    String path,
+    VVideoCompressionConfig config,
+    void Function(double fraction)? onProgress,
+  ) async {
+    final progress = onProgress == null
+        ? null
+        : _channels.eventChannel.receiveBroadcastStream().listen((event) {
+            // Not the end: on Android the plugin sends it after the
+            // result, where it would land on the next compression.
+            if (event case {'progress': final num fraction} when fraction < 1) {
+              onProgress(fraction.toDouble());
+            }
+          }, onError: (Object _) {});
+    try {
+      // The plugin marks its channel for tests only, yet it is the one way
+      // to the error: the data layer may not import Flutter's own.
+      // ignore: invalid_use_of_visible_for_testing_member
+      final result = await _channels.methodChannel
+          .invokeMapMethod<String, Object?>('compressVideo', {
+            'videoPath': path,
+            'config': config.toMap(),
+          });
+      return switch (result?['compressedFilePath']) {
+        final String compressed when compressed.isNotEmpty => compressed,
+        _ => null,
+      };
+    } on Exception catch (e) {
+      // A PlatformException, with Media3's ERROR_CODE_DECODING_
+      // or ENCODING_FORMAT_UNSUPPORTED in its message.
+      final reason = e.toString();
+      if (reason.contains('FORMAT_UNSUPPORTED')) {
+        throw UnsupportedVideoFormatException(reason);
+      }
+      rethrow;
+    } finally {
+      await progress?.cancel();
+    }
   }
 
   @override

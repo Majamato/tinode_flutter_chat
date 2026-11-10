@@ -147,8 +147,8 @@ class _ComposerState extends ConsumerState<Composer> {
         FileTooLargeException(:final limit) => strings.fileTooLargeLimit(
           fileSizeLabel(limit),
         ),
-        VideoTooLongException(:final max) => strings.videoTooLong(
-          formatCallDuration(max),
+        VideoTooLongException(:final limit) => strings.videoTooLongLimit(
+          formatCallDuration(limit),
         ),
         _ => failureMessage(strings, ChatFailure.of(error)),
       };

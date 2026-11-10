@@ -18,4 +18,5 @@ String failureMessage(TinodeChatStrings strings, ChatFailure failure) =>
       ChatFailure.credentialsRefused => strings.credentialsRefused,
       ChatFailure.wrongCode => strings.wrongResetCode,
       ChatFailure.gone => strings.chatGone,
+      ChatFailure.unsupportedFormat => strings.unsupportedVideoFormat,
     };

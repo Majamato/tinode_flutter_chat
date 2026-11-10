@@ -31,8 +31,7 @@ class RenderBubbleTextLayout extends RenderBox
     with
         ContainerRenderObjectMixin<RenderBox, _LayoutParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, _LayoutParentData> {
-  RenderBubbleTextLayout({required TextDirection textDirection})
-    : _textDirection = textDirection;
+  RenderBubbleTextLayout({required this._textDirection});
 
   /// Space between the last word and the footer.
   static const gap = 8.0;

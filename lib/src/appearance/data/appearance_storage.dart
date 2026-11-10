@@ -17,9 +17,7 @@ abstract interface class AppearanceStorage {
 
 /// A JSON file in the app's support directory, next to the chat caches.
 final class FileAppearanceStorage implements AppearanceStorage {
-  FileAppearanceStorage({
-    Future<Directory> Function() directory = getApplicationSupportDirectory,
-  }) : _directory = directory;
+  FileAppearanceStorage({this._directory = getApplicationSupportDirectory});
 
   static const _fileName = 'tinode_appearance.json';
 

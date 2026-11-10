@@ -249,18 +249,18 @@ void main() {
   test('levels go out live and are kept; a new recording starts afresh', () {
     run((async) {
       final live = <double>[];
-      controller().liveLevels.listen(live.add);
+      controller().liveLevels().listen(live.add);
       wait(async, controller().start());
       recorder
         ..level(-30)
         ..level(-10);
       async.flushMicrotasks();
       expect(live, [-30, -10]);
-      expect(controller().levelsSoFar, [-30, -10]);
+      expect(controller().levelsSoFar(), [-30, -10]);
 
       wait(async, controller().cancel());
       wait(async, controller().start());
-      expect(controller().levelsSoFar, isEmpty);
+      expect(controller().levelsSoFar(), isEmpty);
     });
   });
 

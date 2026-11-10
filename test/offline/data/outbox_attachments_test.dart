@@ -273,6 +273,41 @@ void main() {
     expect(files.stagedIds, isEmpty);
   });
 
+  test('a staged file queues nothing until it is sent', () async {
+    final staged = await session.stageAttachment(notes());
+    expect(files.stagedIds, [staged.stagedId]);
+    expect(await session.storedOutgoing(bob), isEmpty);
+
+    await session.sendStaged(bob, staged, caption: ' read me ');
+    await idle();
+
+    expect(remote.calls, contains('publish $bob read me'));
+    expect(await session.storedOutgoing(bob), isEmpty);
+  });
+
+  test('without a compressor, videos cannot be trimmed', () async {
+    expect(session.canTrimVideos, isFalse);
+    expect(
+      await session
+          .videoFrames(
+            pickedFile('clip.mov', [1], isVideo: true),
+            count: 10,
+            duration: const Duration(seconds: 10),
+          )
+          .toList(),
+      isEmpty,
+    );
+  });
+
+  test('a staged file discarded leaves nothing behind', () async {
+    final staged = await session.stageAttachment(notes());
+
+    await session.discardStaged(staged);
+
+    expect(files.stagedIds, isEmpty);
+    expect(await session.storedOutgoing(bob), isEmpty);
+  });
+
   group('received files', () {
     const ref = '/v0/file/s/x.txt';
 

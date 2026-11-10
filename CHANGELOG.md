@@ -1,5 +1,41 @@
 ## Unreleased
 
+- **Breaking:** needs Flutter 3.44 (Dart 3.12) or newer, for `v_video_compressor` 2.2.3.
+- **Fix:** on Android, a compressed video gets the bitrate asked for (1.5 Mbit/s by default). The
+  encoder used to pick its own, about 3.9 Mbit/s at 720p, so a video over about 44 seconds came out
+  over the limit and failed after compressing. Its H.264 level now also suits the output, so iOS
+  and Safari play it.
+- **Fix:** a video that comes out over the limit once compressed is compressed once more, at about
+  480p and a lower bitrate, instead of failing. Some Android phones won't encode 720p below about
+  2.5 Mbit/s whatever is asked, so long videos failed there.
+- **Fix:** a large video a little longer than fits (e.g. 1:36 at 20 MiB) opens in the preview with
+  as much as fits chosen, as the encoder needs some headroom, instead of all of it.
+- **Behaviour change:** a compressed video may weigh up to 10% over `maxVideoBytes` (22 MiB by
+  default, never over the server's limit) before it is compressed again or refused, as encoders
+  miss their bitrate: a full-length video came out at 19.4 of its 20 MiB.
+  `TinodeAttachmentLimits.compressedVideoBytesLimit` is new.
+- **Fix:** a video compressed twice no longer shows 100% during its second pass. The plugin's
+  late "done" event landed on it and held the progress there.
+- **New:** a picked video over 500 MiB or 10 minutes is refused at once, naming the limit, before
+  anything is copied: `TinodeAttachmentLimits.maxSourceVideoBytes` and `maxSourceVideoDuration`.
+- **New:** a video the device can't decode, e.g. a movie with Dolby (AC3) sound on most Android
+  phones, fails with a message that says so. A failed message's sheet now says why it failed.
+  `TinodeChatStrings.videoTooLongLimit` and `unsupportedVideoFormat` are new.
+- **Behaviour change:** a video within the limit (20 MiB, or the server's when lower) goes as it
+  is, with no re-encoding, however long it is. One over it is compressed as before.
+- **New:** the preview trims a video: a bar of its frames with a window to choose the part to
+  send. A video too long to fit opens with as much as fits chosen, instead of being refused.
+- **Fix:** the preview's video controls show in a light theme.
+- **Breaking:** `TinodeChatStrings.videoTooLong` is gone: a whole video that can't fit now throws
+  `FileTooLargeException`. `TinodeChatStrings.preparingAttachment`,
+  `trimStart` and `trimEnd` are new.
+- **Fix:** picking a photo, video or file no longer leaves the chat silent. The preview opens
+  with a spinner while the system fetches the file, even from iCloud.
+- **Fix:** Send in the preview no longer spins on the composer's button before the bubble shows.
+  The file is prepared while the preview is open, and Send pressed early waits there. A second
+  attachment can't be lost, and text can be sent meanwhile.
+- **New:** an X on the bubble of a photo, video or file on its way stops it, without the long
+  press.
 - **Behaviour change:** icons follow one standard. What you can tap is near-black, what only
   informs is grey, and the brand color marks only what is selected or primary. The back button,
   settings rows and sheet rows lose their brand or multicolored tints, and chrome icons are all

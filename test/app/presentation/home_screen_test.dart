@@ -110,13 +110,16 @@ void main() {
     await openTab(tester, strings.settingsTitle);
 
     final chats = find.byType(ChatListScreen, skipOffstage: false);
-    expect(TickerMode.of(tester.element(chats)), isFalse);
-    expect(TickerMode.of(tester.element(find.byType(SettingsScreen))), isTrue);
+    expect(TickerMode.valuesOf(tester.element(chats)).enabled, isFalse);
+    expect(
+      TickerMode.valuesOf(tester.element(find.byType(SettingsScreen))).enabled,
+      isTrue,
+    );
 
     await openTab(tester, strings.chatListTitle);
 
     expect(tester.state<ScrollableState>(list).position, same(position));
-    expect(TickerMode.of(tester.element(chats)), isTrue);
+    expect(TickerMode.valuesOf(tester.element(chats)).enabled, isTrue);
   });
 
   testWidgets('back goes to the chats first', (tester) async {

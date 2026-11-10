@@ -344,21 +344,35 @@ cache. `CachedTinodeSession` decorates the server session:
   files of its voice recordings, as does forgetting a chat. A message pruned from the chat cache
   before it is deleted leaves its file until logout. A store that can't be opened falls back to
   memory.
-- **Compression.** With a `MediaCompressor` (always, in the app), `sendAttachment` stages a
-  photo or video as picked and queues it `pendingCompression`, so its bubble shows at once. A
-  video first has its length, size and a small JPEG poster read; one whose length alone can't
-  fit `TinodeAttachmentLimits` (or the server's limit, when lower) once compressed is refused
-  there with `VideoTooLongException`. A **compressor** loop runs beside the uploader, whether
-  online or not, one entry at a time, oldest first: it re-encodes a video (H.264 MP4 at the
+- **Compression.** With a `MediaCompressor` (always, in the app), `stageAttachment` stages a
+  photo or video as picked, and `sendStaged` queues it, so its bubble shows at once. A picked
+  video over `maxSourceVideoBytes` (500 MiB) or, read from the picked file,
+  `maxSourceVideoDuration` (10 minutes) is refused first, with `FileTooLargeException` or
+  `VideoTooLongException`, before anything is copied. A video
+  within `TinodeAttachmentLimits` (or the server's limit, when lower) goes as it is; photos and
+  videos over it are `pendingCompression`. A video has its length, size and a small JPEG poster
+  read. Of a video that can't fit at the limits' bitrates only a part can go: `trimStaged` marks
+  it with the **video trim** chosen in the preview, retakes the poster from where that starts
+  and leaves it `pendingCompression`, and the cut is made as it compresses, at no more than the
+  source's own bitrate. `sendStaged` refuses with `FileTooLargeException` a whole video that
+  can't fit, which only happens if no part could be chosen. A **compressor** loop runs
+  beside the uploader, whether online or not, one entry at a time, oldest first: it re-encodes a video (H.264 MP4 at the
   limits' bitrates, reporting `CompressProgress`) or scales a photo down to a JPEG (no
-  progress), stages the result in place of the original and emits `OutgoingChanged`. A video
-  still over the limit fails as `tooLarge`; a compression error as `unexpected`. The uploader
+  progress), stages the result in place of the original and emits `OutgoingChanged`. A video may
+  come out up to 10% over the limit (`compressedVideoBytesLimit`, within the server's). Some
+  encoders won't go as low as the bitrate asked (Android's minimum quality raises 720p to about
+  2.5 Mbit/s on some phones), so a video still over that once compressed is compressed once more,
+  at about 480p and a bitrate cut by as much as it overshot, aiming at the limit itself
+  (`TinodeAttachmentLimits.secondPassVideoBitrate`); its progress starts over. One still over
+  fails as `tooLarge`; a video the device can't decode (Media3's `FORMAT_UNSUPPORTED`, read from
+  the plugin's channel, as its wrapper drops the error) as `unsupportedFormat`; any other
+  compression error as `unexpected`. A failed message's sheet names why it failed. The uploader
   and the drain hold an entry until it is compressed, so its chat keeps its order. Discarding
   the entry, forgetting its chat or closing the session stops the compression; an app closed
   meanwhile compresses again from the start. GIFs and files go as they are.
-- **Uploads.** `sendAttachment` copies the picked file into staging (picker files can vanish),
-  reads an image's size from its header, and queues a `publish` whose payload holds the
-  attachment. An **uploader** runs beside the drain, one upload at a time: it uploads an entry's
+- **Uploads.** `stageAttachment` copies the picked file into staging (picker files can vanish)
+  and reads an image's size from its header; `sendStaged` queues a `publish` whose payload holds
+  the attachment. (`sendAttachment` does both, for a voice message.) An **uploader** runs beside the drain, one upload at a time: it uploads an entry's
   file once that entry leads its chat, and saves the ref and its expiry (on the device's clock)
   into the payload before kicking the drain, so a drop never uploads it twice. The drain stops a
   chat at an entry still waiting for its upload and goes on with the other chats: later messages
@@ -622,12 +636,22 @@ Only a local failure (no session) keeps the text and shows a snack bar.
 where `cameraAvailable`, File; the profile photo reuses it for photos only, without File.
 `SendController.pick` asks the `AttachmentPicker`; Camera opens `MediaCameraScreen`, the in-app
 camera with its own photo and video switch, whose capture `SendController.captured` turns into
-a file and saves to the device's photos (`GallerySaver`). `AttachmentPreviewScreen` takes a
-caption (a video plays there); `SendController.sendAttachment` queues it (a file over
-`maxFileUploadSize`, or a video too long to fit, is refused there, naming the limit). The
+a file and saves to the device's photos (`GallerySaver`). Every loading state of a photo or
+video is in its preview or its bubble, never in the composer. `AttachmentPreviewScreen` opens
+with the picker, behind it, since nothing says when the user has chosen and the system is
+fetching the file: it shows a spinner until the file arrives, and leaves by itself when nothing
+was picked. It takes a caption (a video plays there) while `SendController.stage` staged the
+file and reads its poster (a file over `maxFileUploadSize` is refused there, naming the limit,
+and the preview leaves). A video sits on black, since `VideoPlayerView` is white, and where it can
+be compressed `VideoTrimBar` takes the place of its scrubber: `VideoTrim` starts at as much as
+`TinodeAttachmentLimits.maxClip` allows, the player loops inside it, and its frames come one by
+one from `MediaCompressor.videoFrames`. Send pressed before all that ends spins
+on the preview's own button. `SendController.sendStaged` then only queues it, never loading;
+closing the preview discards the staged file. The
 outgoing bubble shows the poster (`MediaCompressor.imagePoster` or `videoPoster`, taken when
-it is queued; a photo without one shows its staged copy, `stagedFile`) under an
-`AttachmentProgressOverlay` ("Compressing… 42%", then "Uploading… 67%"); its
+it is staged; a photo without one shows its staged copy, `stagedFile`) under an
+`AttachmentProgressOverlay` ("Compressing… 42%", then "Uploading… 67%", with an X that
+discards the message; a file has the X at the end of its row); its
 `AttachmentProgressRing` is the only widget that watches `AttachmentProgressController` (fed by
 the outbox's `CompressProgress` and `UploadProgress` events, at most a few a second). The
 compression and the upload belong to the session, so leaving the chat doesn't stop them.
@@ -689,7 +713,7 @@ and
 | Hanging up from the background fails | Logged; the server ends the call when it times out |
 | A search fails, e.g. offline | `ErrorRetryView` in place of the results; it searches again on connect |
 | The server refuses a new group, or some of its members | Snack bar; the group screen stays, or the group opens |
-| A picked file is over the server's limit | Snack bar naming the limit; nothing is queued |
+| A picked file is over the server's limit | The preview leaves; snack bar naming the limit; nothing is queued |
 | The server refuses an upload (413: too large) or it keeps failing | Error mark on the outgoing bubble; long press to retry or discard |
 | An image fails to download, e.g. offline | A retry button in its space; it loads again on connect |
 | A file fails to download, or nothing opens it | "Could not be downloaded" in its bubble, or a snack bar |

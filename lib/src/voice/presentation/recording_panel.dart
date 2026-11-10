@@ -57,7 +57,7 @@ class _RecordingPanelState extends ConsumerState<RecordingPanel>
   late final VoiceRecorderController _recorder = ref.read(
     voiceRecorderControllerProvider(widget.topic).notifier,
   );
-  late final _initial = List<double>.of(_recorder.levelsSoFar);
+  late final _initial = List<double>.of(_recorder.levelsSoFar());
 
   var _still = false;
 
@@ -182,7 +182,7 @@ class _RecordingPanelState extends ConsumerState<RecordingPanel>
                   Expanded(
                     child: LiveVoiceWaveform(
                       initial: _initial,
-                      levels: _recorder.liveLevels,
+                      levels: _recorder.liveLevels(),
                       running: !paused,
                       color: colors.onSurfaceVariant,
                     ),

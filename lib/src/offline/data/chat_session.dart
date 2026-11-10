@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/video_trim.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/cached_call.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
@@ -74,6 +78,41 @@ abstract interface class ChatSession implements TinodeSession {
     PickedFile file, {
     String caption = '',
   });
+
+  /// Copies [file] in and reads what its message will say about it, without
+  /// queuing anything, so that [sendStaged] has nothing slow left to do.
+  /// Throws `FileTooLargeException` for a file over the server's limit.
+  Future<OutgoingAttachment> stageAttachment(PickedFile file);
+
+  /// Whether a video can be trimmed here: it needs the compressor.
+  bool get canTrimVideos;
+
+  /// [count] small stills of the picked video [file], of [duration], to
+  /// choose its part by; none where videos can't be trimmed.
+  Stream<Uint8List?> videoFrames(
+    PickedFile file, {
+    required int count,
+    required Duration duration,
+  });
+
+  /// What [stageAttachment] returned, to send only its [trim] part.
+  Future<OutgoingAttachment> trimStaged(
+    OutgoingAttachment attachment,
+    VideoTrim trim,
+  );
+
+  /// Queues what [stageAttachment] returned, with an optional [caption].
+  /// Throws `FileTooLargeException` for a whole video that can't fit the
+  /// limit even compressed, and deletes its staged copy.
+  Future<OutgoingMessage> sendStaged(
+    String topic,
+    OutgoingAttachment attachment, {
+    String caption = '',
+  });
+
+  /// Deletes the staged copy of what [stageAttachment] returned, when it
+  /// won't be sent.
+  Future<void> discardStaged(OutgoingAttachment attachment);
 
   /// The staged copy of an outgoing attachment, while it is not sent.
   Future<LocalFile?> stagedFile(String stagedId);

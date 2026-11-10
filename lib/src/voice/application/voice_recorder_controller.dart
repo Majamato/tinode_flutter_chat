@@ -78,10 +78,10 @@ class VoiceRecorderController extends _$VoiceRecorderController {
 
   /// The levels of the recording so far, in dBFS, one per
   /// `voiceSampleInterval` recorded.
-  List<double> get levelsSoFar => UnmodifiableListView(_dbfs);
+  List<double> levelsSoFar() => UnmodifiableListView(_dbfs);
 
   /// Each level, in dBFS, as it comes while recording.
-  Stream<double> get liveLevels => _live.stream;
+  Stream<double> liveLevels() => _live.stream;
 
   /// The recorded time so far, without the pauses.
   Duration get _recorded {

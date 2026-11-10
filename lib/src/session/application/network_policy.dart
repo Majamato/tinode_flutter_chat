@@ -50,7 +50,7 @@ class NetworkPolicy extends _$NetworkPolicy {
     switch (session.status) {
       case Connected():
         session.resume(
-          probeTimeout: ref.read(backgroundPolicyProvider.notifier).inCall
+          probeTimeout: ref.read(backgroundPolicyProvider.notifier).inCall()
               ? networkProbeTimeoutInCall
               : networkProbeTimeout,
         );

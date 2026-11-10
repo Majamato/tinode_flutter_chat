@@ -277,8 +277,9 @@ void main() {
       received = last!.attachments.whereType<VideoAttachment>().firstOrNull;
       return received != null;
     });
-    expect(received!.name, 'clip.mp4');
-    expect(received!.mimeType, 'video/mp4');
+    // Within the limit: it goes as it is.
+    expect(received!.name, 'clip.mov');
+    expect(received!.mimeType, 'video/quicktime');
     expect((received!.width, received!.height), (1280, 720));
     expect(received!.duration, const Duration(seconds: 10));
     expect(received!.poster, pngBytes);
