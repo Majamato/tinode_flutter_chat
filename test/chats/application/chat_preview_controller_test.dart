@@ -33,7 +33,6 @@ void main() {
   }
 
   ChatPreview? bobPreview() => container.read(chatPreviewProvider(bob));
-  bool bobBehind() => container.read(chatPreviewBehindProvider(bob));
 
   test('with nothing cached, the previews come from the server', () async {
     final server = FakeTinodeSession(
@@ -60,13 +59,10 @@ void main() {
     expect(preview(bob)?.text, 'hi there');
     expect(preview(friends)?.text, 'hello all');
     expect(preview(friends)?.senderName, 'Carol');
-    expect(fresh.read(chatPreviewBehindProvider(bob)), isFalse);
-    expect(fresh.read(chatPreviewBehindProvider(friends)), isFalse);
   });
 
-  test('nothing cached: no preview, behind once the chat has messages', () {
+  test('nothing cached: no preview', () {
     expect(bobPreview(), isNull);
-    expect(bobBehind(), isTrue);
   });
 
   test('a message that arrives is the preview, and stays cached', () async {
@@ -75,7 +71,6 @@ void main() {
 
     expect(bobPreview()?.text, 'hello');
     expect(bobPreview()?.kind, ChatPreviewKind.text);
-    expect(bobBehind(), isFalse);
 
     container
       ..invalidate(chatPreviewControllerProvider)
@@ -85,7 +80,7 @@ void main() {
   });
 
   test(
-    'pres msg puts the preview behind until the message is cached',
+    'after pres msg the preview stays until the new message is cached',
     () async {
       session.emitMessage(message(bob, 4, text: 'hello'));
       await later();
@@ -99,12 +94,10 @@ void main() {
         ),
       );
       await later();
-      expect(bobBehind(), isTrue);
       expect(bobPreview()?.text, 'hello');
 
       session.emitMessage(message(bob, 5, text: 'again'));
       await later();
-      expect(bobBehind(), isFalse);
       expect(bobPreview()?.text, 'again');
     },
   );

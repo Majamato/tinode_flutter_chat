@@ -20,6 +20,16 @@ void main() {
     );
   });
 
+  test('times are on the 12-hour clock, whatever the locale', () {
+    String time(int hour, int minute) =>
+        localizations.messageTime(DateTime(2026, 10, 23, hour, minute));
+
+    expect(time(14, 5), '2:05 PM');
+    expect(time(0, 30), '12:30 AM');
+    expect(time(12, 0), '12:00 PM');
+    expect(time(23, 59), '11:59 PM');
+  });
+
   test('calendar days ignore the time of day and clock changes', () {
     expect(
       calendarDaysBetween(DateTime(2026, 10, 24, 23), DateTime(2026, 10, 25)),

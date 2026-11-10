@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_members.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_preview.dart';
-import 'package:tinode_flutter_chat/src/chats/domain/message_receipt.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 
 import '../../support/fixtures.dart';
@@ -41,7 +40,6 @@ void main() {
       (text.kind, text.text, text.isOwn),
       (ChatPreviewKind.text, 'see you', false),
     );
-    expect(text.receipt, isNull);
   });
 
   test('a photo with its caption and inline bytes', () {
@@ -128,7 +126,6 @@ void main() {
     expect(toMe.kind, ChatPreviewKind.call);
     expect(toMe.call?.audioOnly, isTrue);
     expect(toMe.isMissedCall, isTrue);
-    expect(toMe.newestSeq, 6);
 
     final mine = preview(
       DataMessage(
@@ -143,7 +140,7 @@ void main() {
     expect(mine.isMissedCall, isFalse);
   });
 
-  test("a group names the sender; the user's own get a receipt", () {
+  test("a group names the sender, but not of the user's own", () {
     final members = const ChatMembers().withMembers([
       member(alice, name: 'Alice', read: 9, received: 9),
       member(bob, name: 'Bob', read: 8, received: 9),
@@ -154,16 +151,9 @@ void main() {
 
     final mine = preview(message(friends, 9, from: alice), members: members)!;
     expect(mine.senderName, isNull);
-    expect(mine.receipt, MessageReceipt.delivered);
 
     // A direct chat names no one.
     expect(preview(message(bob, 9), members: members)!.senderName, isNull);
-  });
-
-  test('behind once the chat has a newer seq than the cache', () {
-    final latest = preview(message(bob, 3))!;
-    expect(latest.isBehind(3), isFalse);
-    expect(latest.isBehind(4), isTrue);
   });
 
   test('no message, only updates of older ones: no preview', () {

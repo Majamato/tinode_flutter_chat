@@ -40,8 +40,8 @@ abstract interface class MediaCompressor {
   Future<Uint8List?> imagePoster(LocalFile image, {int? width, int? height});
 
   /// [video], or only its [trim] part, re-encoded as MP4 at about 720p,
-  /// or 480p when [smaller], and at the [limits]' bitrates, or
-  /// [videoBitrate] for the picture when given. Reports how far it got to
+  /// or 480p when [smaller] or on Android, and at the [limits]' bitrates,
+  /// or [videoBitrate] for the picture when given. Reports how far it got to
   /// [onProgress] (0 to 1). Throws [CompressionCancelledException] after
   /// [cancel].
   Future<CompressedMedia> compressVideo(
@@ -69,6 +69,13 @@ abstract interface class MediaCompressor {
 /// [MediaCompressor] over `v_video_compressor` (Media3 on Android,
 /// AVFoundation on iOS) and `flutter_image_compress`.
 final class PluginMediaCompressor implements MediaCompressor {
+  /// Creates the compressor. When [startsLow] (by default on Android), a
+  /// video is compressed at about 480p from the start: some Android phones
+  /// won't encode 720p as low as asked, and would need a second pass.
+  PluginMediaCompressor({bool? startsLow})
+    : _startsLow = startsLow ?? Platform.isAndroid;
+
+  final bool _startsLow;
   final _videos = VVideoCompressor();
   var _cancelled = false;
 
@@ -79,6 +86,25 @@ final class PluginMediaCompressor implements MediaCompressor {
 
   /// A frame's longer side, in pixels: it shows about 40 px tall.
   static const _frameSide = 96;
+
+  /// What is asked of the video bitrate in a first pass at about 480p: a
+  /// phone that won't go as low as asked still comes out within the limit.
+  static const _lowFirstPassScale = 0.8;
+
+  /// Whether a pass is at about 480p, and the video bitrate it asks for,
+  /// from [bitrate]: at 480p when [smaller] or [startsLow], and at 80% of
+  /// [bitrate] in a first pass that [startsLow]. A second pass, [smaller],
+  /// comes with its bitrate already cut.
+  static ({bool low, int bitrate}) videoPass({
+    required bool startsLow,
+    required bool smaller,
+    required int bitrate,
+  }) => (
+    low: smaller || startsLow,
+    bitrate: startsLow && !smaller
+        ? (bitrate * _lowFirstPassScale).floor()
+        : bitrate,
+  );
 
   @override
   Future<VideoInfo?> videoInfo(LocalFile video) async {
@@ -203,6 +229,12 @@ final class PluginMediaCompressor implements MediaCompressor {
         );
       }
     }
+    final pass = videoPass(
+      startsLow: _startsLow,
+      smaller: smaller,
+      bitrate: bitrate,
+    );
+    bitrate = pass.bitrate;
     final advanced = VVideoAdvancedConfig(
       videoBitrate: bitrate,
       audioBitrate: limits.audioBitrate,
@@ -217,7 +249,7 @@ final class PluginMediaCompressor implements MediaCompressor {
     // The receiver must be able to play it: always H.264 in MP4.
     final compressedPath = await _compressOnChannel(
       path,
-      smaller
+      pass.low
           ? VVideoCompressionConfig.low(
               fallbackToOriginalIfNotSmaller: false,
               advanced: advanced,

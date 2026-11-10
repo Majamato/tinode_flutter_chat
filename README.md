@@ -430,7 +430,7 @@ TinodeChat(
   config: config,
   attachmentLimits: const TinodeAttachmentLimits(
     maxVideoBytes: 20 * 1024 * 1024, // the default; the server's limit wins when lower
-    videoBitrate: 1500000, // bits per second, at about 720p; asked again, at 480p, if overshot
+    videoBitrate: 1500000, // bits per second, at about 720p (480p and 80% of it on Android); asked again, lower, if overshot
     maxSourceVideoBytes: 500 * 1024 * 1024, // the default: larger picked videos are refused
     maxSourceVideoDuration: Duration(minutes: 10), // the default, likewise
     maxPhotoSide: 2048, // pixels, JPEG at photoQuality 85

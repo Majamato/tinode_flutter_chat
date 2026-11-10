@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
-import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_members.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_preview.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
@@ -21,8 +20,8 @@ part 'chat_preview_controller.g.dart';
 /// It never asks the server itself: a chat this device isn't attached to
 /// gets no message content, only `pres msg`, and the session's latest
 /// catch-up fetches the newest messages (and the members a preview needs)
-/// into the cache. Until then, or while offline, the preview is behind
-/// (see `chatPreviewBehindProvider`).
+/// into the cache. Until then, or while offline, a chat keeps the preview
+/// of its newest cached message.
 @Riverpod(keepAlive: true)
 class ChatPreviewController extends _$ChatPreviewController {
   final _changed = <String>{};
@@ -85,8 +84,8 @@ class ChatPreviewController extends _$ChatPreviewController {
     }
   }
 
-  /// The previews of [latest]. A group's members name its senders, and any
-  /// chat's tell how far the user's own message got; the others need none.
+  /// The previews of [latest]. A group's members name its senders; the
+  /// others need none.
   static Future<Map<String, ChatPreview>> _previews(
     ChatSession session,
     String me,
@@ -95,8 +94,7 @@ class ChatPreviewController extends _$ChatPreviewController {
     final previews = <String, ChatPreview>{};
     for (final MapEntry(key: topic, value: end) in latest.entries) {
       final kind = TopicKind.of(topic);
-      final needsMembers = kind == TopicKind.group || end.message?.from == me;
-      final members = needsMembers
+      final members = kind == TopicKind.group
           ? const ChatMembers().withMembers(await session.storedMembers(topic))
           : const ChatMembers();
       if (ChatPreview.of(end, me: me, kind: kind, members: members)
@@ -113,14 +111,3 @@ class ChatPreviewController extends _$ChatPreviewController {
 ChatPreview? chatPreview(Ref ref, String topic) => ref.watch(
   chatPreviewControllerProvider.select((previews) => previews[topic]),
 );
-
-/// Whether [topic] has messages past its preview: it shows "New message"
-/// instead. Changes only when that flips, not with every message.
-@riverpod
-bool chatPreviewBehind(Ref ref, String topic) {
-  final lastSeq = ref.watch(
-    chatSummaryProvider(topic).select((chat) => chat?.lastSeq ?? 0),
-  );
-  final preview = ref.watch(chatPreviewProvider(topic));
-  return preview?.isBehind(lastSeq) ?? lastSeq > 0;
-}

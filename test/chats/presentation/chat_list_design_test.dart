@@ -5,6 +5,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_h
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_tile.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_online_dot.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_preview_line.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_unread_badge.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
@@ -115,8 +116,14 @@ void main() {
       (badge.decoration! as ShapeDecoration).color,
       TinodeChatTheme.of(context).mutedBadgeColor,
     );
-    // Unread but not cached here.
-    expect(find.text(strings.newMessageArrived), findsOneWidget);
+    // Unread but not cached here: the line waits for the message.
+    expect(
+      find.descendant(
+        of: find.byType(ChatPreviewLine).last,
+        matching: find.text(''),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the newest message is the preview: text, then a missed call', (

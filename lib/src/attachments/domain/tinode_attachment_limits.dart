@@ -8,8 +8,9 @@ import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 /// Photos are scaled down to [maxPhotoSide] pixels on their longer side
 /// and saved as JPEG at [photoQuality]. A video within [maxVideoBytes] (or
 /// the server's own limit, when lower) goes as it is. One over it is
-/// re-encoded at about 720p, [videoBitrate] and [audioBitrate], and may
-/// then weigh 10% more (see [compressedVideoBytesLimit]). Some encoders
+/// re-encoded at about 720p, [videoBitrate] and [audioBitrate] (on
+/// Android at about 480p and 80% of [videoBitrate]), and may then weigh
+/// 10% more (see [compressedVideoBytesLimit]). Some encoders
 /// won't go that low, so one still over is re-encoded once more,
 /// at about 480p and a bitrate cut by as much as it overshot (see
 /// [secondPassVideoBitrate]), and not sent if it is still over. Of one that

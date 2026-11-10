@@ -1588,9 +1588,10 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   /// [entry]'s video, [staged], compressed. Some encoders won't go as low
-  /// as the bitrate asked (Android's minimum quality, on some phones), so
-  /// one over the limit is compressed once more, smaller and at a bitrate
-  /// cut by as much as it overshot; its progress starts over.
+  /// as the bitrate asked (Android's minimum quality, on some phones, which
+  /// is why Android starts at about 480p), so one over the limit is
+  /// compressed once more, smaller and at a bitrate cut by as much as it
+  /// overshot; its progress starts over.
   Future<CompressedMedia> _compressVideo(
     MediaCompressor compressor,
     LocalFile staged,

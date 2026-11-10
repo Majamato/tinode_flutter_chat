@@ -29,11 +29,10 @@ void main() {
       source: bob,
       seq: seq,
     );
-    // The first unread message turns the preview line to "New message",
-    // since this device doesn't have it.
+    // The first unread message brings the badge.
     session.emitPresence(news(3));
     await tester.pump();
-    expect(find.text(const TinodeChatStrings().newMessageArrived), findsOne);
+    expect(find.text('1'), findsOneWidget);
 
     final rebuilt = <String>[];
     debugOnRebuildDirtyWidget = (element, _) =>

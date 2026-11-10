@@ -116,7 +116,6 @@ class TinodeChatStrings {
     this.accountMenu = 'Account',
     this.searchChats = 'Search',
     this.chatMuted = 'Muted',
-    this.newMessageArrived = 'New message',
     this.photoMessage = 'Photo',
     this.videoMessage = 'Video',
     this.voiceMessage = 'Voice message',
@@ -366,7 +365,6 @@ class TinodeChatStrings {
     this.accountMenu = 'Cuenta',
     this.searchChats = 'Buscar',
     this.chatMuted = 'Silenciado',
-    this.newMessageArrived = 'Nuevo mensaje',
     this.photoMessage = 'Foto',
     this.videoMessage = 'Video',
     this.voiceMessage = 'Mensaje de voz',
@@ -619,7 +617,6 @@ class TinodeChatStrings {
     this.accountMenu = 'Compte',
     this.searchChats = 'Rechercher',
     this.chatMuted = 'En sourdine',
-    this.newMessageArrived = 'Nouveau message',
     this.photoMessage = 'Photo',
     this.videoMessage = 'Vidéo',
     this.voiceMessage = 'Message vocal',
@@ -1093,9 +1090,6 @@ class TinodeChatStrings {
 
   /// The label of a muted chat's icon in the chat list.
   final String chatMuted;
-
-  /// A chat list preview when the newest message isn't on this device yet.
-  final String newMessageArrived;
 
   /// A chat list preview of a photo without a caption.
   final String photoMessage;

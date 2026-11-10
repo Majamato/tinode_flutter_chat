@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_last_message_time.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_last_sent_ticks.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_muted_icon.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_online_dot.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_preview_line.dart';
@@ -10,9 +9,8 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_unread_badge.dart';
 
 /// One chat in the list, 76 px tall: the avatar with the online dot; the
-/// name, the muted icon, the ticks of the user's own last message and the
-/// time; then the preview line and the unread badge. The divider runs
-/// under the text only.
+/// name, the muted icon and the time; then the preview line and the unread
+/// badge. The divider runs under the text only.
 ///
 /// Watches nothing: each part watches its own field, so a new message
 /// rebuilds only the time and the unread badge.
@@ -78,7 +76,6 @@ class ChatListTile extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            ChatLastSentTicks(topic: topic),
                             ChatLastMessageTime(topic: topic),
                           ],
                         ),

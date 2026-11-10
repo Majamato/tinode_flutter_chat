@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 
 /// Formats message times with the app's [MaterialLocalizations].
 extension ChatTimeFormat on MaterialLocalizations {
-  /// The time of day, e.g. `14:05` or `2:05 PM`.
-  String messageTime(DateTime time) =>
-      formatTimeOfDay(TimeOfDay.fromDateTime(time.toLocal()));
+  /// The time of day on the 12-hour clock, whatever the locale's own,
+  /// e.g. `2:05 PM` (`2:05 p. m.` in Spanish).
+  String messageTime(DateTime time) {
+    final timeOfDay = TimeOfDay.fromDateTime(time.toLocal());
+    final period = switch (timeOfDay.period) {
+      DayPeriod.am => anteMeridiemAbbreviation,
+      DayPeriod.pm => postMeridiemAbbreviation,
+    };
+    return '${timeOfDay.hourOfPeriod}:${formatMinute(timeOfDay)} $period';
+  }
 
   /// The time for today's messages, [yesterday] for yesterday's when
   /// given, else the date, e.g. `Mar 3`.

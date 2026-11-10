@@ -5,7 +5,6 @@ import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.da
 import 'package:tinode_flutter_chat/src/chats/domain/call_record.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_members.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
-import 'package:tinode_flutter_chat/src/chats/domain/message_receipt.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 
@@ -18,20 +17,17 @@ enum ChatPreviewKind { text, photo, video, file, voice, call }
 final class ChatPreview with ValueObject {
   const ChatPreview({
     required this.seq,
-    required this.newestSeq,
     required this.kind,
     this.text = '',
     this.isOwn = false,
     this.senderName,
     this.call,
     this.photo,
-    this.receipt,
   });
 
   /// The preview of [latest] in a chat of [kind], its message as its
   /// updates leave it; null when the cache holds no message to show.
-  /// [members] name a group's senders and tell how far the user [me]'s
-  /// message got.
+  /// [members] name a group's senders; [me] tells the user's own message.
   static ChatPreview? of(
     LatestMessage latest, {
     required String me,
@@ -71,7 +67,6 @@ final class ChatPreview with ValueObject {
     };
     return ChatPreview(
       seq: message.seq,
-      newestSeq: latest.newestSeq,
       kind: previewKind,
       text: text.replaceAll('\n', ' ').trim(),
       isOwn: message.isOwn,
@@ -80,16 +75,10 @@ final class ChatPreview with ValueObject {
           : null,
       call: message.call,
       photo: photo,
-      receipt: message.isOwn
-          ? members.receiptOf(message.seq, me: me, kind: kind)
-          : null,
     );
   }
 
   final int seq;
-
-  /// The newest seq cached for the chat, updates included; see [isBehind].
-  final int newestSeq;
 
   final ChatPreviewKind kind;
 
@@ -109,26 +98,9 @@ final class ChatPreview with ValueObject {
   /// A photo's inline preview, when it came inline.
   final Uint8List? photo;
 
-  /// How far the user's own message got; null for others'.
-  final MessageReceipt? receipt;
-
   /// A call to the user that they didn't take.
   bool get isMissedCall => !isOwn && (call?.failed ?? false);
 
-  /// The chat has messages past what the cache holds: the preview is no
-  /// longer the newest.
-  bool isBehind(int lastSeq) => lastSeq > newestSeq;
-
   @override
-  List<Object?> get props => [
-    seq,
-    newestSeq,
-    kind,
-    text,
-    isOwn,
-    senderName,
-    call,
-    photo,
-    receipt,
-  ];
+  List<Object?> get props => [seq, kind, text, isOwn, senderName, call, photo];
 }

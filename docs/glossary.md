@@ -65,8 +65,8 @@ One row of the chat list. *In code:* `ChatListTile`.
 The tile's second line: the chat's newest cached message (its text, or an icon and label for a
 photo, file, voice message or call; "You" first for the user's own message in any chat, the
 sender first in a group), or who is typing. Read from the cache, which the **latest catch-up**
-fills from the server. When the chat has messages past it (**behind**), until then or while
-offline, the line says "New message" if unread, else nothing. *In code:* `ChatPreview`,
+fills from the server. When the chat has messages past it, until then or while offline, the line
+keeps the newest cached message, or nothing when none is cached. *In code:* `ChatPreview`,
 `ChatPreviewController`, `ChatPreviewLine`.
 
 **Bubble**
@@ -438,7 +438,8 @@ How photos and videos shrink and how large a video may be (20 MiB by default, or
 limit when lower). A video within the limit goes as it is. One over it is compressed; of one
 that can't fit at the limits' bitrates only a part can be sent, the **video trim**. One still too
 large once compressed, past a 10% tolerance (22 MiB), is compressed again, smaller (about 480p),
-and not sent if it still is. A
+and not sent if it still is. Android compresses at about 480p and 80% of the video bitrate from the
+start, as some phones won't encode 720p as low as asked. A
 picked video over 500 MiB or 10 minutes is refused before it is copied in; one the device can't
 decode fails as `unsupportedFormat`. *In code:* `TinodeAttachmentLimits`,
 `TinodeChat.attachmentLimits`, `FileTooLargeException`.

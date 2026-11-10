@@ -53,7 +53,7 @@ final class BackgroundPolicyProvider
   }
 }
 
-String _$backgroundPolicyHash() => r'04f5fa70f15242859fd40f11bb62bd0f5960e252';
+String _$backgroundPolicyHash() => r'553a0362aac7398d806b613910c8847d9fc7c101';
 
 /// Suspends the session a while after the app is hidden and resumes it
 /// when the app is shown again. During a call the session stays open: a

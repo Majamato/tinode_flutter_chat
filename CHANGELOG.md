@@ -14,6 +14,9 @@
   default, never over the server's limit) before it is compressed again or refused, as encoders
   miss their bitrate: a full-length video came out at 19.4 of its 20 MiB.
   `TinodeAttachmentLimits.compressedVideoBytesLimit` is new.
+- **Behaviour change:** on Android, a video over the limit is compressed at about 480p and 80% of
+  `videoBitrate` (1.2 Mbit/s by default) from the start, so phones that won't encode 720p as low as
+  asked compress it once, not twice. iOS still starts at about 720p.
 - **Fix:** a video compressed twice no longer shows 100% during its second pass. The plugin's
   late "done" event landed on it and held the progress there.
 - **New:** a picked video over 500 MiB or 10 minutes is refused at once, naming the limit, before

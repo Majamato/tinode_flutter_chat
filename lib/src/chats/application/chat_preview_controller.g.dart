@@ -16,8 +16,8 @@ part of 'chat_preview_controller.dart';
 /// It never asks the server itself: a chat this device isn't attached to
 /// gets no message content, only `pres msg`, and the session's latest
 /// catch-up fetches the newest messages (and the members a preview needs)
-/// into the cache. Until then, or while offline, the preview is behind
-/// (see `chatPreviewBehindProvider`).
+/// into the cache. Until then, or while offline, a chat keeps the preview
+/// of its newest cached message.
 
 @ProviderFor(ChatPreviewController)
 final chatPreviewControllerProvider = ChatPreviewControllerProvider._();
@@ -30,8 +30,8 @@ final chatPreviewControllerProvider = ChatPreviewControllerProvider._();
 /// It never asks the server itself: a chat this device isn't attached to
 /// gets no message content, only `pres msg`, and the session's latest
 /// catch-up fetches the newest messages (and the members a preview needs)
-/// into the cache. Until then, or while offline, the preview is behind
-/// (see `chatPreviewBehindProvider`).
+/// into the cache. Until then, or while offline, a chat keeps the preview
+/// of its newest cached message.
 final class ChatPreviewControllerProvider
     extends $NotifierProvider<ChatPreviewController, Map<String, ChatPreview>> {
   /// The preview of each chat's newest message, by topic, read from the
@@ -42,8 +42,8 @@ final class ChatPreviewControllerProvider
   /// It never asks the server itself: a chat this device isn't attached to
   /// gets no message content, only `pres msg`, and the session's latest
   /// catch-up fetches the newest messages (and the members a preview needs)
-  /// into the cache. Until then, or while offline, the preview is behind
-  /// (see `chatPreviewBehindProvider`).
+  /// into the cache. Until then, or while offline, a chat keeps the preview
+  /// of its newest cached message.
   ChatPreviewControllerProvider._()
     : super(
         from: null,
@@ -72,7 +72,7 @@ final class ChatPreviewControllerProvider
 }
 
 String _$chatPreviewControllerHash() =>
-    r'fef1a04a176cb3cfb555d10c0fcbd854c6b5291c';
+    r'ed6fb222d23fd471ad4729228f04989bb5b7233c';
 
 /// The preview of each chat's newest message, by topic, read from the
 /// cache: all of them first, then each chat again when its cached messages
@@ -82,8 +82,8 @@ String _$chatPreviewControllerHash() =>
 /// It never asks the server itself: a chat this device isn't attached to
 /// gets no message content, only `pres msg`, and the session's latest
 /// catch-up fetches the newest messages (and the members a preview needs)
-/// into the cache. Until then, or while offline, the preview is behind
-/// (see `chatPreviewBehindProvider`).
+/// into the cache. Until then, or while offline, a chat keeps the preview
+/// of its newest cached message.
 
 abstract class _$ChatPreviewController
     extends $Notifier<Map<String, ChatPreview>> {
@@ -189,95 +189,4 @@ final class ChatPreviewFamily extends $Family
 
   @override
   String toString() => r'chatPreviewProvider';
-}
-
-/// Whether [topic] has messages past its preview: it shows "New message"
-/// instead. Changes only when that flips, not with every message.
-
-@ProviderFor(chatPreviewBehind)
-final chatPreviewBehindProvider = ChatPreviewBehindFamily._();
-
-/// Whether [topic] has messages past its preview: it shows "New message"
-/// instead. Changes only when that flips, not with every message.
-
-final class ChatPreviewBehindProvider
-    extends $FunctionalProvider<bool, bool, bool>
-    with $Provider<bool> {
-  /// Whether [topic] has messages past its preview: it shows "New message"
-  /// instead. Changes only when that flips, not with every message.
-  ChatPreviewBehindProvider._({
-    required ChatPreviewBehindFamily super.from,
-    required String super.argument,
-  }) : super(
-         retry: null,
-         name: r'chatPreviewBehindProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$chatPreviewBehindHash();
-
-  @override
-  String toString() {
-    return r'chatPreviewBehindProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  bool create(Ref ref) {
-    final argument = this.argument as String;
-    return chatPreviewBehind(ref, argument);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(bool value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<bool>(value),
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is ChatPreviewBehindProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$chatPreviewBehindHash() => r'48aae15baae1c81bd06051d148d6282eeb4af87f';
-
-/// Whether [topic] has messages past its preview: it shows "New message"
-/// instead. Changes only when that flips, not with every message.
-
-final class ChatPreviewBehindFamily extends $Family
-    with $FunctionalFamilyOverride<bool, String> {
-  ChatPreviewBehindFamily._()
-    : super(
-        retry: null,
-        name: r'chatPreviewBehindProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  /// Whether [topic] has messages past its preview: it shows "New message"
-  /// instead. Changes only when that flips, not with every message.
-
-  ChatPreviewBehindProvider call(String topic) =>
-      ChatPreviewBehindProvider._(argument: topic, from: this);
-
-  @override
-  String toString() => r'chatPreviewBehindProvider';
 }

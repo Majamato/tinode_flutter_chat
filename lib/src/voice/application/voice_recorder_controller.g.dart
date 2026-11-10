@@ -87,7 +87,7 @@ final class VoiceRecorderControllerProvider
 }
 
 String _$voiceRecorderControllerHash() =>
-    r'a9d46c35c135cde1f3f9ad279f9114e6d5da065f';
+    r'371185c881b6d04da5140b2ce7d784378173b6ec';
 
 /// Recording a voice message in one chat's composer: [start], maybe
 /// [pause] and [resume], then [send] or [cancel]. Sending goes through the

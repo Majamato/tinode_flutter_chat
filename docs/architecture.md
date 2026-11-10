@@ -363,7 +363,9 @@ cache. `CachedTinodeSession` decorates the server session:
   encoders won't go as low as the bitrate asked (Android's minimum quality raises 720p to about
   2.5 Mbit/s on some phones), so a video still over that once compressed is compressed once more,
   at about 480p and a bitrate cut by as much as it overshot, aiming at the limit itself
-  (`TinodeAttachmentLimits.secondPassVideoBitrate`); its progress starts over. One still over
+  (`TinodeAttachmentLimits.secondPassVideoBitrate`); its progress starts over. On Android,
+  `PluginMediaCompressor` starts at about 480p and 80% of the video bitrate, so those phones need
+  one pass, not two. One still over
   fails as `tooLarge`; a video the device can't decode (Media3's `FORMAT_UNSUPPORTED`, read from
   the plugin's channel, as its wrapper drops the error) as `unsupportedFormat`; any other
   compression error as `unexpected`. A failed message's sheet names why it failed. The uploader

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_preview_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/application/message_runs.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_preview.dart';
@@ -12,12 +11,12 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_th
 
 /// The line under a chat's name: who is typing, in the link colour; else
 /// the newest message, after "You" when the user sent it, in any chat, or
-/// its sender in a group, and with an icon for what it is. When the newest
-/// isn't on this device yet: "New message" if it is unread, else nothing (a
-/// new device has no messages of chats long read).
+/// its sender in a group, and with an icon for what it is. A newer message
+/// that isn't on this device yet shows once it is cached; until then the
+/// line keeps the cached one, or nothing when there is none.
 ///
-/// Rebuilds when the cached newest message changes or falls behind, or the
-/// chat turns read or unread, not with every `pres msg`.
+/// Rebuilds when the cached newest message changes, not with every
+/// `pres msg`.
 class ChatPreviewLine extends ConsumerWidget {
   const ChatPreviewLine({required this.topic, super.key});
 
@@ -35,12 +34,6 @@ class ChatPreviewLine extends ConsumerWidget {
       return TypingIndicator(topic: topic, style: style);
     }
     final strings = TinodeChatStrings.of(context);
-    if (ref.watch(chatPreviewBehindProvider(topic))) {
-      final unread = ref.watch(
-        chatSummaryProvider(topic).select((chat) => (chat?.unread ?? 0) > 0),
-      );
-      return _line(Text(unread ? strings.newMessageArrived : ''), style);
-    }
     final preview = ref.watch(chatPreviewProvider(topic));
     if (preview == null) {
       return _line(const Text(''), style);
