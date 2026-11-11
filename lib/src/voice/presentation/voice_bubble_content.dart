@@ -8,14 +8,18 @@ import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_str
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 import 'package:tinode_flutter_chat/src/voice/application/voice_file.dart';
 import 'package:tinode_flutter_chat/src/voice/application/voice_playback_controller.dart';
+import 'package:tinode_flutter_chat/src/voice/application/voice_speed_controller.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/voice_failure_message.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/voice_play_button.dart';
+import 'package:tinode_flutter_chat/src/voice/presentation/voice_speed_button.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/voice_waveform.dart';
 
 /// A voice message in its bubble: the play button, the waveform filling
-/// as it plays, the duration (or where it stands) and the [footer]. It
+/// as it plays, the duration (or where it stands), while it plays or
+/// pauses the speed, which a tap changes for every message, and the
+/// [footer]. It
 /// shows complete at once, and plays [source] once its file is on this
 /// device (see `voiceFileProvider`): a message without one, or [busy] (an
 /// upload's progress in the button), doesn't play yet. A tap after a
@@ -52,6 +56,9 @@ class VoiceBubbleContent extends ConsumerWidget {
               (p) => p?.key == source.key ? p : null,
             ),
           );
+    final speed = playback == null
+        ? null
+        : ref.watch(voiceSpeedControllerProvider);
     final theme = TinodeChatTheme.of(context);
     // The player's length once it knows, as its progress and seeks use;
     // until then, the message's.
@@ -95,6 +102,7 @@ class VoiceBubbleContent extends ConsumerWidget {
                   waveform: note.waveform,
                   progress: playback?.progress ?? 0,
                   duration: duration,
+                  speed: speed?.rate ?? 1,
                   playing:
                       playback != null && playback.playing && !playback.loading,
                   playedColor: own ? theme.ownAccentColor : theme.actionColor,
@@ -109,22 +117,49 @@ class VoiceBubbleContent extends ConsumerWidget {
                               .seek(source.key, fraction),
                         ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    ExcludeSemantics(
-                      child: Text(
-                        voiceClock(shown),
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: meta,
-                          fontSize: 12,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+                // As tall with the speed as without, so the bubble keeps its
+                // size as playback starts.
+                SizedBox(
+                  height: VoiceSpeedButton.targetHeight,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Shrinks rather than overflow next to the footer, as
+                      // with large text.
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ExcludeSemantics(
+                                child: Text(
+                                  voiceClock(shown),
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: meta,
+                                        fontSize: 12,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
+                                ),
+                              ),
+                              if (speed != null)
+                                VoiceSpeedButton(
+                                  speed: speed,
+                                  color: meta,
+                                  onPressed: () => _cycleSpeed(ref),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const Spacer(),
-                    footer,
-                  ],
+                      const SizedBox(width: 6),
+                      footer,
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -133,6 +168,9 @@ class VoiceBubbleContent extends ConsumerWidget {
       ),
     );
   }
+
+  static void _cycleSpeed(WidgetRef ref) =>
+      unawaited(ref.read(voiceSpeedControllerProvider.notifier).cycle());
 
   /// Fetches the file again after a failure, e.g. offline.
   static void _retry(WidgetRef ref, VoiceSource source) {

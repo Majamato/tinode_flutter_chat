@@ -27,6 +27,9 @@ final class FakeVoicePlayer implements VoicePlayer {
   int stops = 0;
   Duration? seekedTo;
 
+  /// The rate it was last set to play at.
+  double speed = 1;
+
   /// Every seek, in the order sent.
   final seeks = <Duration>[];
   bool disposed = false;
@@ -69,6 +72,9 @@ final class FakeVoicePlayer implements VoicePlayer {
     seeks.add(position);
     await seekGate?.future;
   }
+
+  @override
+  Future<void> setSpeed(double rate) async => speed = rate;
 
   @override
   Future<void> stop() async {

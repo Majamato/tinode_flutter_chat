@@ -42,6 +42,7 @@ import 'package:tinode_flutter_chat/src/shared/presentation/tap_outside_closes_k
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_theme_scope.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_speed_storage.dart';
 
 /// A complete chat UI for a Tinode server: login, chat list and chats.
 ///
@@ -101,7 +102,8 @@ class TinodeChat extends StatefulWidget {
        callMedia = null,
        systemCalls = null,
        voiceRecorder = null,
-       voicePlayer = null;
+       voicePlayer = null,
+       voiceSpeedStorage = null;
 
   /// Like the default constructor, with sessions opened by [connector]
   /// (or [restorer] for a remembered user) instead of a real connection,
@@ -111,7 +113,8 @@ class TinodeChat extends StatefulWidget {
   /// reports from
   /// [network], the media of calls from [callMedia], the phone's call
   /// screens from [systemCalls], and voice messages recorded with
-  /// [voiceRecorder] and played with [voicePlayer].
+  /// [voiceRecorder] and played with [voicePlayer], at the speed kept in
+  /// [voiceSpeedStorage].
   @visibleForTesting
   const TinodeChat.withConnector({
     required this.config,
@@ -128,6 +131,7 @@ class TinodeChat extends StatefulWidget {
     this.systemCalls,
     this.voiceRecorder,
     this.voicePlayer,
+    this.voiceSpeedStorage,
     this.credentials,
     this.onLoggedIn,
     this.onLoggedOut,
@@ -316,6 +320,10 @@ class TinodeChat extends StatefulWidget {
   @visibleForTesting
   final VoicePlayerFactory? voicePlayer;
 
+  /// Keeps the voice message speed; null for a file on this device.
+  @visibleForTesting
+  final VoiceSpeedStorage? voiceSpeedStorage;
+
   @override
   State<TinodeChat> createState() => _TinodeChatState();
 }
@@ -346,6 +354,7 @@ class _TinodeChatState extends State<TinodeChat> {
     ),
     voiceRecorder: widget.voiceRecorder,
     voicePlayer: widget.voicePlayer,
+    voiceSpeedStorage: widget.voiceSpeedStorage,
   );
 
   late final AppLifecycleListener _lifecycle;

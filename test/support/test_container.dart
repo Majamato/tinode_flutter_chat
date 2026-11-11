@@ -15,6 +15,7 @@ import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_speed_storage.dart';
 
 import 'fake_attachment_picker.dart';
 import 'fake_call_media.dart';
@@ -24,6 +25,7 @@ import 'fake_system_calls.dart';
 import 'fake_tinode_session.dart';
 import 'fake_voice_player.dart';
 import 'fake_voice_recorder.dart';
+import 'memory_voice_speed_storage.dart';
 
 final testConfig = TinodeConfig(
   server: Uri.parse('ws://localhost:6060'),
@@ -39,7 +41,8 @@ final testConfig = TinodeConfig(
 /// nothing. Calls get fake media unless [callMedia] says otherwise, and
 /// fake system call screens unless [systemCalls] does. Voice messages
 /// record and play with fakes unless [voiceRecorder] and [voicePlayer]
-/// say otherwise.
+/// say otherwise, at a speed kept in memory unless [voiceSpeedStorage] is
+/// given.
 ProviderContainer createTestContainer({
   required SessionConnector connector,
   SessionRestorer? restorer,
@@ -53,6 +56,7 @@ ProviderContainer createTestContainer({
   SystemCalls? systemCalls,
   VoiceRecorderFactory? voiceRecorder,
   VoicePlayerFactory? voicePlayer,
+  VoiceSpeedStorage? voiceSpeedStorage,
   TinodeChatFeatures features = const TinodeChatFeatures(),
 }) {
   final container = createTinodeContainer(
@@ -75,6 +79,7 @@ ProviderContainer createTestContainer({
     systemCalls: systemCalls ?? FakeSystemCalls(),
     voiceRecorder: voiceRecorder ?? FakeVoiceRecorder.new,
     voicePlayer: voicePlayer ?? FakeVoicePlayer.new,
+    voiceSpeedStorage: voiceSpeedStorage ?? MemoryVoiceSpeedStorage(),
   );
   addTearDown(container.dispose);
   return container;
@@ -93,6 +98,7 @@ Future<ProviderContainer> loggedInContainer(
   AttachmentPicker? attachmentPicker,
   VoiceRecorderFactory? voiceRecorder,
   VoicePlayerFactory? voicePlayer,
+  VoiceSpeedStorage? voiceSpeedStorage,
   TinodeChatFeatures features = const TinodeChatFeatures(),
   ChatStoreOpener? storeOpener,
 }) async {
@@ -106,6 +112,7 @@ Future<ProviderContainer> loggedInContainer(
     attachmentPicker: attachmentPicker,
     voiceRecorder: voiceRecorder,
     voicePlayer: voicePlayer,
+    voiceSpeedStorage: voiceSpeedStorage,
     features: features,
     storeOpener: storeOpener,
   )..listen(sessionControllerProvider, (_, _) {});

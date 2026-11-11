@@ -22,6 +22,7 @@ import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 import 'package:tinode_flutter_chat/src/voice/application/voice_inputs.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_speed_storage.dart';
 
 /// The composition root: one container per `TinodeChat`, owned by it.
 ///
@@ -47,6 +48,7 @@ ProviderContainer createTinodeContainer({
   SystemCallTexts? systemCallTexts,
   VoiceRecorderFactory? voiceRecorder,
   VoicePlayerFactory? voicePlayer,
+  VoiceSpeedStorage? voiceSpeedStorage,
 }) => ProviderContainer(
   overrides: [
     tinodeConfigProvider.overrideWithValue(config),
@@ -68,6 +70,7 @@ ProviderContainer createTinodeContainer({
     ?_override(systemCallTexts, systemCallTextsProvider.overrideWithValue),
     ?_override(voiceRecorder, voiceRecorderFactoryProvider.overrideWithValue),
     ?_override(voicePlayer, voicePlayerFactoryProvider.overrideWithValue),
+    ?_override(voiceSpeedStorage, voiceSpeedStorageProvider.overrideWithValue),
   ],
   retry: (_, _) => null,
 );

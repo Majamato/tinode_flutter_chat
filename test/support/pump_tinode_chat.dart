@@ -12,6 +12,7 @@ import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_recorder.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_speed_storage.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import 'fake_attachment_picker.dart';
@@ -22,6 +23,7 @@ import 'fake_system_calls.dart';
 import 'fake_tinode_session.dart';
 import 'fake_voice_player.dart';
 import 'fake_voice_recorder.dart';
+import 'memory_voice_speed_storage.dart';
 import 'test_container.dart';
 
 /// Pumps a [TinodeChat] in a `MaterialApp`, connected to [session], or
@@ -43,6 +45,7 @@ Future<void> pumpTinodeChat(
   GallerySaver? gallerySaver,
   VoiceRecorderFactory? voiceRecorder,
   VoicePlayerFactory? voicePlayer,
+  VoiceSpeedStorage? voiceSpeedStorage,
   VoidCallback? onLoggedOut,
   TinodeChatController? controller,
   TinodeChatFeatures features = const TinodeChatFeatures(),
@@ -91,6 +94,7 @@ Future<void> pumpTinodeChat(
         systemCalls: systemCalls ?? FakeSystemCalls(),
         voiceRecorder: voiceRecorder ?? FakeVoiceRecorder.new,
         voicePlayer: voicePlayer ?? FakeVoicePlayer.new,
+        voiceSpeedStorage: voiceSpeedStorage ?? MemoryVoiceSpeedStorage(),
         credentials: credentials,
         onLoggedIn: onLoggedIn,
         onLoggedOut: onLoggedOut,

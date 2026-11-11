@@ -10,22 +10,25 @@ part of 'voice_playback_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// The voice message playing, one at a time; null when none is. Starting
 /// another stops the first; a call or a recording stops it too, and one
-/// that plays to its end rewinds. Each bubble selects its own key, so only
-/// the playing one rebuilds.
+/// that plays to its end rewinds. It plays at the speed the user picked
+/// (see [VoiceSpeedController]), which applies at once. Each bubble
+/// selects its own key, so only the playing one rebuilds.
 
 @ProviderFor(VoicePlaybackController)
 final voicePlaybackControllerProvider = VoicePlaybackControllerProvider._();
 
 /// The voice message playing, one at a time; null when none is. Starting
 /// another stops the first; a call or a recording stops it too, and one
-/// that plays to its end rewinds. Each bubble selects its own key, so only
-/// the playing one rebuilds.
+/// that plays to its end rewinds. It plays at the speed the user picked
+/// (see [VoiceSpeedController]), which applies at once. Each bubble
+/// selects its own key, so only the playing one rebuilds.
 final class VoicePlaybackControllerProvider
     extends $NotifierProvider<VoicePlaybackController, VoicePlayback?> {
   /// The voice message playing, one at a time; null when none is. Starting
   /// another stops the first; a call or a recording stops it too, and one
-  /// that plays to its end rewinds. Each bubble selects its own key, so only
-  /// the playing one rebuilds.
+  /// that plays to its end rewinds. It plays at the speed the user picked
+  /// (see [VoiceSpeedController]), which applies at once. Each bubble
+  /// selects its own key, so only the playing one rebuilds.
   VoicePlaybackControllerProvider._()
     : super(
         from: null,
@@ -54,12 +57,13 @@ final class VoicePlaybackControllerProvider
 }
 
 String _$voicePlaybackControllerHash() =>
-    r'0b6736f770962698842901ab8d1289920e578636';
+    r'e55a309960c78d0dd5dc96d4fe270c09aa11f4b6';
 
 /// The voice message playing, one at a time; null when none is. Starting
 /// another stops the first; a call or a recording stops it too, and one
-/// that plays to its end rewinds. Each bubble selects its own key, so only
-/// the playing one rebuilds.
+/// that plays to its end rewinds. It plays at the speed the user picked
+/// (see [VoiceSpeedController]), which applies at once. Each bubble
+/// selects its own key, so only the playing one rebuilds.
 
 abstract class _$VoicePlaybackController extends $Notifier<VoicePlayback?> {
   VoicePlayback? build();

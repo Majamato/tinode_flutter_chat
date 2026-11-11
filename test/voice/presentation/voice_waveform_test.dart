@@ -15,6 +15,7 @@ void main() {
     WidgetTester tester, {
     double progress = 0,
     bool playing = false,
+    double speed = 1,
   }) => tester.pumpWidget(
     Directionality(
       textDirection: TextDirection.ltr,
@@ -27,6 +28,7 @@ void main() {
             progress: progress,
             duration: length,
             playing: playing,
+            speed: speed,
             playedColor: Colors.white,
             unplayedColor: Colors.grey,
             onSeek: seeks.add,
@@ -100,6 +102,31 @@ void main() {
     expect(head(tester), closeTo(0.175, 0.01));
     await tester.pump(const Duration(milliseconds: 16));
     expect(head(tester), greaterThan(0.175));
+  });
+
+  testWidgets('at twice the speed, the dot glides twice as fast', (
+    tester,
+  ) async {
+    await pumpWaveform(tester, playing: true, speed: 2);
+    await tester.pump();
+    await pumpWaveform(tester, progress: 0.05, playing: true, speed: 2);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(head(tester), closeTo(0.3, 0.01));
+  });
+
+  testWidgets('a speed change while gliding goes on from where the dot is', (
+    tester,
+  ) async {
+    await pumpWaveform(tester, playing: true);
+    await tester.pump();
+    await pumpWaveform(tester, progress: 0.05, playing: true);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(head(tester), closeTo(0.175, 0.01));
+
+    await pumpWaveform(tester, progress: 0.05, playing: true, speed: 2);
+    expect(head(tester), closeTo(0.175, 0.01));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(head(tester), closeTo(0.425, 0.01));
   });
 
   testWidgets('while playing, a report behind slows the dot down until '

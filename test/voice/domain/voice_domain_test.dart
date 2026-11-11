@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_note.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_speed.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_waveform.dart';
 
 void main() {
@@ -94,5 +95,14 @@ void main() {
           .progress,
       1,
     );
+  });
+
+  group('VoiceSpeed', () {
+    test('plays at 1, 1.5 and 2 times, a tap going round them', () {
+      expect(VoiceSpeed.values.map((s) => s.rate), [1, 1.5, 2]);
+      expect(VoiceSpeed.normal.next, VoiceSpeed.fast);
+      expect(VoiceSpeed.fast.next, VoiceSpeed.fastest);
+      expect(VoiceSpeed.fastest.next, VoiceSpeed.normal);
+    });
   });
 }

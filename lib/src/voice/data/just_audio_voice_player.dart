@@ -61,6 +61,9 @@ final class JustAudioVoicePlayer implements VoicePlayer {
   Future<void> seek(Duration position) => _player.seek(position);
 
   @override
+  Future<void> setSpeed(double rate) => _player.setSpeed(rate);
+
+  @override
   Future<void> stop() => _player.stop();
 
   @override

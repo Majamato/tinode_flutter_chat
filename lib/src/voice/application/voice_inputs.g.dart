@@ -113,3 +113,55 @@ final class VoicePlayerFactoryProvider
 
 String _$voicePlayerFactoryHash() =>
     r'900a4cc61d0556a6aaa30aaa930677bc2d3843c1';
+
+/// Where the voice message speed is kept; tests override it with a fake.
+
+@ProviderFor(voiceSpeedStorage)
+final voiceSpeedStorageProvider = VoiceSpeedStorageProvider._();
+
+/// Where the voice message speed is kept; tests override it with a fake.
+
+final class VoiceSpeedStorageProvider
+    extends
+        $FunctionalProvider<
+          VoiceSpeedStorage,
+          VoiceSpeedStorage,
+          VoiceSpeedStorage
+        >
+    with $Provider<VoiceSpeedStorage> {
+  /// Where the voice message speed is kept; tests override it with a fake.
+  VoiceSpeedStorageProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'voiceSpeedStorageProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$voiceSpeedStorageHash();
+
+  @$internal
+  @override
+  $ProviderElement<VoiceSpeedStorage> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  VoiceSpeedStorage create(Ref ref) {
+    return voiceSpeedStorage(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VoiceSpeedStorage value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VoiceSpeedStorage>(value),
+    );
+  }
+}
+
+String _$voiceSpeedStorageHash() => r'f93a3040d2684b15ef4e0db22f8b0c8088d8624b';

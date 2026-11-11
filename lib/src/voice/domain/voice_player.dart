@@ -28,6 +28,9 @@ abstract interface class VoicePlayer {
 
   Future<void> seek(Duration position);
 
+  /// Plays at [rate] times normal speed, keeping the pitch, from now on.
+  Future<void> setSpeed(double rate);
+
   /// Stops and unloads the recording.
   Future<void> stop();
 

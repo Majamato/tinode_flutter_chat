@@ -14,7 +14,8 @@ import 'package:tinode_flutter_chat/src/voice/domain/voice_waveform.dart';
 /// rest and grows to 12 px while playing or dragging.
 ///
 /// While [playing], the dot moves on its own every frame, from the last
-/// [progress] over [duration], so it glides between the player's reports.
+/// [progress] over [duration] at [speed], so it glides between the
+/// player's reports.
 /// It never steps back while playing: it starts gliding once a report shows
 /// the audio really moves (as play starts, or after a seek), and when a
 /// report is behind it, it slows down until the audio catches up, stopping
@@ -31,6 +32,7 @@ class VoiceWaveform extends StatefulWidget {
     required this.playing,
     required this.playedColor,
     required this.unplayedColor,
+    this.speed = 1,
     this.onSeek,
     super.key,
   });
@@ -68,6 +70,9 @@ class VoiceWaveform extends StatefulWidget {
   final List<int> waveform;
   final double progress;
   final Duration duration;
+
+  /// How fast the audio plays, times normal, so the dot glides as fast.
+  final double speed;
   final bool playing;
   final Color playedColor;
   final Color unplayedColor;
@@ -124,6 +129,8 @@ class VoiceWaveformState extends State<VoiceWaveform>
     super.didUpdateWidget(oldWidget);
     if (widget.duration != oldWidget.duration) {
       _anchorTo(_head.value);
+    } else if (widget.speed != oldWidget.speed) {
+      _rebase(oldWidget.speed);
     }
     if (widget.progress != oldWidget.progress && !_dragging) {
       if (widget.playing) {
@@ -184,7 +191,7 @@ class VoiceWaveformState extends State<VoiceWaveform>
     if (!_moving || length <= 0) {
       return;
     }
-    final moved = (elapsed - _anchorAt).inMicroseconds / length;
+    final moved = (elapsed - _anchorAt).inMicroseconds * widget.speed / length;
     final at = (_anchor + moved).clamp(0.0, 1.0);
     if (at >= _head.value) {
       _head.value = at;
@@ -194,18 +201,30 @@ class VoiceWaveformState extends State<VoiceWaveform>
     // slower it goes, stopping at [VoiceWaveform.catchUp], so the audio
     // catches up without the dot stalling or stepping back. The lead is as
     // the frame began, as the dot's step covers the whole frame.
-    final lead = (_head.value - at) * length + frame.inMicroseconds;
+    final step = frame.inMicroseconds * widget.speed;
+    final lead = (_head.value - at) * length + step;
     final pace = (1 - lead / VoiceWaveform.catchUp.inMicroseconds).clamp(
       0.0,
       1.0,
     );
-    _head.value = min(1, _head.value + pace * frame.inMicroseconds / length);
+    _head.value = min(1, _head.value + pace * step / length);
   }
 
   /// Moves the dot straight to [fraction], back too.
   void _anchorTo(double fraction) {
     _head.value = fraction;
     _anchor = fraction;
+    _anchorAt = _elapsed;
+  }
+
+  /// The speed changed from [was]: the glide so far counts at that pace,
+  /// and goes on at the new one from where it would be now.
+  void _rebase(double was) {
+    final length = widget.duration.inMicroseconds;
+    if (_moving && length > 0) {
+      final moved = (_elapsed - _anchorAt).inMicroseconds * was / length;
+      _anchor = (_anchor + moved).clamp(0.0, 1.0);
+    }
     _anchorAt = _elapsed;
   }
 

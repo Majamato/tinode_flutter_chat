@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/voice/application/voice_inputs.dart';
+import 'package:tinode_flutter_chat/src/voice/application/voice_speed_controller.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_failure.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_player.dart';
@@ -14,8 +15,9 @@ part 'voice_playback_controller.g.dart';
 
 /// The voice message playing, one at a time; null when none is. Starting
 /// another stops the first; a call or a recording stops it too, and one
-/// that plays to its end rewinds. Each bubble selects its own key, so only
-/// the playing one rebuilds.
+/// that plays to its end rewinds. It plays at the speed the user picked
+/// (see [VoiceSpeedController]), which applies at once. Each bubble
+/// selects its own key, so only the playing one rebuilds.
 @Riverpod(keepAlive: true)
 class VoicePlaybackController extends _$VoicePlaybackController {
   VoicePlayer? _player;
@@ -36,6 +38,10 @@ class VoicePlaybackController extends _$VoicePlaybackController {
           }
         },
       )
+      ..listen(
+        voiceSpeedControllerProvider,
+        (_, speed) => unawaited(_player?.setSpeed(speed.rate)),
+      )
       ..onDispose(() {
         for (final s in _subscriptions) {
           unawaited(s.cancel());
@@ -50,6 +56,7 @@ class VoicePlaybackController extends _$VoicePlaybackController {
       return player;
     }
     final player = _player = ref.read(voicePlayerFactoryProvider)();
+    unawaited(player.setSpeed(ref.read(voiceSpeedControllerProvider).rate));
     _subscriptions.addAll([
       player.positions.listen((position) {
         if (state case final playback?

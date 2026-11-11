@@ -6,13 +6,16 @@ import 'package:riverpod/riverpod.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_controller.dart';
 import 'package:tinode_flutter_chat/src/voice/application/voice_playback_controller.dart';
+import 'package:tinode_flutter_chat/src/voice/application/voice_speed_controller.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_failure.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_playback.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_speed.dart';
 
 import '../../support/fake_call_media.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fake_voice_player.dart';
 import '../../support/fixtures.dart';
+import '../../support/memory_voice_speed_storage.dart';
 import '../../support/test_container.dart';
 
 void main() {
@@ -39,6 +42,7 @@ void main() {
         await loggedInContainer(
             session,
             voicePlayer: () => player,
+            voiceSpeedStorage: MemoryVoiceSpeedStorage(VoiceSpeed.fast),
             callMedia: FakeCallMediaFactory().call,
           )
           ..listen(voicePlaybackControllerProvider, (_, _) {});
@@ -201,5 +205,16 @@ void main() {
     await settle();
     expect(playback(), isNull);
     expect(player.playing, isFalse);
+  });
+
+  test('plays at the saved speed, and a new pick applies at once', () async {
+    await controller().toggle(first, firstFile);
+    await settle();
+    expect(player.speed, 1.5);
+
+    await container.read(voiceSpeedControllerProvider.notifier).cycle();
+    expect(player.speed, 2);
+    await controller().toggle(second, secondFile);
+    expect(player.speed, 2);
   });
 }

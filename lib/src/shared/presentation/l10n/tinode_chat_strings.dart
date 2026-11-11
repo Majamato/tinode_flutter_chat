@@ -41,6 +41,10 @@ class TinodeChatStrings {
     this.recordingVoiceMessage = 'Recording voice message',
     this.playVoiceMessage = 'Play voice message',
     this.pauseVoiceMessage = 'Pause voice message',
+    this.voiceSpeedLabel = 'Playback speed',
+    this.voiceSpeedNormal = '1×',
+    this.voiceSpeedFast = '1.5×',
+    this.voiceSpeedFastest = '2×',
     this.microphoneDeniedForVoice =
         'Allow access to the microphone to record voice messages.',
     this.voiceMessageTooShort = 'Too short to send. Tap the mic to record.',
@@ -291,6 +295,10 @@ class TinodeChatStrings {
     this.recordingVoiceMessage = 'Grabando mensaje de voz',
     this.playVoiceMessage = 'Reproducir mensaje de voz',
     this.pauseVoiceMessage = 'Pausar mensaje de voz',
+    this.voiceSpeedLabel = 'Velocidad de reproducción',
+    this.voiceSpeedNormal = '1×',
+    this.voiceSpeedFast = '1,5×',
+    this.voiceSpeedFastest = '2×',
     this.microphoneDeniedForVoice =
         'Permite el acceso al micrófono para grabar mensajes de voz.',
     this.voiceMessageTooShort =
@@ -547,6 +555,10 @@ class TinodeChatStrings {
     this.recordingVoiceMessage = 'Enregistrement du message vocal',
     this.playVoiceMessage = 'Lire le message vocal',
     this.pauseVoiceMessage = 'Mettre en pause le message vocal',
+    this.voiceSpeedLabel = 'Vitesse de lecture',
+    this.voiceSpeedNormal = '1×',
+    this.voiceSpeedFast = '1,5×',
+    this.voiceSpeedFastest = '2×',
     this.microphoneDeniedForVoice =
         "Autorisez l'accès au micro pour enregistrer des messages vocaux.",
     this.voiceMessageTooShort =
@@ -872,6 +884,18 @@ class TinodeChatStrings {
 
   /// The play button of a voice message while it plays.
   final String pauseVoiceMessage;
+
+  /// The speed button of a voice message, read out before its speed.
+  final String voiceSpeedLabel;
+
+  /// The speed button of a voice message at normal speed.
+  final String voiceSpeedNormal;
+
+  /// The speed button of a voice message at one and a half times.
+  final String voiceSpeedFast;
+
+  /// The speed button of a voice message at twice the speed.
+  final String voiceSpeedFastest;
 
   /// The user did not allow the microphone for a voice message.
   final String microphoneDeniedForVoice;

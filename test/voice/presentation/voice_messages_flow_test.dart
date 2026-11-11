@@ -5,15 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/voice/domain/voice_speed.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/live_voice_waveform.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/recording_panel.dart';
 import 'package:tinode_flutter_chat/src/voice/presentation/voice_bubble_content.dart';
+import 'package:tinode_flutter_chat/src/voice/presentation/voice_speed_button.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_tinode_session.dart';
 import '../../support/fake_voice_player.dart';
 import '../../support/fake_voice_recorder.dart';
 import '../../support/fixtures.dart';
+import '../../support/memory_voice_speed_storage.dart';
 import '../../support/pump_tinode_chat.dart';
 
 const icons = TinodeChatIcons();
@@ -42,6 +45,7 @@ void main() {
   late FakeTinodeSession session;
   late FakeVoiceRecorder recorder;
   late FakeVoicePlayer player;
+  late MemoryVoiceSpeedStorage speeds;
 
   setUp(() {
     session = FakeTinodeSession(
@@ -55,6 +59,7 @@ void main() {
     session.files[voiceRef] = Uint8List.fromList([1, 2, 3, 4]);
     recorder = FakeVoiceRecorder();
     player = FakeVoicePlayer();
+    speeds = MemoryVoiceSpeedStorage();
   });
 
   Future<void> openBob(
@@ -68,6 +73,7 @@ void main() {
       credentials: TinodeCredentials.token(session.token),
       voiceRecorder: () => recorder,
       voicePlayer: () => player,
+      voiceSpeedStorage: speeds,
       reduceMotion: reduceMotion,
       bubbleBuilder: bubbleBuilder,
     );
@@ -253,6 +259,70 @@ void main() {
     await tester.pump();
     expect(player.playing, isFalse);
     expect(find.bySemanticsLabel(RegExp('Play voice message')), findsOne);
+    semantics.dispose();
+  });
+
+  /// Where the speed pill showing [label] is drawn.
+  Rect speedPill(WidgetTester tester, String label) => tester.getRect(
+    find.ancestor(of: find.text(label), matching: find.byType(Material)).first,
+  );
+
+  /// How much [pill] shrank to fit: the test font is wide.
+  double pillScale(Rect pill) => pill.height / VoiceSpeedButton.height;
+
+  testWidgets('a tap just beside the speed pill changes it too, and the '
+      'bubble keeps its height as the pill shows', (tester) async {
+    await openBob(tester);
+    final before = tester.getSize(find.byType(VoiceBubbleContent)).height;
+    await tester.tap(find.byIcon(icons.play));
+    await playFor(tester);
+    expect(tester.getSize(find.byType(VoiceBubbleContent)).height, before);
+
+    var pill = speedPill(tester, '1×');
+    await tester.tapAt(pill.centerRight + Offset(8 * pillScale(pill), 0));
+    await tester.pump();
+    expect(find.text('1.5×'), findsOneWidget);
+    pill = speedPill(tester, '1.5×');
+    await tester.tapAt(pill.topCenter - Offset(0, 2 * pillScale(pill)));
+    await tester.pump();
+    expect(find.text('2×'), findsOneWidget);
+    expect(player.speed, 2);
+  });
+
+  testWidgets('while it plays or pauses, a tap on its speed goes 1.5×, 2× '
+      'and back, for every message', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await openBob(tester);
+    expect(find.text('1×'), findsNothing);
+
+    await tester.tap(find.byIcon(icons.play));
+    await playFor(tester);
+    expect(find.text('1×'), findsOneWidget);
+    expect(player.speed, 1);
+
+    await tester.tap(find.text('1×'));
+    await tester.pump();
+    expect(find.text('1.5×'), findsOneWidget);
+    expect(player.speed, 1.5);
+    expect(speeds.speed, VoiceSpeed.fast);
+    final pill = tester
+        .getSemantics(find.bySemanticsLabel('Playback speed'))
+        .getSemanticsData();
+    expect(pill.value, '1.5×');
+    expect(pill.hasAction(SemanticsAction.tap), isTrue);
+
+    await tester.tap(find.byIcon(icons.pause));
+    await tester.pump();
+    await tester.tap(find.text('1.5×'));
+    await tester.pump();
+    expect(find.text('2×'), findsOneWidget);
+    expect(player.speed, 2);
+
+    await tester.tap(find.text('2×'));
+    await tester.pump();
+    expect(find.text('1×'), findsOneWidget);
+    expect(player.speed, 1);
+    expect(speeds.speed, VoiceSpeed.normal);
     semantics.dispose();
   });
 
