@@ -18,6 +18,9 @@ class CaptionedAttachments extends StatelessWidget {
   /// Around a caption under a photo.
   static const _photoCaptionPadding = EdgeInsets.fromLTRB(8, 2, 8, 6);
 
+  /// Each must report its intrinsic width, as the column takes the widest
+  /// of them: give one a fixed size rather than a `LayoutBuilder`, which
+  /// throws.
   final List<Widget> attachments;
   final String caption;
 
