@@ -74,6 +74,24 @@ void main() {
     });
   });
 
+  test('it says whether typing ended with a message or a pause', () {
+    run((async) {
+      bool endedWithMessage() =>
+          container.read(typingControllerProvider(friends)).endedWithMessage;
+      keyPress(bob);
+      session.emitMessage(message(friends, 1));
+      expect(endedWithMessage(), isTrue);
+
+      keyPress(bob);
+      async.elapse(typingTimeout);
+      expect(endedWithMessage(), isFalse);
+
+      // A message from someone who wasn't typing changes nothing.
+      session.emitMessage(message(friends, 2, from: carol));
+      expect(endedWithMessage(), isFalse);
+    });
+  });
+
   test("the user's own key presses from another device don't count", () {
     run((async) {
       keyPress(alice);

@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_frame.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_text_layout.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_slot.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
 /// Someone else's bubble with three bouncing dots, in the [TypingSlot] at
-/// the bottom of the chat while someone types. The dots stand still with
-/// the OS's Reduce motion. Decoration: the header says who types.
+/// the bottom of the chat while someone types. As tall as a one-line text
+/// message, so nothing jumps when the message replaces it. The dots stand
+/// still with the OS's Reduce motion. Decoration: the header says who types.
 class TypingBubble extends StatefulWidget {
   const TypingBubble({super.key});
 
@@ -63,28 +65,41 @@ class _TypingBubbleState extends State<TypingBubble>
         child: BubbleFrame(
           own: false,
           tail: true,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          body: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) => Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < 3; i++)
-                  Padding(
-                    padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
-                    child: Transform.translate(
-                      offset: Offset(0, -_lift * _height(_controller.value, i)),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
+          body: Stack(
+            alignment: AlignmentDirectional.centerStart,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  bottom: RenderBubbleTextLayout.drop,
+                ),
+                child: Text('', style: Theme.of(context).textTheme.bodyLarge),
+              ),
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < 3; i++)
+                      Padding(
+                        padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
+                        child: Transform.translate(
+                          offset: Offset(
+                            0,
+                            -_lift * _height(_controller.value, i),
+                          ),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const SizedBox.square(dimension: _dot),
+                          ),
                         ),
-                        child: const SizedBox.square(dimension: _dot),
                       ),
-                    ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

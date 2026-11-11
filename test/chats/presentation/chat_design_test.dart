@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/typing_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_frame.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_presence_line.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_status.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/date_chip.dart';
@@ -248,6 +249,48 @@ void main() {
     expect(find.byType(TypingBubble), findsNothing);
     expect(tester.getRect(mine).top, start);
     expect(rebuilt, isNot(contains('$MessageBubble')));
+  });
+
+  testWidgets("the typing bubble goes at once when the typer's message "
+      'arrives', (tester) async {
+    await openFriends(tester, reduceMotion: false);
+    session.emitInfo(
+      const InfoMessage(topic: friends, event: InfoEvent.typing, from: bob),
+    );
+    await tester.pump();
+    await tester.pump(swap);
+    expect(find.byType(TypingBubble), findsOneWidget);
+
+    session.emitMessage(message(friends, 5, text: 'five'));
+    await tester.pump();
+    expect(find.byType(TypingBubble), findsNothing);
+    expect(find.text('five'), findsOneWidget);
+  });
+
+  testWidgets('the typing bubble is as tall as a one-line text bubble', (
+    tester,
+  ) async {
+    await openFriends(tester);
+    session.emitInfo(
+      const InfoMessage(topic: friends, event: InfoEvent.typing, from: bob),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    double height(Finder of) => tester
+        .getSize(find.ancestor(of: of, matching: find.byType(BubbleFrame)))
+        .height;
+    expect(
+      tester
+          .getSize(
+            find.descendant(
+              of: find.byType(TypingBubble),
+              matching: find.byType(BubbleFrame),
+            ),
+          )
+          .height,
+      height(find.text('two')),
+    );
   });
 
   testWidgets('with Reduce motion the typing bubble comes and goes at once', (

@@ -8,8 +8,8 @@ part of 'typing_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Typing in one open chat, both ways: the user IDs of the members typing
-/// now, first to start first, and [typed] for the user's own key presses.
+/// Typing in one open chat, both ways: [Typing] for the members typing now,
+/// and [typed] for the user's own key presses.
 ///
 /// A member stops typing after [typingTimeout] without a key press, or when
 /// their message arrives.
@@ -17,15 +17,15 @@ part of 'typing_controller.dart';
 @ProviderFor(TypingController)
 final typingControllerProvider = TypingControllerFamily._();
 
-/// Typing in one open chat, both ways: the user IDs of the members typing
-/// now, first to start first, and [typed] for the user's own key presses.
+/// Typing in one open chat, both ways: [Typing] for the members typing now,
+/// and [typed] for the user's own key presses.
 ///
 /// A member stops typing after [typingTimeout] without a key press, or when
 /// their message arrives.
 final class TypingControllerProvider
-    extends $NotifierProvider<TypingController, List<String>> {
-  /// Typing in one open chat, both ways: the user IDs of the members typing
-  /// now, first to start first, and [typed] for the user's own key presses.
+    extends $NotifierProvider<TypingController, Typing> {
+  /// Typing in one open chat, both ways: [Typing] for the members typing now,
+  /// and [typed] for the user's own key presses.
   ///
   /// A member stops typing after [typingTimeout] without a key press, or when
   /// their message arrives.
@@ -55,10 +55,10 @@ final class TypingControllerProvider
   TypingController create() => TypingController();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(List<String> value) {
+  Override overrideWithValue(Typing value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<List<String>>(value),
+      providerOverride: $SyncValueProvider<Typing>(value),
     );
   }
 
@@ -73,23 +73,17 @@ final class TypingControllerProvider
   }
 }
 
-String _$typingControllerHash() => r'ebd357b7130c28d3a3d3213dffad63d0f7c179ff';
+String _$typingControllerHash() => r'3ce711e56b23854d56fad64aadecb376a6a000c4';
 
-/// Typing in one open chat, both ways: the user IDs of the members typing
-/// now, first to start first, and [typed] for the user's own key presses.
+/// Typing in one open chat, both ways: [Typing] for the members typing now,
+/// and [typed] for the user's own key presses.
 ///
 /// A member stops typing after [typingTimeout] without a key press, or when
 /// their message arrives.
 
 final class TypingControllerFamily extends $Family
     with
-        $ClassFamilyOverride<
-          TypingController,
-          List<String>,
-          List<String>,
-          List<String>,
-          String
-        > {
+        $ClassFamilyOverride<TypingController, Typing, Typing, Typing, String> {
   TypingControllerFamily._()
     : super(
         retry: null,
@@ -99,8 +93,8 @@ final class TypingControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Typing in one open chat, both ways: the user IDs of the members typing
-  /// now, first to start first, and [typed] for the user's own key presses.
+  /// Typing in one open chat, both ways: [Typing] for the members typing now,
+  /// and [typed] for the user's own key presses.
   ///
   /// A member stops typing after [typingTimeout] without a key press, or when
   /// their message arrives.
@@ -112,26 +106,26 @@ final class TypingControllerFamily extends $Family
   String toString() => r'typingControllerProvider';
 }
 
-/// Typing in one open chat, both ways: the user IDs of the members typing
-/// now, first to start first, and [typed] for the user's own key presses.
+/// Typing in one open chat, both ways: [Typing] for the members typing now,
+/// and [typed] for the user's own key presses.
 ///
 /// A member stops typing after [typingTimeout] without a key press, or when
 /// their message arrives.
 
-abstract class _$TypingController extends $Notifier<List<String>> {
+abstract class _$TypingController extends $Notifier<Typing> {
   late final _$args = ref.$arg as String;
   String get topic => _$args;
 
-  List<String> build(String topic);
+  Typing build(String topic);
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<List<String>, List<String>>;
+    final ref = this.ref as $Ref<Typing, Typing>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<List<String>, List<String>>,
-              List<String>,
+              AnyNotifier<Typing, Typing>,
+              Typing,
               Object?,
               Object?
             >;
@@ -204,7 +198,7 @@ final class TypingMembersProvider
   }
 }
 
-String _$typingMembersHash() => r'b4f99692b131c055316d7393c2fdb8eaf1d08fd0';
+String _$typingMembersHash() => r'6c76ae52f8eb5bd1e4e0ceeaa2058e36be873050';
 
 /// Who is typing in [topic], by name. In a direct chat the title already
 /// names the peer.

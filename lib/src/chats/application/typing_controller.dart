@@ -5,6 +5,7 @@ import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_members_controller.dart';
+import 'package:tinode_flutter_chat/src/chats/domain/typing.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/typing_members.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 
@@ -16,8 +17,8 @@ const typingTimeout = Duration(seconds: 5);
 /// The shortest time between two typing notes this user sends.
 const typingThrottle = Duration(seconds: 3);
 
-/// Typing in one open chat, both ways: the user IDs of the members typing
-/// now, first to start first, and [typed] for the user's own key presses.
+/// Typing in one open chat, both ways: [Typing] for the members typing now,
+/// and [typed] for the user's own key presses.
 ///
 /// A member stops typing after [typingTimeout] without a key press, or when
 /// their message arrives.
@@ -27,13 +28,13 @@ class TypingController extends _$TypingController {
   DateTime? _lastSent;
 
   @override
-  List<String> build(String topic) {
+  Typing build(String topic) {
     final session = ref.watch(activeSessionProvider);
     final me = ref.watch(currentUserIdProvider);
     _lastSent = null;
     ref.onDispose(_cancelTimeouts);
     if (session == null) {
-      return const [];
+      return const Typing();
     }
 
     final subscriptions = [
@@ -48,14 +49,14 @@ class TypingController extends _$TypingController {
           .listen((i) => _typing(i.from!)),
       session.messages
           .where((m) => m.topic == topic)
-          .listen((m) => _stopped(m.from)),
+          .listen((m) => _stopped(m.from, withMessage: true)),
     ];
     ref.onDispose(() {
       for (final subscription in subscriptions) {
         unawaited(subscription.cancel());
       }
     });
-    return const [];
+    return const Typing();
   }
 
   /// The user typed in the composer: tells the other members, at most once
@@ -72,15 +73,15 @@ class TypingController extends _$TypingController {
   void _typing(String userId) {
     _timeouts.remove(userId)?.cancel();
     _timeouts[userId] = Timer(typingTimeout, () => _stopped(userId));
-    if (!state.contains(userId)) {
-      state = List.unmodifiable([...state, userId]);
+    if (!state.userIds.contains(userId)) {
+      state = state.started(userId);
     }
   }
 
-  void _stopped(String? userId) {
+  void _stopped(String? userId, {bool withMessage = false}) {
     _timeouts.remove(userId)?.cancel();
-    if (state.contains(userId)) {
-      state = List.unmodifiable(state.where((id) => id != userId));
+    if (userId != null && state.userIds.contains(userId)) {
+      state = state.stopped(userId, withMessage: withMessage);
     }
   }
 
@@ -96,7 +97,9 @@ class TypingController extends _$TypingController {
 /// names the peer.
 @riverpod
 TypingMembers typingMembers(Ref ref, String topic) {
-  final typing = ref.watch(typingControllerProvider(topic));
+  final typing = ref.watch(
+    typingControllerProvider(topic).select((t) => t.userIds),
+  );
   if (typing.isEmpty) {
     return const TypingMembers();
   }

@@ -19,7 +19,7 @@ class BubbleFrame extends StatelessWidget {
   });
 
   /// Around text.
-  static const textPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 7);
+  static const textPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 4);
 
   /// Around a file or a call.
   static const tilePadding = EdgeInsets.symmetric(horizontal: 12, vertical: 10);

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/message_runs.dart';
+import 'package:tinode_flutter_chat/src/chats/application/typing_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_tail.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_bubble.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
@@ -10,7 +11,9 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_th
 /// The bottom of the message list, where the [TypingBubble] grows in while
 /// someone types and shrinks away when they stop, so the messages above
 /// slide rather than jump. Empty while nobody types; with Reduce motion
-/// the bubble comes and goes at once. Watches only whether anyone types.
+/// the bubble comes and goes at once, and it goes at once when the typer's
+/// message arrives, which takes its place. Watches only whether anyone
+/// types.
 class TypingSlot extends ConsumerStatefulWidget {
   const TypingSlot({required this.topic, super.key});
 
@@ -66,7 +69,10 @@ class _TypingSlotState extends ConsumerState<TypingSlot>
 
   void _onTyping(bool? _, bool typing) {
     final target = typing ? 1.0 : 0.0;
-    if (MediaQuery.disableAnimationsOf(context)) {
+    final sent =
+        !typing &&
+        ref.read(typingControllerProvider(widget.topic)).endedWithMessage;
+    if (sent || MediaQuery.disableAnimationsOf(context)) {
       _controller.value = target;
     } else {
       unawaited(_controller.animateTo(target));
