@@ -36,7 +36,7 @@ class ChatHeader extends StatelessWidget implements PreferredSizeWidget {
 }
 
 /// The chat's photo, then its name over its status, on glass, as wide as
-/// they need.
+/// they need; the width eases as the status changes.
 class _TitlePill extends StatelessWidget {
   const _TitlePill({required this.topic});
 
@@ -59,38 +59,61 @@ class _TitlePill extends StatelessWidget {
             child: Padding(
               // The photo sits concentric in the pill's round end.
               padding: const EdgeInsetsDirectional.only(start: 5, end: 14),
-              child: SizedBox(
-                height: TinodeAppBar.rowHeight,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 8,
-                  children: [
-                    ExcludeSemantics(
-                      child: ChatAvatar(topic: topic, radius: _avatarRadius),
-                    ),
-                    Flexible(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          DefaultTextStyle.merge(
-                            style: textTheme.titleMedium?.copyWith(
-                              fontSize: 15,
-                              height: 1.2,
-                            ),
-                            child: ChatTitle(topic: topic),
-                          ),
-                          ChatStatus(topic: topic),
-                        ],
+              child: _EasedWidth(
+                child: SizedBox(
+                  height: TinodeAppBar.rowHeight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 8,
+                    children: [
+                      ExcludeSemantics(
+                        child: ChatAvatar(topic: topic, radius: _avatarRadius),
                       ),
-                    ),
-                  ],
+                      Flexible(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DefaultTextStyle.merge(
+                              style: textTheme.titleMedium?.copyWith(
+                                fontSize: 15,
+                                height: 1.2,
+                              ),
+                              child: ChatTitle(topic: topic),
+                            ),
+                            ChatStatus(topic: topic),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// [child], easing to its new width when that changes; at once with Reduce
+/// motion, where AnimatedSize can't run.
+class _EasedWidth extends StatelessWidget {
+  const _EasedWidth({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return child;
+    }
+    return AnimatedSize(
+      duration: TinodeChatTheme.of(context).springDuration,
+      curve: Curves.easeOutCubic,
+      alignment: AlignmentDirectional.centerStart,
+      child: child,
     );
   }
 }

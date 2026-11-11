@@ -36,6 +36,7 @@ class ImageViewerScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: TinodeAppBar(
         fadeColor: Colors.black,
+        opaque: true,
         overlayBrightness: Brightness.dark,
         title: Text(
           image.name ?? TinodeChatStrings.of(context).imageLabel,
@@ -43,9 +44,11 @@ class ImageViewerScreen extends StatelessWidget {
         ),
         leading: const TinodeBackButton(),
       ),
-      body: InteractiveViewer(
-        maxScale: 5,
-        child: Center(child: Image(image: provider)),
+      body: SafeArea(
+        child: InteractiveViewer(
+          maxScale: 5,
+          child: Center(child: Image(image: provider)),
+        ),
       ),
     );
   }

@@ -16,7 +16,9 @@ import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_overlay_s
 /// Behind it, a fade of [fadeColor] (the theme's `scaffoldBackgroundColor`
 /// by default) keeps what isn't on glass readable: it is solid under the
 /// status bar and, unless [titleOnGlass], under the title's row, then
-/// eases to clear over the rest of the bar and 16 px past it.
+/// eases to clear over the rest of the bar and 16 px past it. When
+/// [opaque], it is solid all the way down to the bar's edge and stops
+/// there, for a picture laid out below the bar.
 /// The bar takes every touch that lands on it.
 ///
 /// Every screen of the chat with an app bar uses one; a host can build its
@@ -38,6 +40,7 @@ class TinodeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.bottom,
     this.fadeColor,
     this.titleOnGlass = false,
+    this.opaque = false,
     this.overlayBrightness,
     super.key,
   });
@@ -81,6 +84,11 @@ class TinodeAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// chat's name pill). Plain text needs the solid fade behind it.
   final bool titleOnGlass;
 
+  /// Whether the bar is solid [fadeColor] down to its own bottom edge and
+  /// no further, for a body laid out below the bar (a picture, a video)
+  /// that a fade would smudge. Otherwise the fade eases into the body.
+  final bool opaque;
+
   /// How bright what is behind the status bar looks, for a screen that
   /// doesn't follow the theme (the image viewer is always black). The
   /// theme's brightness by default.
@@ -99,6 +107,7 @@ class TinodeAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final color = fadeColor ?? theme.scaffoldBackgroundColor;
     final statusBar = MediaQuery.paddingOf(context).top;
     final solid = titleOnGlass ? statusBar : statusBar + _gap + rowHeight;
     final fade = math.max(
@@ -115,17 +124,20 @@ class TinodeAppBar extends StatelessWidget implements PreferredSizeWidget {
           children: [
             // Nothing under the bar can be tapped through it.
             const Positioned.fill(child: AbsorbPointer()),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: fade,
-              child: EdgeFade(
-                color: fadeColor ?? theme.scaffoldBackgroundColor,
-                edge: VerticalDirection.up,
-                solid: solid / fade,
+            if (opaque)
+              Positioned.fill(child: ColoredBox(color: color))
+            else
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: fade,
+                child: EdgeFade(
+                  color: color,
+                  edge: VerticalDirection.up,
+                  solid: solid / fade,
+                ),
               ),
-            ),
             SafeArea(
               bottom: false,
               child: Padding(

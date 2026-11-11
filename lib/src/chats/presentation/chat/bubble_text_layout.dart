@@ -4,8 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 /// A message's `text` with its `footer` (time and ticks) at the end of the
-/// last line when they fit there, else on a line of their own, aligned to
-/// the end.
+/// last line when they fit there, hanging a little below it as in Telegram
+/// and WhatsApp, else on a line of their own, aligned to the end.
 class BubbleTextLayout extends MultiChildRenderObjectWidget {
   BubbleTextLayout({required Widget text, required Widget footer, super.key})
     : super(children: [text, footer]);
@@ -35,6 +35,9 @@ class RenderBubbleTextLayout extends RenderBox
 
   /// Space between the last word and the footer.
   static const gap = 8.0;
+
+  /// How far a footer at the end of the last line hangs below the text.
+  static const drop = 4.0;
 
   TextDirection get textDirection => _textDirection;
   TextDirection _textDirection;
@@ -69,7 +72,7 @@ class RenderBubbleTextLayout extends RenderBox
 
   @override
   double computeMinIntrinsicHeight(double width) =>
-      _text.getMinIntrinsicHeight(width);
+      _text.getMinIntrinsicHeight(width) + drop;
 
   @override
   double computeMaxIntrinsicHeight(double width) =>
@@ -100,7 +103,7 @@ class RenderBubbleTextLayout extends RenderBox
         ? max(text.width, lineEnd + gap + footer.width)
         : max(text.width, footer.width);
     final height = inline
-        ? max(text.height, footer.height)
+        ? max(text.height + drop, footer.height)
         : text.height + footer.height;
     size = constraints.constrain(Size(width, height));
 

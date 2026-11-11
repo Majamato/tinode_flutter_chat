@@ -1,24 +1,23 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
-import 'package:tinode_flutter_chat/src/chats/application/message_runs.dart';
+import 'package:tinode_flutter_chat/src/chats/domain/message_list_layout.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/message_reveal.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_bubble.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/older_messages_indicator.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/outgoing_bubble.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/reveal_highlight.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_bubble.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_slot.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
 /// The messages, newest at the bottom, below them those still in the
-/// outbox, and the typing bubble while someone types. Rebuilds only when a
-/// message is added or leaves the outbox, or typing starts or stops; each
-/// bubble watches its own message, and padding changes (a bar or the
-/// keyboard) rebuild only this. It scrolls under the app bar and the
+/// outbox, and the [TypingSlot]. Rebuilds only when a message is added or
+/// leaves the outbox; each bubble watches its own message, the slot
+/// whether anyone types, and padding changes (a bar or the keyboard)
+/// rebuild only this. It scrolls under the app bar and the
 /// composer, padded by their heights (the `MediaQuery` padding the
 /// `Scaffold` gives it). Scrolling near the top loads older messages. A
 /// message the user asked to see is scrolled to, or a snack bar says it
@@ -36,13 +35,30 @@ class _MessageListState extends ConsumerState<MessageList> {
   /// How close to the oldest loaded message a scroll starts the next page.
   static const _loadOlderExtent = 400.0;
 
+  /// Room between the bubbles and the sides of the screen.
+  static const _sideRoom = 10.0;
+
+  /// Room between the app bar and the top of the list.
+  static const _topRoom = 4.0;
+
+  /// Room between the newest message and the composer.
+  static const _bottomRoom = 12.0;
+
+  /// Where a revealed message lands: the middle of the list.
+  static const _revealAlignment = 0.5;
+
   final _scroll = ScrollController();
   final _list = ListController();
 
   /// Each message's widget, by seq or client ID. The same instance comes
-  /// back while the list rebuilds, e.g. as typing starts, so no bubble
+  /// back while the list rebuilds, e.g. as a message arrives, so no bubble
   /// rebuilds with it.
   final _items = <Object, Widget>{};
+
+  late final Widget _typingSlot = TypingSlot(
+    key: const ValueKey(TypingSlot.listKey),
+    topic: widget.topic,
+  );
 
   @override
   void initState() {
@@ -104,15 +120,17 @@ class _MessageListState extends ConsumerState<MessageList> {
       return;
     }
     final chat = ref.read(chatControllerProvider(widget.topic));
-    final position = binarySearch(chat.seqs, seq);
-    if (position < 0) {
+    final index = MessageListLayout(
+      outbox: chat.outgoingIds,
+      seqs: chat.seqs,
+    ).indexOfSeq(seq);
+    if (index == null) {
       return;
     }
-    final typing = ref.read(anyoneTypingProvider(widget.topic)) ? 1 : 0;
     _list.jumpToItem(
-      index: typing + chat.outgoingIds.length + chat.seqs.length - 1 - position,
+      index: index,
       scrollController: _scroll,
-      alignment: 0.5,
+      alignment: _revealAlignment,
     );
   }
 
@@ -124,10 +142,9 @@ class _MessageListState extends ConsumerState<MessageList> {
     final outgoing = ref.watch(
       chatControllerProvider(widget.topic).select((s) => s.outgoingIds),
     );
-    final typing = ref.watch(anyoneTypingProvider(widget.topic)) ? 1 : 0;
-    // Reversed, so index 0 is the newest message and the list starts at
-    // the bottom: the typing bubble, the outbox, then the numbered
-    // messages, and last the indicator for older messages.
+    // Reversed, so the list starts at the bottom; the layout says what
+    // sits where.
+    final layout = MessageListLayout(outbox: outgoing, seqs: seqs);
     final padding = MediaQuery.paddingOf(context);
     return MediaQuery.removePadding(
       context: context,
@@ -138,69 +155,52 @@ class _MessageListState extends ConsumerState<MessageList> {
         listController: _list,
         reverse: true,
         padding: EdgeInsets.fromLTRB(
-          10,
-          padding.top + 4,
-          10,
-          padding.bottom + 12,
+          _sideRoom,
+          padding.top + _topRoom,
+          _sideRoom,
+          padding.bottom + _bottomRoom,
         ),
-        itemCount: typing + outgoing.length + seqs.length + 1,
-        // By key, so a bubble keeps its element as the typing bubble or a
-        // new message shifts the others.
-        findChildIndexCallback: (key) => _indexOf(key, typing, outgoing, seqs),
-        itemBuilder: (context, position) {
-          if (position < typing) {
-            return const TypingBubble(key: ValueKey(TypingBubble.listKey));
-          }
-          return _item(position - typing, outgoing, seqs);
+        itemCount: layout.itemCount,
+        // By key, so a bubble keeps its element as a new message shifts
+        // the others.
+        findChildIndexCallback: (key) => _indexOf(key, layout),
+        itemBuilder: (context, index) => switch (layout.itemAt(index)) {
+          TypingSlotItem() => _typingSlot,
+          OutboxItem(:final clientId) => _outboxBubble(clientId),
+          NumberedItem(:final seq) => _numberedBubble(seq),
+          OlderMessagesItem() => OlderMessagesIndicator(topic: widget.topic),
         },
       ),
     );
   }
 
   /// Where the item with [key] is now, or null when it's gone.
-  int? _indexOf(Key key, int typing, List<String> outgoing, List<int> seqs) {
-    switch (key) {
-      case ValueKey<String>(:final value) when value == TypingBubble.listKey:
-        return typing > 0 ? 0 : null;
-      case ValueKey<String>(:final value):
-        final index = outgoing.indexOf(value);
-        return index < 0 ? null : typing + outgoing.length - 1 - index;
-      case ValueKey<int>(:final value):
-        final index = binarySearch(seqs, value);
-        return index < 0
-            ? null
-            : typing + outgoing.length + seqs.length - 1 - index;
-    }
-    return null;
-  }
+  int? _indexOf(Key key, MessageListLayout layout) => switch (key) {
+    ValueKey<String>(:final value) when value == TypingSlot.listKey =>
+      MessageListLayout.typingSlot,
+    ValueKey<String>(:final value) => layout.indexOfOutbox(value),
+    ValueKey<int>(:final value) => layout.indexOfSeq(value),
+    _ => null,
+  };
 
-  /// The message at [index] counted from the newest: the outbox first,
-  /// then the numbered messages, last the indicator for older ones.
-  Widget _item(int index, List<String> outgoing, List<int> seqs) {
-    if (index < outgoing.length) {
-      final id = outgoing[outgoing.length - 1 - index];
-      return _items.putIfAbsent(
-        id,
-        () => OutgoingBubble(
-          key: ValueKey(id),
-          topic: widget.topic,
-          clientId: id,
-        ),
-      );
-    }
-    final numbered = index - outgoing.length;
-    if (numbered == seqs.length) {
-      return OlderMessagesIndicator(topic: widget.topic);
-    }
-    final seq = seqs[seqs.length - 1 - numbered];
-    return _items.putIfAbsent(
-      seq,
-      () => RevealHighlight(
-        key: ValueKey(seq),
-        topic: widget.topic,
-        seq: seq,
-        child: MessageBubble(topic: widget.topic, seq: seq),
-      ),
-    );
-  }
+  /// The bubble of the outbox message [clientId].
+  Widget _outboxBubble(String clientId) => _items.putIfAbsent(
+    clientId,
+    () => OutgoingBubble(
+      key: ValueKey(clientId),
+      topic: widget.topic,
+      clientId: clientId,
+    ),
+  );
+
+  /// The bubble of the numbered message [seq].
+  Widget _numberedBubble(int seq) => _items.putIfAbsent(
+    seq,
+    () => RevealHighlight(
+      key: ValueKey(seq),
+      topic: widget.topic,
+      seq: seq,
+      child: MessageBubble(topic: widget.topic, seq: seq),
+    ),
+  );
 }

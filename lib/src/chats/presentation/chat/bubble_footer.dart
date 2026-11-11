@@ -12,6 +12,7 @@ class BubbleFooter extends StatelessWidget {
     this.own = false,
     this.status,
     this.receipt,
+    this.readColor,
     super.key,
   });
 
@@ -26,6 +27,9 @@ class BubbleFooter extends StatelessWidget {
   final OutgoingStatus? status;
   final MessageReceipt? receipt;
 
+  /// The ticks of a read message; the theme's `readReceiptColor` when null.
+  final Color? readColor;
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -37,7 +41,12 @@ class BubbleFooter extends StatelessWidget {
         ),
         if (own) ...[
           const SizedBox(width: 4),
-          MessageStatusIcon(status: status, receipt: receipt, color: color),
+          MessageStatusIcon(
+            status: status,
+            receipt: receipt,
+            color: color,
+            readColor: readColor,
+          ),
         ],
       ],
     );

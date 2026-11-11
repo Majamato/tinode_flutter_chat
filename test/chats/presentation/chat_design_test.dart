@@ -6,6 +6,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_presence_li
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_status.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/date_chip.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_bubble.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/photo_time_chip.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_bubble.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
@@ -14,6 +15,10 @@ import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
 
 const icons = TinodeChatIcons();
+
+/// Longer than any swap in the chat: the typing bubble growing or the
+/// header's line fading.
+const swap = Duration(milliseconds: 500);
 
 void main() {
   late FakeTinodeSession session;
@@ -49,6 +54,7 @@ void main() {
     WidgetTester tester, {
     TinodeBubbleBuilder? bubbleBuilder,
     TinodeChatFeatures features = const TinodeChatFeatures(),
+    bool reduceMotion = true,
   }) async {
     await pumpTinodeChat(
       tester,
@@ -57,9 +63,11 @@ void main() {
       theme: TinodeChatTheme.materialTheme(),
       bubbleBuilder: bubbleBuilder,
       features: features,
+      reduceMotion: reduceMotion,
     );
     await tester.tap(find.text('Friends'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
   }
 
   testWidgets('only the last bubble of a run has a tail', (tester) async {
@@ -153,24 +161,117 @@ void main() {
     expect(send().onPressed, isNull);
   });
 
-  testWidgets('a typing bubble shows while someone types, rebuilding no '
-      'message', (tester) async {
+  testWidgets("read ticks on a photo take the theme's colour for media", (
+    tester,
+  ) async {
+    session.chats.first = chat(
+      friends,
+      name: 'Friends',
+      lastSeq: 5,
+      read: 5,
+      lastMessageAt: at(5),
+    );
+    session.histories[friends]!.add(
+      DataMessage(
+        topic: friends,
+        seq: 5,
+        from: alice,
+        time: at(5),
+        content: DraftyContent(
+          Drafty.fromJson(const {
+            'txt': ' ',
+            'fmt': [
+              {'at': -1, 'key': 0},
+            ],
+            'ent': [
+              {
+                'tp': 'IM',
+                'data': {
+                  'mime': 'image/jpeg',
+                  'ref': '/v0/file/s/a.jpg',
+                  'width': 640,
+                  'height': 480,
+                },
+              },
+            ],
+          }),
+        ),
+      ),
+    );
+    session.memberLists[friends] = [
+      member(alice, name: 'Alice', read: 5, received: 5),
+      member(bob, name: 'Bob', read: 5, received: 5),
+      member(carol, name: 'Carol', read: 5, received: 5),
+    ];
     await openFriends(tester);
+
+    final ticks = tester.widget<Icon>(
+      find.descendant(
+        of: find.byType(PhotoTimeChip),
+        matching: find.byIcon(icons.read),
+      ),
+    );
+    final theme = TinodeChatTheme.of(
+      tester.element(find.byType(PhotoTimeChip)),
+    );
+    expect(ticks.color, theme.mediaReadReceiptColor);
+  });
+
+  testWidgets('a typing bubble grows in while someone types and shrinks '
+      'away after, rebuilding no message', (tester) async {
+    await openFriends(tester, reduceMotion: false);
     final rebuilt = <String>[];
     debugOnRebuildDirtyWidget = (element, _) =>
         rebuilt.add(element.widget.runtimeType.toString());
     addTearDown(() => debugOnRebuildDirtyWidget = null);
 
+    final mine = find.text('mine');
+    final start = tester.getRect(mine).top;
     session.emitInfo(
       const InfoMessage(topic: friends, event: InfoEvent.typing, from: bob),
     );
     await tester.pump();
+
+    // It grows in, lifting the messages bit by bit.
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.byType(TypingBubble), findsOneWidget);
+    final midway = tester.getRect(mine).top;
+    await tester.pump(swap);
+    final end = tester.getRect(mine).top;
+    expect(midway, lessThan(start));
+    expect(end, lessThan(midway));
 
     await tester.pump(typingTimeout);
     await tester.pump();
+    expect(find.byType(TypingBubble), findsOneWidget);
+    await tester.pump(swap);
     expect(find.byType(TypingBubble), findsNothing);
+    expect(tester.getRect(mine).top, start);
     expect(rebuilt, isNot(contains('$MessageBubble')));
+  });
+
+  testWidgets('with Reduce motion the typing bubble comes and goes at once', (
+    tester,
+  ) async {
+    await openFriends(tester);
+    final mine = find.text('mine');
+    final start = tester.getRect(mine).top;
+
+    session.emitInfo(
+      const InfoMessage(topic: friends, event: InfoEvent.typing, from: bob),
+    );
+    await tester.pump();
+    await tester.pump();
+    final lifted = tester.getRect(mine).top;
+    expect(lifted, lessThan(start));
+    await tester.pump(swap);
+    expect(tester.getRect(mine).top, lifted);
+
+    await tester.pump(typingTimeout);
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(TypingBubble), findsNothing);
+    expect(tester.getRect(mine).top, start);
   });
 
   testWidgets('the header says online, and typing over it', (tester) async {
@@ -192,7 +293,10 @@ void main() {
       const InfoMessage(topic: bob, event: InfoEvent.typing, from: bob),
     );
     await tester.pump();
+    // Typing fades in over online.
     expect(find.text(strings.typingDirect), findsOneWidget);
+    expect(find.text(strings.online), findsOneWidget);
+    await tester.pump(swap);
     expect(find.text(strings.online), findsNothing);
 
     session.emitPresence(
@@ -200,6 +304,7 @@ void main() {
     );
     await tester.pump(typingTimeout);
     await tester.pump();
+    await tester.pump(swap);
     expect(find.text(strings.typingDirect), findsNothing);
     expect(find.text(strings.online), findsNothing);
   });
@@ -368,6 +473,7 @@ void main() {
       ..emitStatus(const Reconnecting(attempt: 1, retryIn: Duration.zero));
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
+    await tester.pump(swap);
 
     expect(find.text(strings.reconnecting), findsOneWidget);
     expect(find.text(strings.typingDirect), findsNothing);
@@ -378,6 +484,7 @@ void main() {
 
     session.emitStatus(const Connected());
     await tester.pump();
+    await tester.pump(swap);
     expect(find.text(strings.reconnecting), findsNothing);
     expect(find.text(strings.typingDirect), findsOneWidget);
   });

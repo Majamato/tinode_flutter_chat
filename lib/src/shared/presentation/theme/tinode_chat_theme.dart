@@ -43,6 +43,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.onlineColor,
     required this.missedCallColor,
     required this.readReceiptColor,
+    required this.mediaReadReceiptColor,
     required this.waveOffColor,
     required this.senderNameColors,
     required this.revealedMessageColor,
@@ -106,6 +107,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       onlineColor: ChatNeutrals.online,
       missedCallColor: colors.error,
       readReceiptColor: colors.primary,
+      mediaReadReceiptColor: Color.lerp(colors.primary, Colors.white, 0.75)!,
       waveOffColor: colors.outlineVariant,
       senderNameColors: _senderNameColors(theme.brightness),
       revealedMessageColor: colors.primary.withValues(alpha: 0.16),
@@ -191,6 +193,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       onlineColor: ChatNeutrals.online,
       missedCallColor: ChatNeutrals.danger,
       readReceiptColor: filledBubble ? onPrimary : primary,
+      mediaReadReceiptColor: Color.lerp(primary, onPrimary, 0.75)!,
       waveOffColor: neutrals.waveOff,
       senderNameColors: _senderNameColors(brightness),
       revealedMessageColor: primary.withValues(alpha: 0.16),
@@ -380,6 +383,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// The ticks of one of the user's messages that every other member read.
   final Color readReceiptColor;
 
+  /// The ticks of a read message on the dark chip over a photo or video:
+  /// light enough to read there, and unlike the white of a delivered one.
+  final Color mediaReadReceiptColor;
+
   /// The unplayed part of a voice message's waveform.
   final Color waveOffColor;
 
@@ -504,6 +511,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     Color? onlineColor,
     Color? missedCallColor,
     Color? readReceiptColor,
+    Color? mediaReadReceiptColor,
     Color? waveOffColor,
     List<Color>? senderNameColors,
     Color? revealedMessageColor,
@@ -562,6 +570,7 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     onlineColor: onlineColor ?? this.onlineColor,
     missedCallColor: missedCallColor ?? this.missedCallColor,
     readReceiptColor: readReceiptColor ?? this.readReceiptColor,
+    mediaReadReceiptColor: mediaReadReceiptColor ?? this.mediaReadReceiptColor,
     waveOffColor: waveOffColor ?? this.waveOffColor,
     senderNameColors: senderNameColors ?? this.senderNameColors,
     revealedMessageColor: revealedMessageColor ?? this.revealedMessageColor,
@@ -636,6 +645,10 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       onlineColor: color(onlineColor, other.onlineColor),
       missedCallColor: color(missedCallColor, other.missedCallColor),
       readReceiptColor: color(readReceiptColor, other.readReceiptColor),
+      mediaReadReceiptColor: color(
+        mediaReadReceiptColor,
+        other.mediaReadReceiptColor,
+      ),
       waveOffColor: color(waveOffColor, other.waveOffColor),
       senderNameColors: colorList(senderNameColors, other.senderNameColors),
       revealedMessageColor: color(

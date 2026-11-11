@@ -66,6 +66,7 @@ class MessageBubble extends ConsumerWidget {
           ? theme.ownMetaColor
           : theme.peerMetaColor,
       own: own,
+      readColor: onPhoto ? theme.mediaReadReceiptColor : null,
     );
 
     final (kind, padding, body, footerBelow) = switch (message) {

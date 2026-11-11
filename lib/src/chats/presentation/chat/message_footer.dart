@@ -12,6 +12,7 @@ class MessageFooter extends ConsumerWidget {
     required this.time,
     required this.color,
     this.own = false,
+    this.readColor,
     super.key,
   });
 
@@ -23,11 +24,15 @@ class MessageFooter extends ConsumerWidget {
   final Color color;
   final bool own;
 
+  /// The ticks of a read message; the theme's `readReceiptColor` when null.
+  final Color? readColor;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) => BubbleFooter(
     time: time,
     color: color,
     own: own,
+    readColor: readColor,
     receipt: own ? ref.watch(messageReceiptProvider(topic, seq)) : null,
   );
 }

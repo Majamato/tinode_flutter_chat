@@ -41,7 +41,7 @@ lib/
     chats/                        chat list and open chats
       domain/                     ChatSummary, ChatListState, ChatMessage, ChatState, CallRecord,
                                   ChatMembers, ChatMember, MessageReceipt, MessageSender,
-                                  TypingMembers, ChatExit, MessageReveal
+                                  TypingMembers, ChatExit, MessageReveal, MessageListLayout
       application/                providers: chat list, chat, send, members, typing, chat actions,
                                   requested chat
       presentation/chat_list/     list screen and its tile parts, the account menu

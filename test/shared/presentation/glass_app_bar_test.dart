@@ -276,6 +276,31 @@ void main() {
     expect(tester.getRect(fade).bottom, tester.getRect(listBar).bottom + 16);
   });
 
+  testWidgets('an opaque bar is solid down to its edge and paints nothing '
+      'past it', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: TinodeAppBar(
+            title: Text('Photo'),
+            fadeColor: Colors.black,
+            opaque: true,
+          ),
+          body: SizedBox.expand(),
+        ),
+      ),
+    );
+    final bar = find.byType(TinodeAppBar);
+    expect(
+      find.descendant(of: bar, matching: find.byType(EdgeFade)),
+      findsNothing,
+    );
+    final fill = find.descendant(of: bar, matching: find.byType(ColoredBox));
+    expect(tester.widget<ColoredBox>(fill.first).color, Colors.black);
+    expect(tester.getRect(fill.first), tester.getRect(bar));
+  });
+
   /// Whether a chat's row covers [point].
   bool rowAt(WidgetTester tester, Offset point) => find
       .byType(ChatListTile)

@@ -22,6 +22,7 @@ import 'package:tinode_flutter_chat/src/attachments/presentation/video_bubble_co
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_player_view.dart';
 import 'package:tinode_flutter_chat/src/attachments/presentation/video_trim_bar.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/send_button.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/edge_fade.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/ref_photo_avatar.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
@@ -103,6 +104,19 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The app bar on [screen] is solid, with no fade to smudge the top of
+  /// a picture under it.
+  void expectSolidBar(Finder screen) {
+    final bar = find.descendant(
+      of: screen,
+      matching: find.byType(TinodeAppBar),
+    );
+    expect(
+      find.descendant(of: bar, matching: find.byType(EdgeFade)),
+      findsNothing,
+    );
+  }
+
   testWidgets('sends a photo with a caption, then shows and opens it', (
     tester,
   ) async {
@@ -118,6 +132,7 @@ void main() {
     expect(picker.picks, [AttachmentSource.media]);
     expect(find.byType(AttachmentPreviewScreen), findsOneWidget);
     expect(backText(), findsNothing);
+    expectSolidBar(find.byType(AttachmentPreviewScreen));
 
     await tester.enterText(find.byType(TextField), 'Sunset');
     await tester.tap(find.byIcon(icons.send));
@@ -138,6 +153,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ImageViewerScreen), findsOneWidget);
     expect(backText(), findsNothing);
+    expectSolidBar(find.byType(ImageViewerScreen));
+    // Below the bar, so that zoomed in the photo stops at it, not under it.
+    expect(
+      tester.getRect(find.byType(InteractiveViewer)).top,
+      tester
+          .getRect(
+            find.descendant(
+              of: find.byType(ImageViewerScreen),
+              matching: find.byType(TinodeAppBar),
+            ),
+          )
+          .bottom,
+    );
     // Always black, so the status bar's icons stay light in a light theme.
     expect(
       tester

@@ -28,6 +28,7 @@ class VideoPlayerScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: TinodeAppBar(
         fadeColor: Colors.black,
+        opaque: true,
         overlayBrightness: Brightness.dark,
         title: Text(title, style: const TextStyle(color: Colors.white)),
         leading: const TinodeBackButton(),

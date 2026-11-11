@@ -29,11 +29,16 @@ void main() {
     return tester.getSize(find.byType(BubbleTextLayout));
   }
 
-  testWidgets('the footer follows a short last line', (tester) async {
+  testWidgets('the footer follows a short last line, hanging below it', (
+    tester,
+  ) async {
     final size = await layOut(tester, 'hi');
-    expect(size.height, 10);
+    expect(size.height, 10 + RenderBubbleTextLayout.drop);
     expect(size.width, 20 + RenderBubbleTextLayout.gap + 40);
-    expect(tester.getBottomRight(find.byKey(const Key('footer'))).dy, 10);
+    expect(
+      tester.getBottomRight(find.byKey(const Key('footer'))).dy,
+      10 + RenderBubbleTextLayout.drop,
+    );
   });
 
   testWidgets('the footer takes a line of its own after a full one', (

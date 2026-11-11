@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/photo_time_chip.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/chat_neutrals.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
@@ -45,6 +46,24 @@ void main() {
       expect(theme.iconColor, ChatNeutrals.dark.text);
       expect(theme.iconPassiveColor, ChatNeutrals.dark.muted);
       expect(theme.wallpaperColor, isNot(palette.soft));
+    });
+
+    test('read ticks over media stand out on the photo chip, and from the '
+        'white of delivered ones', () {
+      // The chip over a white photo, its lightest.
+      final chip = Color.alphaBlend(PhotoTimeChip.background, _white);
+      for (final brightness in Brightness.values) {
+        final theme = TinodeChatTheme.fromPalette(
+          palette,
+          brightness: brightness,
+        );
+
+        expect(
+          _contrast(theme.mediaReadReceiptColor, chip),
+          greaterThanOrEqualTo(3),
+        );
+        expect(theme.mediaReadReceiptColor, isNot(_white));
+      }
     });
 
     test('keeps the call screens dark in either mode', () {
@@ -272,6 +291,7 @@ final List<(String, Object? Function(TinodeChatTheme))> _fields = [
   ('onlineColor', (t) => t.onlineColor),
   ('missedCallColor', (t) => t.missedCallColor),
   ('readReceiptColor', (t) => t.readReceiptColor),
+  ('mediaReadReceiptColor', (t) => t.mediaReadReceiptColor),
   ('waveOffColor', (t) => t.waveOffColor),
   ('senderNameColors', (t) => t.senderNameColors),
   ('revealedMessageColor', (t) => t.revealedMessageColor),

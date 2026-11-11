@@ -2,16 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_frame.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/typing_slot.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 
-/// Someone else's bubble with three bouncing dots, at the bottom of the
-/// chat while someone types. The dots stand still with the OS's Reduce
-/// motion. Decoration: the header says who types.
+/// Someone else's bubble with three bouncing dots, in the [TypingSlot] at
+/// the bottom of the chat while someone types. The dots stand still with
+/// the OS's Reduce motion. Decoration: the header says who types.
 class TypingBubble extends StatefulWidget {
   const TypingBubble({super.key});
-
-  /// Its key in the message list; no client ID looks like it.
-  static const listKey = '_typing';
 
   @override
   State<TypingBubble> createState() => _TypingBubbleState();

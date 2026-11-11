@@ -230,7 +230,7 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
       screen: const TinodeAttachmentPreviewScreen(),
       appBar: TinodeAppBar(
         title: Text(file?.name ?? ''),
-        // The chevron alone: the file's name needs the room.
+        opaque: true,
         leading: const TinodeBackButton(),
       ),
       body: SafeArea(
