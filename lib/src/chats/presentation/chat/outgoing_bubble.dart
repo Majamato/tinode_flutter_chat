@@ -14,6 +14,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_builder_s
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_footer.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_frame.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_text_layout.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/captioned_attachments.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_slot.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/outgoing_actions_sheet.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/photo_time_chip.dart';
@@ -121,10 +122,12 @@ class OutgoingBubble extends ConsumerWidget {
             ),
           ],
         ),
-        final attachment? => Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        final attachment? => CaptionedAttachments(
+          caption: text,
+          media: attachment.isMedia,
+          color: foreground,
+          footer: footer,
+          attachments: [
             OutgoingAttachmentView(
               topic: topic,
               clientId: clientId,
@@ -132,20 +135,6 @@ class OutgoingBubble extends ConsumerWidget {
               uploading: message.status == OutgoingStatus.queued,
               color: foreground,
               onCancel: () => _cancel(ref),
-            ),
-            Padding(
-              padding: attachment.isMedia
-                  ? const EdgeInsets.fromLTRB(8, 2, 8, 6)
-                  : const EdgeInsets.only(top: 4),
-              child: text.isEmpty
-                  ? Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: footer,
-                    )
-                  : BubbleTextLayout(
-                      text: Text(text, style: textStyle),
-                      footer: footer,
-                    ),
             ),
           ],
         ),
