@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/account/application/delete_account_controller.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/confirm_dialog.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/confirm_sheet.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
@@ -17,8 +17,10 @@ class DeleteAccountTile extends ConsumerWidget {
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
     final strings = TinodeChatStrings.of(context);
     final controller = ref.read(deleteAccountControllerProvider.notifier);
-    final confirmed = await ConfirmDialog.ask(
+    final confirmed = await ConfirmSheet.ask(
       context,
+      icon: TinodeChatIcons.of(context).deleteForever,
+      title: strings.deleteAccountConfirmTitle,
       message: strings.deleteAccountConfirm,
       action: strings.deleteAccount,
     );

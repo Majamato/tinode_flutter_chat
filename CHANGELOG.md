@@ -1,5 +1,13 @@
 ## Unreleased
 
+- **New:** deleting the account, a chat or a group, leaving a group and removing a member ask on
+  a sheet, like the chat's other sheets, instead of a plain dialog: an icon, a title, what will
+  happen, and full-width buttons.
+- **Breaking:** `TinodeChatStrings` has the titles of those questions: `deleteAccountConfirmTitle`,
+  `deleteChatConfirmTitle`, `deleteGroupConfirmTitle`, `leaveGroupConfirmTitle` and
+  `removeMemberConfirmTitle(name)`. `deleteAccountConfirm`, `deleteChatConfirm`,
+  `deleteGroupConfirm`, `leaveGroupConfirm` and `removeMemberConfirm` now say what happens, under
+  the title; `removeMemberConfirm` is a `String` and no longer takes the name.
 - **Breaking:** needs Flutter 3.44 (Dart 3.12) or newer, for `v_video_compressor` 2.2.3.
 - **Fix:** on Android, a compressed video gets the bitrate asked for (1.5 Mbit/s by default). The
   encoder used to pick its own, about 3.9 Mbit/s at 720p, so a video over about 44 seconds came out

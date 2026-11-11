@@ -110,8 +110,9 @@ lib/
     shared/                       used by several features
       domain/                     ValueObject, ChatFailure, TinodeScreen
       application/                BuildLifetime
-      presentation/               theme, strings, time format, error view, confirm dialog,
-                                  sheets (showChatSheet, ChatSheet, ChatSheetAction),
+      presentation/               theme, strings, time format, error view,
+                                  sheets (showChatSheet, ChatSheet, ChatSheetAction,
+                                  ConfirmSheet),
                                   progress button, glass (GlassSurface, GlassIconButton,
                                   EdgeFade, GlassBelow), app bar (TinodeAppBar, GlassScaffold,
                                   AppBarBuilderScope), sliding segments, settings sections

@@ -288,6 +288,12 @@ them.
   deletes or discards is `destructive`: icon and label in `colorScheme.error`, the square that
   color @ 12 %. A tap
   ticks the haptics.
+- **Confirmations** (`ConfirmSheet`): whatever can't be undone asks first on a sheet, centred,
+  24 px in: a 56 px circle in `colorScheme.error` @ 12 % behind a 28 px icon in that color, the
+  title (`titleLarge`, a header) and under it what happens (`bodyMedium` in `onSurfaceVariant`),
+  then two full-width 54 px buttons 8 px apart: the action filled in `colorScheme.error`, a tap
+  ticking the haptics, over Cancel on `surfaceContainer`. A text taller than the sheet may be
+  scrolls; the buttons stay. Dragging it down or tapping outside cancels.
 - Read by lists the members under its title, with "Delivered to" as an upper-case
   `labelMedium` label in `outline`.
 

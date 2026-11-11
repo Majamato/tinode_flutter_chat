@@ -202,22 +202,24 @@ class TinodeChatStrings {
     this.passwordChanged = 'Password changed.',
     this.passwordsDontMatch = "The passwords don't match.",
     this.deleteAccount = 'Delete account',
+    this.deleteAccountConfirmTitle = 'Delete your account?',
     this.deleteAccountConfirm =
-        'Delete your account, with your chats and messages? '
-        'This cannot be undone.',
+        'Your chats and messages go with it. This cannot be undone.',
     this.chatInfo = 'Chat info',
     this.members = 'Members',
     this.ownerLabel = 'Owner',
     this.youLabel = 'You',
     this.removeMember = 'Remove',
     this.deleteChat = 'Delete chat',
-    this.deleteChatConfirm = 'Delete this chat and its messages for you?',
+    this.deleteChatConfirmTitle = 'Delete this chat?',
+    this.deleteChatConfirm = 'Its messages are deleted for you only.',
     this.deleteGroup = 'Delete group',
+    this.deleteGroupConfirmTitle = 'Delete this group?',
     this.deleteGroupConfirm =
-        'Delete this group and its messages for everyone?',
+        'Its messages are deleted for everyone. This cannot be undone.',
     this.leaveGroup = 'Leave group',
-    this.leaveGroupConfirm =
-        'Leave this group? You will not see its messages any more.',
+    this.leaveGroupConfirmTitle = 'Leave this group?',
+    this.leaveGroupConfirm = 'You will not see its messages any more.',
     this.cancel = 'Cancel',
     this.loginTaken = 'This login is taken.',
     this.credentialsRefused =
@@ -239,7 +241,8 @@ class TinodeChatStrings {
     this.messageSearchIdle = 'Searches the messages kept on this device.',
     this.noMessagesFound = 'No messages found',
     this.messageUnavailable = 'This message is not available right now.',
-    this.removeMemberConfirm = _removeMemberConfirm,
+    this.removeMemberConfirmTitle = _removeMemberConfirmTitle,
+    this.removeMemberConfirm = "They will not see the group's new messages.",
     this.callsTitle = 'Calls',
     this.settingsTitle = 'Settings',
     this.noCalls = 'No calls yet',
@@ -453,19 +456,24 @@ class TinodeChatStrings {
     this.passwordChanged = 'Contraseña cambiada.',
     this.passwordsDontMatch = 'Las contraseñas no coinciden.',
     this.deleteAccount = 'Eliminar cuenta',
+    this.deleteAccountConfirmTitle = '¿Eliminar tu cuenta?',
     this.deleteAccountConfirm =
-        '¿Eliminar tu cuenta, con tus chats y mensajes? No se puede deshacer.',
+        'Tus chats y mensajes se eliminarán con ella. No se puede deshacer.',
     this.chatInfo = 'Información del chat',
     this.members = 'Miembros',
     this.ownerLabel = 'Propietario',
     this.youLabel = 'Tú',
     this.removeMember = 'Quitar',
     this.deleteChat = 'Eliminar chat',
-    this.deleteChatConfirm = '¿Eliminar este chat y sus mensajes para ti?',
+    this.deleteChatConfirmTitle = '¿Eliminar este chat?',
+    this.deleteChatConfirm = 'Sus mensajes se eliminan solo para ti.',
     this.deleteGroup = 'Eliminar grupo',
-    this.deleteGroupConfirm = '¿Eliminar este grupo y sus mensajes para todos?',
+    this.deleteGroupConfirmTitle = '¿Eliminar este grupo?',
+    this.deleteGroupConfirm =
+        'Sus mensajes se eliminan para todos. No se puede deshacer.',
     this.leaveGroup = 'Salir del grupo',
-    this.leaveGroupConfirm = '¿Salir de este grupo? Ya no verás sus mensajes.',
+    this.leaveGroupConfirmTitle = '¿Salir de este grupo?',
+    this.leaveGroupConfirm = 'Ya no verás sus mensajes.',
     this.cancel = 'Cancelar',
     this.loginTaken = 'Este usuario ya existe.',
     this.credentialsRefused =
@@ -489,7 +497,8 @@ class TinodeChatStrings {
         'Busca en los mensajes guardados en este dispositivo.',
     this.noMessagesFound = 'No se encontraron mensajes',
     this.messageUnavailable = 'Este mensaje no está disponible ahora mismo.',
-    this.removeMemberConfirm = _removeMemberConfirmEs,
+    this.removeMemberConfirmTitle = _removeMemberConfirmTitleEs,
+    this.removeMemberConfirm = 'No verá los mensajes nuevos del grupo.',
     this.callsTitle = 'Llamadas',
     this.settingsTitle = 'Ajustes',
     this.noCalls = 'Aún no hay llamadas',
@@ -706,8 +715,9 @@ class TinodeChatStrings {
     this.passwordChanged = 'Mot de passe modifié.',
     this.passwordsDontMatch = 'Les mots de passe ne correspondent pas.',
     this.deleteAccount = 'Supprimer le compte',
+    this.deleteAccountConfirmTitle = 'Supprimer votre compte\u00A0?',
     this.deleteAccountConfirm =
-        'Supprimer votre compte, avec vos discussions et vos messages\u00A0? '
+        'Vos discussions et vos messages seront supprimés avec lui. '
         'Cette action est irréversible.',
     this.chatInfo = 'Infos de la discussion',
     this.members = 'Membres',
@@ -715,14 +725,16 @@ class TinodeChatStrings {
     this.youLabel = 'Vous',
     this.removeMember = 'Retirer',
     this.deleteChat = 'Supprimer la discussion',
-    this.deleteChatConfirm =
-        'Supprimer cette discussion et ses messages pour vous\u00A0?',
+    this.deleteChatConfirmTitle = 'Supprimer cette discussion\u00A0?',
+    this.deleteChatConfirm = 'Ses messages sont supprimés pour vous seulement.',
     this.deleteGroup = 'Supprimer le groupe',
+    this.deleteGroupConfirmTitle = 'Supprimer ce groupe\u00A0?',
     this.deleteGroupConfirm =
-        'Supprimer ce groupe et ses messages pour tout le monde\u00A0?',
+        'Ses messages sont supprimés pour tout le monde. '
+        'Cette action est irréversible.',
     this.leaveGroup = 'Quitter le groupe',
-    this.leaveGroupConfirm =
-        'Quitter ce groupe\u00A0? Vous ne verrez plus ses messages.',
+    this.leaveGroupConfirmTitle = 'Quitter ce groupe\u00A0?',
+    this.leaveGroupConfirm = 'Vous ne verrez plus ses messages.',
     this.cancel = 'Annuler',
     this.loginTaken = 'Cet identifiant est déjà pris.',
     this.credentialsRefused =
@@ -747,7 +759,9 @@ class TinodeChatStrings {
         'Recherche dans les messages conservés sur cet appareil.',
     this.noMessagesFound = 'Aucun message trouvé',
     this.messageUnavailable = "Ce message n'est pas disponible pour le moment.",
-    this.removeMemberConfirm = _removeMemberConfirmFr,
+    this.removeMemberConfirmTitle = _removeMemberConfirmTitleFr,
+    this.removeMemberConfirm =
+        'Ce membre ne verra plus les nouveaux messages du groupe.',
     this.callsTitle = 'Appels',
     this.settingsTitle = 'Paramètres',
     this.noCalls = 'Aucun appel pour le moment',
@@ -1356,6 +1370,9 @@ class TinodeChatStrings {
   final String deleteAccount;
 
   /// Asks before deleting the account.
+  final String deleteAccountConfirmTitle;
+
+  /// Says, under [deleteAccountConfirmTitle], what deleting the account does.
   final String deleteAccountConfirm;
 
   /// Title of the screen about one chat.
@@ -1377,18 +1394,27 @@ class TinodeChatStrings {
   final String deleteChat;
 
   /// Asks before deleting a 1:1 chat.
+  final String deleteChatConfirmTitle;
+
+  /// Says, under [deleteChatConfirmTitle], what deleting the chat does.
   final String deleteChatConfirm;
 
   /// Deletes a group the user owns, for everyone.
   final String deleteGroup;
 
   /// Asks before deleting a group.
+  final String deleteGroupConfirmTitle;
+
+  /// Says, under [deleteGroupConfirmTitle], what deleting the group does.
   final String deleteGroupConfirm;
 
   /// Leaves a group for good.
   final String leaveGroup;
 
   /// Asks before leaving a group.
+  final String leaveGroupConfirmTitle;
+
+  /// Says, under [leaveGroupConfirmTitle], what leaving the group does.
   final String leaveGroupConfirm;
 
   /// Closes a question without doing anything.
@@ -1428,7 +1454,10 @@ class TinodeChatStrings {
   final String confirmEmailFirst;
 
   /// Asks before removing the member `name` from a group.
-  final String Function(String name) removeMemberConfirm;
+  final String Function(String name) removeMemberConfirmTitle;
+
+  /// Says, under [removeMemberConfirmTitle], what removing a member does.
+  final String removeMemberConfirm;
 
   /// Opens the search for people and groups from the chat list.
   final String findPeople;
@@ -1535,7 +1564,7 @@ String _fileTooLargeLimit(String limit) =>
 String _videoTooLongLimit(String limit) =>
     'The video is too long to send: the limit is $limit.';
 
-String _removeMemberConfirm(String name) => 'Remove $name from the group?';
+String _removeMemberConfirmTitle(String name) => 'Remove $name?';
 
 String _appearancePreviewAnswer(String name) => '$name, obviously';
 
@@ -1562,7 +1591,7 @@ String _fileTooLargeLimitEs(String limit) =>
 String _videoTooLongLimitEs(String limit) =>
     'El video es demasiado largo para enviarlo: el límite es $limit.';
 
-String _removeMemberConfirmEs(String name) => '¿Quitar a $name del grupo?';
+String _removeMemberConfirmTitleEs(String name) => '¿Quitar a $name?';
 
 String _appearancePreviewAnswerEs(String name) => '$name, obviamente';
 
@@ -1591,7 +1620,7 @@ String _videoTooLongLimitFr(String limit) =>
     'La vidéo est trop longue pour être envoyée\u00A0: la limite est de '
     '$limit.';
 
-String _removeMemberConfirmFr(String name) => 'Retirer $name du groupe\u00A0?';
+String _removeMemberConfirmTitleFr(String name) => 'Retirer $name\u00A0?';
 
 String _appearancePreviewAnswerFr(String name) => '$name, évidemment';
 

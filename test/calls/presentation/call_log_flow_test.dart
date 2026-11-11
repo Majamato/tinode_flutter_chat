@@ -7,6 +7,7 @@ import 'package:tinode_flutter_chat/src/app/presentation/home/home_tab_bar.dart'
 import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_tile.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/confirm_sheet.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_network_monitor.dart';
@@ -238,7 +239,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(
       find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(ConfirmSheet),
         matching: find.text(strings.deleteAccount),
       ),
     );

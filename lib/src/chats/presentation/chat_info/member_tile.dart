@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_actions_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/confirm_dialog.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/confirm_sheet.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/profile_avatar.dart';
@@ -21,9 +21,11 @@ class MemberTile extends ConsumerWidget {
   Future<void> _remove(BuildContext context, WidgetRef ref, String name) async {
     final strings = TinodeChatStrings.of(context);
     final controller = ref.read(chatActionsControllerProvider(topic).notifier);
-    final confirmed = await ConfirmDialog.ask(
+    final confirmed = await ConfirmSheet.ask(
       context,
-      message: strings.removeMemberConfirm(name),
+      icon: TinodeChatIcons.of(context).removeMember,
+      title: strings.removeMemberConfirmTitle(name),
+      message: strings.removeMemberConfirm,
       action: strings.removeMember,
     );
     if (confirmed) {

@@ -5,6 +5,7 @@ import 'package:tinode_flutter_chat/src/account/presentation/account_screen.dart
 import 'package:tinode_flutter_chat/src/account/presentation/change_password_screen.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/home/home_tab_bar.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/login_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/confirm_sheet.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/back_button.dart';
@@ -139,6 +140,7 @@ void main() {
 
     await tester.tap(find.text(strings.deleteAccount));
     await tester.pumpAndSettle();
+    expect(find.text(strings.deleteAccountConfirmTitle), findsOneWidget);
     expect(find.text(strings.deleteAccountConfirm), findsOneWidget);
     await tester.tap(find.text(strings.cancel));
     await tester.pumpAndSettle();
@@ -148,7 +150,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(
       find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(ConfirmSheet),
         matching: find.text(strings.deleteAccount),
       ),
     );

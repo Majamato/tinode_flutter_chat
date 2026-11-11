@@ -42,7 +42,7 @@ void main() {
     test('names people', () {
       expect(spanish.typingOne('Ana'), 'Ana está escribiendo…');
       expect(spanish.typingTwo('Ana', 'Luis'), 'Ana y Luis están escribiendo…');
-      expect(spanish.removeMemberConfirm('Ana'), '¿Quitar a Ana del grupo?');
+      expect(spanish.removeMemberConfirmTitle('Ana'), '¿Quitar a Ana?');
     });
 
     test('counts', () {
@@ -56,7 +56,7 @@ void main() {
     test('names people', () {
       expect(french.typingOne('Léa'), 'Léa écrit…');
       expect(french.typingTwo('Léa', 'Hugo'), 'Léa et Hugo écrivent…');
-      expect(french.removeMemberConfirm('Léa'), 'Retirer Léa du groupe ?');
+      expect(french.removeMemberConfirmTitle('Léa'), 'Retirer Léa ?');
     });
 
     test('counts zero and one in the singular', () {

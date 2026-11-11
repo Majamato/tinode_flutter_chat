@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_header.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_presence_line.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_info_screen.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/confirm_sheet.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/back_button.dart';
@@ -106,7 +106,7 @@ void main() {
   Future<void> confirm(WidgetTester tester, String action) async {
     await tester.tap(
       find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(ConfirmSheet),
         matching: find.text(action),
       ),
     );
@@ -135,7 +135,7 @@ void main() {
 
     await tester.tap(find.byTooltip(strings.removeMember));
     await tester.pumpAndSettle();
-    expect(find.text(strings.removeMemberConfirm('Bob')), findsOneWidget);
+    expect(find.text(strings.removeMemberConfirmTitle('Bob')), findsOneWidget);
     await confirm(tester, strings.removeMember);
     expect(session.removedMembers[friends], [bob]);
     expect(find.byTooltip(strings.removeMember), findsNothing);

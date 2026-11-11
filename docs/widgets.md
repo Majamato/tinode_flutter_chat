@@ -96,7 +96,8 @@ business logic in UI files. Flutter's own guidance is in
 - Widgets must work at phone width and in dark mode.
 - **Sheets.** Open every bottom sheet with `showChatSheet` and build it as a `ChatSheet` of
   `ChatSheetAction` rows, never a raw `showModalBottomSheet` with `ListTile`s, so they all
-  look, move and read alike.
+  look, move and read alike. Ask before what can't be undone with `ConfirmSheet.ask` (an icon,
+  a title, what happens, the action), never `showDialog` or an `AlertDialog`.
 - **App bars and bottom bars.** A screen with an app bar is a `GlassScaffold`: a `Scaffold`
   with `extendBodyBehindAppBar` and `extendBody`, inside one `BackdropGroup`. Its app bar is a
   `TinodeAppBar` (or a widget building one: `ChatListHeader`, `ChatHeader`), which the host's
