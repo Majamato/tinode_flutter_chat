@@ -14,6 +14,7 @@ import 'package:tinode_flutter_chat/src/shared/presentation/chat_time_format.dar
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/message_field.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
 import 'package:tinode_flutter_chat/src/voice/application/voice_recorder_controller.dart';
 import 'package:tinode_flutter_chat/src/voice/domain/voice_failure.dart';
@@ -22,8 +23,7 @@ import 'package:tinode_flutter_chat/src/voice/presentation/recording_panel.dart'
 import 'package:tinode_flutter_chat/src/voice/presentation/voice_failure_message.dart';
 
 /// Three pieces of glass floating over the messages: the round attach
-/// button, the message field (a pill, its corners `composerRadius` as it
-/// grows to more lines) and the round send button. Typing and sending
+/// button, the [MessageField] and the round send button. Typing and sending
 /// never rebuild it: the button watches both on its
 /// own. Typing tells the other members. A failed send, or a refused
 /// attachment, shows a snack bar and keeps the text. Its buttons count as
@@ -140,6 +140,11 @@ class _ComposerState extends ConsumerState<Composer> {
     }
   }
 
+  void _onTyped(String _) =>
+      ref.read(typingControllerProvider(widget.topic).notifier).typed();
+
+  void _onSubmitted(String _) => unawaited(_send());
+
   void _onSendState(AsyncValue<void>? previous, AsyncValue<void> next) {
     if (next case AsyncError(:final error) when previous is! AsyncError) {
       final strings = TinodeChatStrings.of(context);
@@ -191,34 +196,11 @@ class _ComposerState extends ConsumerState<Composer> {
                 children: [
                   AttachButton(topic: widget.topic),
                   Expanded(
-                    child: GlassSurface(
-                      radius: theme.composerRadius,
-                      child: TextField(
-                        controller: _text,
-                        decoration: InputDecoration(
-                          hintText: TinodeChatStrings.of(context).messageHint,
-                          isDense: true,
-                          filled: false,
-                          // 22 px of text: as tall as the round buttons.
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 11,
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                        ),
-                        minLines: 1,
-                        maxLines: 5,
-                        textCapitalization: TextCapitalization.sentences,
-                        textInputAction: TextInputAction.send,
-                        onChanged: (_) => ref
-                            .read(
-                              typingControllerProvider(widget.topic).notifier,
-                            )
-                            .typed(),
-                        onSubmitted: (_) => _send(),
-                      ),
+                    child: MessageField(
+                      controller: _text,
+                      hintText: TinodeChatStrings.of(context).messageHint,
+                      onChanged: _onTyped,
+                      onSubmitted: _onSubmitted,
                     ),
                   ),
                   SendButton(

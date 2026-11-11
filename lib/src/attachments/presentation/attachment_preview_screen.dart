@@ -14,6 +14,8 @@ import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart'
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/message_field.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/round_send_button.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
@@ -220,6 +222,10 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
     Navigator.of(context).pop<PreviewedAttachment>(previewed);
   }
 
+  void _onSend() => unawaited(_send());
+
+  void _onSubmitted(String _) => unawaited(_send());
+
   @override
   Widget build(BuildContext context) {
     final icons = TinodeChatIcons.of(context);
@@ -292,37 +298,27 @@ class _AttachmentPreviewScreenState extends State<AttachmentPreviewScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 4, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+              child: TextFieldTapRegion(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  spacing: 8,
+                  children: [
+                    Expanded(
                       // No keyboard until asked for: rising, it would
                       // shrink the picture as it appears.
-                      controller: _caption,
-                      decoration: InputDecoration(
+                      child: MessageField(
+                        controller: _caption,
                         hintText: strings.captionHint,
+                        onSubmitted: _onSubmitted,
                       ),
-                      minLines: 1,
-                      maxLines: 5,
-                      textCapitalization: TextCapitalization.sentences,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => unawaited(_send()),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: strings.send,
-                    icon: _sending
-                        ? const SizedBox.square(
-                            dimension: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Icon(icons.send),
-                    onPressed: file == null || _sending
-                        ? null
-                        : () => unawaited(_send()),
-                  ),
-                ],
+                    RoundSendButton(
+                      onSend: file == null ? null : _onSend,
+                      busy: _sending,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
