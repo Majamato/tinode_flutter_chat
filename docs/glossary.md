@@ -21,6 +21,12 @@ One topic the user takes part in, as the UI shows it: a direct chat, a group or 
 **Chat list screen / chat screen**
 The list of the user's chats, and one open chat.
 
+**Skeleton**
+Grey shapes laid out like a screen's content, shown in its place while it loads: the chat list's
+rows, a chat's bubbles, the calls, the profile, search results. A spinner is only for an action
+that runs (a button, an upload). *Avoid:* "placeholder", "shimmer" (that is its motion).
+*In code:* `SkeletonShimmer`, `SkeletonBone`, `ChatListSkeleton`, `ChatSkeleton`.
+
 **Chat summary**
 What the list knows about one chat: title, last message time, `lastSeq`, `read`, whether the user
 may write, whether it is online and muted. *In code:* `ChatSummary`.

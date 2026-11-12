@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/search/application/message_search_controller.dart';
 import 'package:tinode_flutter_chat/src/search/domain/message_search_state.dart';
+import 'package:tinode_flutter_chat/src/search/presentation/found_message_skeleton.dart';
 import 'package:tinode_flutter_chat/src/search/presentation/found_message_tile.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/error_retry_view.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// What a message search has: a hint, progress, an error, nothing found,
-/// or the found messages, loading more near the end. Watches the search's
-/// state.
+/// What a message search has: a hint, a skeleton, an error, nothing
+/// found, or the found messages, loading more near the end. Watches the
+/// search's state.
 class MessageSearchResults extends ConsumerWidget {
   const MessageSearchResults({required this.topic, super.key});
 
@@ -34,9 +35,7 @@ class MessageSearchResults extends ConsumerWidget {
         onRetry: ref.read(provider.notifier).retry,
       ),
       (MessageSearchStatus.idle, _) => _Message(strings.messageSearchIdle),
-      (MessageSearchStatus.searching, true) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      (MessageSearchStatus.searching, true) => const FoundMessageSkeleton(),
       (MessageSearchStatus.done, true) => _Message(strings.noMessagesFound),
       (_, false) => NotificationListener<ScrollUpdateNotification>(
         onNotification: (notification) {
@@ -49,10 +48,7 @@ class MessageSearchResults extends ConsumerWidget {
           itemCount: results.length + (loadingMore ? 1 : 0),
           itemBuilder: (context, index) => index < results.length
               ? FoundMessageTile(found: results[index])
-              : const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
+              : const FoundMessageSkeleton(rows: 1),
         ),
       ),
     };

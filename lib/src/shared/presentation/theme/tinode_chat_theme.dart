@@ -65,6 +65,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     required this.cardColor,
     required this.tabBarLensColor,
     required this.recordingColor,
+    required this.skeletonColor,
+    required this.skeletonHighlightColor,
     required this.composerRadius,
     required this.fieldRadius,
     required this.buttonRadius,
@@ -136,6 +138,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       cardColor: colors.surfaceContainerHighest,
       tabBarLensColor: colors.primary.withValues(alpha: 0.12),
       recordingColor: colors.error,
+      skeletonColor: colors.surfaceContainerHighest,
+      skeletonHighlightColor: colors.surfaceContainerLow,
       composerRadius: 22,
       fieldRadius: 4,
       buttonRadius: 20,
@@ -224,6 +228,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
           ? const Color(0x24FFFFFF)
           : palette.primary.withValues(alpha: 0.1),
       recordingColor: ChatNeutrals.danger,
+      skeletonColor: neutrals.skeleton,
+      skeletonHighlightColor: neutrals.skeletonHighlight,
       composerRadius: 22,
       fieldRadius: 14,
       buttonRadius: 16,
@@ -453,6 +459,13 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
   /// panel's delete button.
   final Color recordingColor;
 
+  /// The bones of a skeleton, which stands in for a screen's content
+  /// while it loads.
+  final Color skeletonColor;
+
+  /// The band of light that sweeps over a skeleton's bones.
+  final Color skeletonHighlightColor;
+
   /// Corner radius of the composer's text field.
   final double composerRadius;
 
@@ -533,6 +546,8 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     Color? cardColor,
     Color? tabBarLensColor,
     Color? recordingColor,
+    Color? skeletonColor,
+    Color? skeletonHighlightColor,
     double? composerRadius,
     double? fieldRadius,
     double? buttonRadius,
@@ -594,6 +609,9 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
     cardColor: cardColor ?? this.cardColor,
     tabBarLensColor: tabBarLensColor ?? this.tabBarLensColor,
     recordingColor: recordingColor ?? this.recordingColor,
+    skeletonColor: skeletonColor ?? this.skeletonColor,
+    skeletonHighlightColor:
+        skeletonHighlightColor ?? this.skeletonHighlightColor,
     composerRadius: composerRadius ?? this.composerRadius,
     fieldRadius: fieldRadius ?? this.fieldRadius,
     buttonRadius: buttonRadius ?? this.buttonRadius,
@@ -685,6 +703,11 @@ class TinodeChatTheme extends ThemeExtension<TinodeChatTheme> {
       cardColor: color(cardColor, other.cardColor),
       tabBarLensColor: color(tabBarLensColor, other.tabBarLensColor),
       recordingColor: color(recordingColor, other.recordingColor),
+      skeletonColor: color(skeletonColor, other.skeletonColor),
+      skeletonHighlightColor: color(
+        skeletonHighlightColor,
+        other.skeletonHighlightColor,
+      ),
       composerRadius: number(composerRadius, other.composerRadius),
       fieldRadius: number(fieldRadius, other.fieldRadius),
       buttonRadius: number(buttonRadius, other.buttonRadius),

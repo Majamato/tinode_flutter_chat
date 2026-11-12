@@ -111,8 +111,8 @@ and a `MemoryChatStoreOpener` directly (`test/calls/application/call_push_handle
 ## Motion in tests
 
 `pumpTinodeChat` turns on Reduce motion (`reduceMotion: true`): the call screens loop for as long
-as they show (the blobs, the avatar rings, the dots of "Ringing…"), so `pumpAndSettle` would never
-settle on them. A test about motion passes `reduceMotion: false` and pumps frames instead of
+as they show (the blobs, the avatar rings, the dots of "Ringing…"), and so does a skeleton's
+shimmer, so `pumpAndSettle` would never settle on them. A test about motion passes `reduceMotion: false` and pumps frames instead of
 settling; "the call screen moves" in `call_layer_test.dart` checks them that way.
 
 To seed the cache before the widget opens, open the user's store from a shared

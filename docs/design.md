@@ -427,6 +427,32 @@ today at 14:05", "last seen yesterday at 14:05", "last seen Mar 3". Online is li
 cached; last seen is cached. None of it shows while the host turns presence off
 (`TinodeChatFeatures.presence`), nor for a peer who hides theirs ("Show my online status").
 
+## Skeletons
+
+A screen with nothing to show yet shows its skeleton, never a centred spinner: bones
+(`SkeletonBone`) laid out like its content, so the content replaces them without a jump.
+
+- Each copies its screen's real sizes and padding, under the bars: the chat list's 76 px rows
+  (a 56 px circle, the name and time, the preview, the divider under the text), a chat's bubbles
+  on both sides in runs (`bubbleRadius`, at most 78 % wide, `sameRunGap` and `newRunGap`), the
+  calls history's 72 px rows, the profile's photo, field and button, and the rows of people and
+  message search. Lines are stadiums shorter than their text, their widths varied from a fixed
+  list, so the rows don't look stamped and don't change between frames.
+- Bones are `skeletonColor` (`ChatNeutrals.skeleton`); a chat's are the bubbles' own colours, on
+  the wallpaper.
+- **Shimmer** (`SkeletonShimmer`): one band of `skeletonHighlightColor` (a chat's: the
+  wallpaper at 60 %) sweeps across the whole skeleton, start to end and slightly slanted, every
+  1.4 s. Only the band is painted over the bones, so each keeps its colour.
+- Screen readers hear "Loading…" once (a live region), not the bones; the skeleton takes no
+  touches.
+- While the session connects at start-up, the chat list's skeleton shows under a bar reading
+  "Connecting…" with the search field's bone, and nothing to tap. The host's `appBarBuilder`
+  isn't asked for it.
+- Paging shows bones too: three bubbles above the oldest message while older ones load, and one
+  found message row at the end of a message search.
+- A spinner stays for what runs rather than loads: a busy button, an upload or download ring,
+  a video buffering, the reconnecting title, and the thin bar over people results already shown.
+
 ## Motion
 
 `springCurve` (a spring with a little overshoot, `Cubic(.2, .9, .3, 1.25)`) over
@@ -439,7 +465,7 @@ The reconnecting title swaps in and out over `springDuration`, fading while it r
 grows from .92 on `springCurve`.
 With the OS's Reduce motion (`MediaQuery.disableAnimationsOf`), scale and slide become plain
 fades (the reconnecting title included) and looping background animations stop: the call blobs hold still, the avatar rings go
-and the dots of "Ringing…" stop pulsing; while recording, the button changes colour without
+and the dots of "Ringing…" stop pulsing, skeletons hold still; while recording, the button changes colour without
 growing, the rings go, and the dot and the chevron hold still; the playhead's bars stop
 swelling.
 

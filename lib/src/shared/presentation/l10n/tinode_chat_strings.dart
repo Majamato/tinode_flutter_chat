@@ -24,6 +24,7 @@ class TinodeChatStrings {
     this.chatListTitle = 'Chats',
     this.noChats = 'No chats yet',
     this.connecting = 'Connecting…',
+    this.loading = 'Loading…',
     this.loginTitle = 'Sign in',
     this.loginField = 'Login',
     this.passwordField = 'Password',
@@ -278,6 +279,7 @@ class TinodeChatStrings {
     this.chatListTitle = 'Chats',
     this.noChats = 'Aún no hay chats',
     this.connecting = 'Conectando…',
+    this.loading = 'Cargando…',
     this.loginTitle = 'Iniciar sesión',
     this.loginField = 'Usuario',
     this.passwordField = 'Contraseña',
@@ -538,6 +540,7 @@ class TinodeChatStrings {
     this.chatListTitle = 'Discussions',
     this.noChats = 'Aucune discussion pour le moment',
     this.connecting = 'Connexion…',
+    this.loading = 'Chargement…',
     this.loginTitle = 'Se connecter',
     this.loginField = 'Identifiant',
     this.passwordField = 'Mot de passe',
@@ -831,6 +834,9 @@ class TinodeChatStrings {
 
   /// Shown while connecting to the server.
   final String connecting;
+
+  /// Read out while a skeleton stands in for content that loads.
+  final String loading;
 
   /// The login screen's switch to signing in.
   final String loginTitle;

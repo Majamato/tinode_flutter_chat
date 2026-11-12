@@ -115,7 +115,8 @@ lib/
                                   ConfirmSheet),
                                   progress button, glass (GlassSurface, GlassIconButton,
                                   EdgeFade, GlassBelow), app bar (TinodeAppBar, GlassScaffold,
-                                  AppBarBuilderScope), sliding segments, settings sections
+                                  AppBarBuilderScope), skeletons (SkeletonShimmer,
+                                  SkeletonBone), sliding segments, settings sections
                                   and tiles
 ```
 

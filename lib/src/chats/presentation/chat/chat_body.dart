@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_controller.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/load_status.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_skeleton.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_list.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/error_retry_view.dart';
 
-/// Progress, error or the messages, which scroll under the bars; the rest
-/// sits between them. Rebuilds only when the load status does. While it is
-/// shown the chat stays attached.
+/// A skeleton of the messages or the messages, which scroll under the
+/// bars, or an error between them. Rebuilds only when the load status
+/// does. While it is shown the chat stays attached.
 class ChatBody extends ConsumerWidget {
   const ChatBody({required this.topic, super.key});
 
@@ -20,9 +21,7 @@ class ChatBody extends ConsumerWidget {
       chatControllerProvider(topic).select((s) => (s.status, s.failure)),
     );
     return switch (status) {
-      LoadStatus.loading => const SafeArea(
-        child: Center(child: CircularProgressIndicator()),
-      ),
+      LoadStatus.loading => const ChatSkeleton(),
       LoadStatus.failed => SafeArea(
         child: ErrorRetryView(
           failure: failure ?? ChatFailure.unexpected,

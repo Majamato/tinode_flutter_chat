@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_history_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_list.dart';
+import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_skeleton.dart';
 
-/// A spinner until the call log was read, then the calls. Watches only
+/// A skeleton until the call log was read, then the calls. Watches only
 /// whether it was read.
 class CallHistoryBody extends ConsumerWidget {
   const CallHistoryBody({super.key});
@@ -13,8 +14,6 @@ class CallHistoryBody extends ConsumerWidget {
     final loaded = ref.watch(
       callHistoryControllerProvider.select((h) => h.loaded),
     );
-    return loaded
-        ? const CallHistoryList()
-        : const SafeArea(child: Center(child: CircularProgressIndicator()));
+    return loaded ? const CallHistoryList() : const CallHistorySkeleton();
   }
 }

@@ -4,11 +4,12 @@ import 'package:tinode_flutter_chat/src/new_chat/application/find_controller.dar
 import 'package:tinode_flutter_chat/src/new_chat/domain/find_state.dart';
 import 'package:tinode_flutter_chat/src/new_chat/domain/search_result.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/search_result_list.dart';
+import 'package:tinode_flutter_chat/src/new_chat/presentation/search_result_skeleton.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/error_retry_view.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// What the [scope]'s search has: a hint, progress, an error, nothing
+/// What the [scope]'s search has: a hint, a skeleton, an error, nothing
 /// found, or the results. Watches the search's status and results.
 class FindResults extends ConsumerWidget {
   const FindResults({
@@ -40,9 +41,7 @@ class FindResults extends ConsumerWidget {
         onRetry: ref.read(findControllerProvider(scope).notifier).retry,
       ),
       (FindStatus.idle, _) => _Message(strings.findHint),
-      (FindStatus.searching, true) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      (FindStatus.searching, true) => const SearchResultSkeleton(),
       (FindStatus.done, true) => _Message(strings.nobodyFound),
       (_, false) => SearchResultList(
         results: results,

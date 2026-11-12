@@ -6,7 +6,8 @@ import 'package:tinode_flutter_chat/src/shared/presentation/glass_below.dart';
 
 /// A screen whose [body] runs under its floating bars: the [appBar] (or
 /// what the host's `TinodeChat.appBarBuilder` makes of it for [screen]) and
-/// the [bottomBar], if any.
+/// the [bottomBar], if any. Without a [screen] the host's builder isn't
+/// asked, for a bar that must stay as it is.
 ///
 /// The [Scaffold] lays the body out behind both and hands it their heights
 /// as `MediaQuery` padding in the same layout pass: lists pad by
@@ -24,8 +25,8 @@ import 'package:tinode_flutter_chat/src/shared/presentation/glass_below.dart';
 /// reads what is behind the bars once. Watches only the host's builder.
 class GlassScaffold extends StatefulWidget {
   const GlassScaffold({
-    required this.screen,
     required this.appBar,
+    required this.screen,
     required this.body,
     this.bottomBar,
     this.backgroundColor,
@@ -33,7 +34,7 @@ class GlassScaffold extends StatefulWidget {
     super.key,
   });
 
-  final TinodeScreen screen;
+  final TinodeScreen? screen;
   final PreferredSizeWidget appBar;
   final Widget body;
   final Widget? bottomBar;
@@ -59,7 +60,9 @@ class _GlassScaffoldState extends State<GlassScaffold> {
         extendBody: true,
         resizeToAvoidBottomInset: bottomBar == null,
         backgroundColor: widget.backgroundColor,
-        appBar: builder == null ? appBar : builder(context, screen, appBar),
+        appBar: builder == null || screen == null
+            ? appBar
+            : builder(context, screen, appBar),
         body: bottomBar == null
             ? Stack(
                 fit: StackFit.expand,

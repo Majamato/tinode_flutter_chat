@@ -18,6 +18,8 @@ final class ChatNeutrals {
     required this.waveOff,
     required this.dateChip,
     required this.mutedBadge,
+    required this.skeleton,
+    required this.skeletonHighlight,
   });
 
   /// The neutrals for [brightness].
@@ -41,6 +43,8 @@ final class ChatNeutrals {
     waveOff: Color(0xFFC9CCD2),
     dateChip: Color(0x5714161B),
     mutedBadge: Color(0xFF9BA1AB),
+    skeleton: Color(0xFFEAE8E3),
+    skeletonHighlight: Color(0xFFF7F6F3),
   );
 
   static const dark = ChatNeutrals._(
@@ -58,6 +62,8 @@ final class ChatNeutrals {
     waveOff: Color(0xFF5A606B),
     dateChip: Color(0x2EFFFFFF),
     mutedBadge: Color(0xFF5A606B),
+    skeleton: Color(0xFF242832),
+    skeletonHighlight: Color(0xFF323743),
   );
 
   /// End call, the recording dot, missed calls.
@@ -120,4 +126,8 @@ final class ChatNeutrals {
 
   /// The unread badge of a muted chat.
   final Color mutedBadge;
+
+  /// A skeleton's bones, and the light sweeping over them.
+  final Color skeleton;
+  final Color skeletonHighlight;
 }
