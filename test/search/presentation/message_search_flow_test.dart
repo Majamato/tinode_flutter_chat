@@ -4,7 +4,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/message_bubble.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/reveal_highlight.dart';
-import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat_search/chat_search_screen.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/search/application/message_search_controller.dart';
 import 'package:tinode_flutter_chat/src/search/presentation/found_message_tile.dart';
@@ -142,13 +142,15 @@ void main() {
     expect(highlighted(tester, 5), isFalse);
   });
 
-  testWidgets('the chat list searches people and groups', (tester) async {
+  testWidgets('the chat list searches the chats, not their messages', (
+    tester,
+  ) async {
     await pump(tester);
 
-    await tester.tap(find.byTooltip(strings.findPeople));
+    await tester.tap(find.text(strings.searchChats));
     await tester.pumpAndSettle();
 
-    expect(find.byType(FindPeopleScreen), findsOneWidget);
+    expect(find.byType(ChatSearchScreen), findsOneWidget);
     expect(find.byType(MessageSearchScreen), findsNothing);
   });
 }

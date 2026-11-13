@@ -9,7 +9,6 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/older_messages_i
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/skeleton_bubble.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_skeleton.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_tile.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_search_field.dart';
 import 'package:tinode_flutter_chat/src/new_chat/application/find_controller.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/search_result_skeleton.dart';
@@ -164,7 +163,7 @@ void main() {
       ),
     ];
     await pump(tester);
-    await tester.tap(find.byType(ChatSearchField));
+    await tester.tap(find.byTooltip(const TinodeChatStrings().newChat));
     await tester.pumpAndSettle();
     final hold = session.holdFind = Completer();
     await tester.enterText(

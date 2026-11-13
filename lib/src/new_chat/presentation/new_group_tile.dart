@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tinode_flutter_chat/src/new_chat/presentation/new_group_screen.dart';
+import 'package:tinode_flutter_chat/src/new_chat/presentation/add_members_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
@@ -12,7 +12,7 @@ class NewGroupTile extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(child: Icon(TinodeChatIcons.of(context).newGroup)),
       title: Text(TinodeChatStrings.of(context).newGroup),
-      onTap: () => NewGroupScreen.open(context),
+      onTap: () => AddMembersScreen.open(context),
     );
   }
 }

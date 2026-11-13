@@ -1,4 +1,5 @@
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/chats/domain/chat_summary.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/avatar_image.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/initials.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
@@ -23,6 +24,15 @@ final class SearchResult with ValueObject {
       memberCount: found.memberCount,
     );
   }
+
+  /// The chat [chat] as a result, e.g. a direct chat suggested as a
+  /// member of a new group.
+  factory SearchResult.fromChat(ChatSummary chat) => SearchResult(
+    topic: chat.topic,
+    kind: chat.kind,
+    title: chat.title,
+    photo: chat.photo,
+  );
 
   /// A user's ID, which also names the 1:1 chat with them, or a group's
   /// name.

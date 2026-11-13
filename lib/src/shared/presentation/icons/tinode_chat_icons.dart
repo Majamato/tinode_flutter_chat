@@ -40,6 +40,8 @@ class TinodeChatIcons {
     this.avatarPlaceholder = PhosphorIconsFill.user,
     this.newChat = PhosphorIconsRegular.plus,
     this.newGroup = PhosphorIconsRegular.usersThree,
+    this.picked = PhosphorIconsBold.check,
+    this.editName = PhosphorIconsRegular.pencilSimpleLine,
     this.openChat = PhosphorIconsRegular.chatCircle,
     this.muted = PhosphorIconsRegular.bellSlash,
     this.attach = PhosphorIconsRegular.paperclip,
@@ -139,6 +141,13 @@ class TinodeChatIcons {
 
   /// The new group row when starting a chat.
   final IconData newGroup;
+
+  /// The tick in a picked person's round mark, when picking a new group's
+  /// members; drawn 16 px.
+  final IconData picked;
+
+  /// Beside a name field, e.g. the new group's.
+  final IconData editName;
 
   /// Opens the chat of a call in the calls history.
   final IconData openChat;
@@ -301,6 +310,8 @@ class TinodeChatIcons {
     avatarPlaceholder,
     newChat,
     newGroup,
+    picked,
+    editName,
     openChat,
     muted,
     attach,

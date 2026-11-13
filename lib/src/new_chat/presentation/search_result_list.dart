@@ -9,17 +9,12 @@ class SearchResultList extends StatelessWidget {
     required this.results,
     required this.searching,
     required this.onSelected,
-    this.selected,
     super.key,
   });
 
   final List<SearchResult> results;
   final bool searching;
   final ValueChanged<SearchResult> onSelected;
-
-  /// The topics picked so far. When set, each result shows whether it is
-  /// picked; when null, results are tapped, not picked.
-  final Set<String>? selected;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +29,6 @@ class SearchResultList extends StatelessWidget {
               return SearchResultTile(
                 key: ValueKey(result.topic),
                 result: result,
-                selected: selected?.contains(result.topic),
                 onTap: () => onSelected(result),
               );
             },

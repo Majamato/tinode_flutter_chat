@@ -1,5 +1,24 @@
 ## Unreleased
 
+- **Behaviour change:** the chat list's search pill opens the **chat search**. It filters the
+  user's own chats (direct and groups) by name as they type, on the device, and opens the chat
+  tapped. Finding new people and groups, and creating a group, is the new chat button's
+  (the plus).
+- **New:** `TinodeChatSearchScreen` for `TinodeChat.appBarBuilder`. `TinodeChatStrings` has
+  `chatSearchHint` and `noChatsFound`; `findPeople` is no longer used.
+- **New:** creating a group takes two screens, on cards like the settings. **Add members**
+  suggests the people of the user's direct chats (most recent first) with a round mark to pick
+  each; typing filters them at once by name and searches the server for others below. The
+  picked members show on a card at the top, a tap on one unpicking them, and the bar counts them.
+  **Next** leads to **New group**: the group's photo (from the gallery or the camera, uploaded
+  as it is created) and name, and the members, still removable. Create stays disabled until the
+  group has a name.
+- **New:** `TinodeAddMembersScreen`, the first of those screens, for `TinodeChat.appBarBuilder`.
+  `TinodeScreen` is sealed: a `switch` over it without a default case needs the new case.
+- **New:** `TinodeChatStrings` has `next`, `selectedCount(count)`, `suggestedMembers`,
+  `moreMembers`, `memberFindHint`, `membersCount(count)`, `groupPhoto` and `removePicked(name)`.
+  `addMembersHint` is now the add members screen's title, and `groupNameField` the name field's
+  hint. `TinodeChatIcons` has `picked` and `editName`.
 - **New:** deleting the account, a chat or a group, leaving a group and removing a member ask on
   a sheet, like the chat's other sheets, instead of a plain dialog: an icon, a title, what will
   happen, and full-width buttons.

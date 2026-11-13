@@ -193,7 +193,7 @@ them.
 
 - The chats scroll under the glass app bar: the account menu (only without the tab bar:
   profile, appearance, log out) as a round button, "Chats" (`titleLarge`) centred and the
-  tonal new chat button (a plus), then a 40 px search pill that opens the people search: filled
+  tonal new chat button (a plus), then a 40 px search pill that opens the chat search: filled
   in `surfaceContainerHighest` like an input in light mode, where white glass would vanish on
   the white list, and glass in dark mode.
   No folder chips.
@@ -249,6 +249,31 @@ them.
   one out. Pull to fetch again.
 - "Calls" turns into the reconnecting title while the link is down, as on the chat list.
   Settings and Appearance don't show it.
+
+## New group
+
+Two screens on `pageColor`, with cards (`cardColor`, `cardRadius`) like the settings, as in
+WhatsApp. Each has a back chevron and its main action at the end of the bar: a tonal pill
+(`StepButton`, 44 px, `labelLarge` in `onPrimaryContainer`), faded while disabled, a 16 px spinner
+while busy.
+
+- **Add members**: the title over "N selected" (`bodySmall` in `outline`) once someone is
+  picked, Next, and the search field under the bar (`GlassField`), which doesn't take the focus.
+  Then, 22 px apart: the picked members on a card scrolling sideways (56 px photos with a small
+  x badge, the name under each in `bodySmall`; a tap unpicks; it grows and shrinks on
+  `springCurve`), "SUGGESTED" (the user's direct chats, most recent first) and, once the input
+  is long enough to search, "MORE PEOPLE" from the server, without those already suggested.
+  Rows are 64 px on one card per section: a 44 px photo, the name in `titleMedium`, and the pick
+  mark, a 24 px circle: a 1.5 px `outline` ring, or `actionColor` with a Bold tick in
+  `onActionColor` that pops in on `springCurve` (fades with Reduce motion). The divider runs
+  under the text. Typing filters the suggestions at once, every word starting a word of the name,
+  accents aside. While the server's first answer is on its way, three bone rows on the card; an
+  error offers a retry; "Nobody found" only when neither has anyone. With no direct chats, a muted
+  line says how to search.
+- **New group**: a card with the photo button (a 64 px circle in `surface`, a camera in
+  `linkColor`, then the picked photo; a tap opens the photo sheet where there is a camera) and
+  the name field (no border, a passive pencil, autofocus), then "MEMBERS: N" and the picked
+  members on a card that wraps. Create stays disabled while the name is blank.
 
 ## Settings
 

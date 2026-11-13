@@ -126,6 +126,8 @@ class TinodeChatStrings {
     this.voiceMessage = 'Voice message',
     this.findHint = 'Search by login, email or phone',
     this.nobodyFound = 'Nobody found',
+    this.chatSearchHint = 'Search chats',
+    this.noChatsFound = 'No chats found',
     this.groupLabel = 'Group',
     this.channelLabel = 'Channel',
     this.newGroup = 'New group',
@@ -133,6 +135,14 @@ class TinodeChatStrings {
     this.addMembersHint = 'Add members',
     this.createGroup = 'Create',
     this.membersNotAdded = 'Some members could not be added.',
+    this.next = 'Next',
+    this.selectedCount = _selectedCount,
+    this.suggestedMembers = 'Suggested',
+    this.moreMembers = 'More people',
+    this.memberFindHint = 'Name, login, email or phone',
+    this.membersCount = _membersCount,
+    this.groupPhoto = 'Group photo',
+    this.removePicked = _removePicked,
     this.messageDelivered = 'Delivered',
     this.messageRead = 'Read',
     this.readBy = 'Read by',
@@ -383,6 +393,8 @@ class TinodeChatStrings {
     this.voiceMessage = 'Mensaje de voz',
     this.findHint = 'Busca por usuario, correo o teléfono',
     this.nobodyFound = 'No se encontró a nadie',
+    this.chatSearchHint = 'Buscar chats',
+    this.noChatsFound = 'No se encontraron chats',
     this.groupLabel = 'Grupo',
     this.channelLabel = 'Canal',
     this.newGroup = 'Nuevo grupo',
@@ -390,6 +402,14 @@ class TinodeChatStrings {
     this.addMembersHint = 'Añadir miembros',
     this.createGroup = 'Crear',
     this.membersNotAdded = 'No se pudo añadir a algunos miembros.',
+    this.next = 'Siguiente',
+    this.selectedCount = _selectedCountEs,
+    this.suggestedMembers = 'Sugeridos',
+    this.moreMembers = 'Más personas',
+    this.memberFindHint = 'Nombre, usuario, correo o teléfono',
+    this.membersCount = _membersCountEs,
+    this.groupPhoto = 'Foto del grupo',
+    this.removePicked = _removePickedEs,
     this.messageDelivered = 'Entregado',
     this.messageRead = 'Leído',
     this.readBy = 'Leído por',
@@ -646,6 +666,8 @@ class TinodeChatStrings {
     this.voiceMessage = 'Message vocal',
     this.findHint = 'Rechercher par identifiant, e-mail ou téléphone',
     this.nobodyFound = 'Aucun résultat',
+    this.chatSearchHint = 'Rechercher des discussions',
+    this.noChatsFound = 'Aucune discussion trouvée',
     this.groupLabel = 'Groupe',
     this.channelLabel = 'Canal',
     this.newGroup = 'Nouveau groupe',
@@ -653,6 +675,14 @@ class TinodeChatStrings {
     this.addMembersHint = 'Ajouter des membres',
     this.createGroup = 'Créer',
     this.membersNotAdded = "Certains membres n'ont pas pu être ajoutés.",
+    this.next = 'Suivant',
+    this.selectedCount = _selectedCountFr,
+    this.suggestedMembers = 'Suggestions',
+    this.moreMembers = 'Autres personnes',
+    this.memberFindHint = 'Nom, identifiant, e-mail ou téléphone',
+    this.membersCount = _membersCountFr,
+    this.groupPhoto = 'Photo du groupe',
+    this.removePicked = _removePickedFr,
     this.messageDelivered = 'Distribué',
     this.messageRead = 'Lu',
     this.readBy = 'Lu par',
@@ -1150,6 +1180,13 @@ class TinodeChatStrings {
   /// A search that found no one.
   final String nobodyFound;
 
+  /// Hint of the chat search field, and the label of the chat list's
+  /// search field.
+  final String chatSearchHint;
+
+  /// A chat search that matched no chat.
+  final String noChatsFound;
+
   /// Under a search result that is a group.
   final String groupLabel;
 
@@ -1159,10 +1196,10 @@ class TinodeChatStrings {
   /// Title of the screen that creates a group, and of the entry opening it.
   final String newGroup;
 
-  /// Label of the new group's name field.
+  /// Hint of the new group's name field.
   final String groupNameField;
 
-  /// Hint of the field that finds people to add to a new group.
+  /// Title of the screen that picks a new group's members.
   final String addMembersHint;
 
   /// Label of the button that creates the new group.
@@ -1170,6 +1207,33 @@ class TinodeChatStrings {
 
   /// The group was created, but the server refused some of its members.
   final String membersNotAdded;
+
+  /// The button that goes on from picking a new group's members to naming
+  /// it.
+  final String next;
+
+  /// Under the add members title: how many people are picked.
+  final String Function(int count) selectedCount;
+
+  /// Heading of the people suggested as members of a new group: those the
+  /// user has a direct chat with.
+  final String suggestedMembers;
+
+  /// Heading of the people the server found as members of a new group,
+  /// beyond the suggested ones.
+  final String moreMembers;
+
+  /// Hint of the field that finds people to add to a new group.
+  final String memberFindHint;
+
+  /// Heading of the members on the new group screen, counting them.
+  final String Function(int count) membersCount;
+
+  /// Label of the button that picks the new group's photo.
+  final String groupPhoto;
+
+  /// Label of the button that unpicks `name` from a new group.
+  final String Function(String name) removePicked;
 
   /// Status of one of the user's messages that every other member
   /// received.
@@ -1588,6 +1652,12 @@ String _typingTwo(String first, String second) =>
 
 String _typingMany(int count) => '$count people are typing…';
 
+String _selectedCount(int count) => '$count selected';
+
+String _membersCount(int count) => 'Members: $count';
+
+String _removePicked(String name) => 'Remove $name';
+
 String _fileTooLargeLimit(String limit) =>
     'The file is too large to send: the limit is $limit.';
 
@@ -1615,6 +1685,13 @@ String _typingTwoEs(String first, String second) =>
 
 String _typingManyEs(int count) => '$count personas están escribiendo…';
 
+String _selectedCountEs(int count) =>
+    count == 1 ? '1 seleccionado' : '$count seleccionados';
+
+String _membersCountEs(int count) => 'Miembros: $count';
+
+String _removePickedEs(String name) => 'Quitar a $name';
+
 String _fileTooLargeLimitEs(String limit) =>
     'El archivo es demasiado grande para enviarlo: el límite es $limit.';
 
@@ -1641,6 +1718,13 @@ String _typingTwoFr(String first, String second) =>
     '$first et $second écrivent…';
 
 String _typingManyFr(int count) => '$count personnes écrivent…';
+
+String _selectedCountFr(int count) =>
+    count <= 1 ? '$count sélectionné' : '$count sélectionnés';
+
+String _membersCountFr(int count) => 'Membres\u00A0: $count';
+
+String _removePickedFr(String name) => 'Retirer $name';
 
 String _fileTooLargeLimitFr(String limit) =>
     'Le fichier est trop volumineux pour être envoyé\u00A0: la limite est '

@@ -12,19 +12,10 @@ import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_str
 /// What the [scope]'s search has: a hint, a skeleton, an error, nothing
 /// found, or the results. Watches the search's status and results.
 class FindResults extends ConsumerWidget {
-  const FindResults({
-    required this.scope,
-    required this.onSelected,
-    this.selected,
-    super.key,
-  });
+  const FindResults({required this.scope, required this.onSelected, super.key});
 
   final FindScope scope;
   final ValueChanged<SearchResult> onSelected;
-
-  /// The topics picked so far, when results can be picked; see
-  /// [SearchResultList.selected].
-  final Set<String>? selected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,7 +37,6 @@ class FindResults extends ConsumerWidget {
       (_, false) => SearchResultList(
         results: results,
         searching: status == FindStatus.searching,
-        selected: selected,
         onSelected: onSelected,
       ),
     };

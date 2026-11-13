@@ -65,7 +65,19 @@ final class TinodeFindPeopleScreen extends TinodeScreen {
   const TinodeFindPeopleScreen();
 }
 
-/// Creating a group.
+/// Finding the user's own chats by name, from the chat list.
+final class TinodeChatSearchScreen extends TinodeScreen {
+  /// The chat search.
+  const TinodeChatSearchScreen();
+}
+
+/// Picking the members of a new group, its first step.
+final class TinodeAddMembersScreen extends TinodeScreen {
+  /// The add members screen.
+  const TinodeAddMembersScreen();
+}
+
+/// Naming a new group and giving it a photo, its second step.
 final class TinodeNewGroupScreen extends TinodeScreen {
   /// The new group screen.
   const TinodeNewGroupScreen();

@@ -4,10 +4,10 @@ import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart'
 
 /// A text field in an app bar's row: [child] on a pill as tall as the row,
 /// filled like an input in light mode, where white glass would vanish on a
-/// white list, and glass in dark mode. The theme's own fill, borders and
-/// padding don't reach [child]. Watches nothing.
+/// white list, and glass in dark mode or [onPage]. The theme's own fill,
+/// borders and padding don't reach [child]. Watches nothing.
 class GlassField extends StatelessWidget {
-  const GlassField({required this.child, super.key});
+  const GlassField({required this.child, this.onPage = false, super.key});
 
   /// Replaces the theme's field, so its fill and borders stay out of the
   /// pill, and leaves the text room to grow at 1.3 times within the row.
@@ -19,6 +19,10 @@ class GlassField extends StatelessWidget {
 
   final Widget child;
 
+  /// Over the theme's `pageColor`, which the light fill matches, rather
+  /// than a white list: glass in light mode too, as the bar's buttons.
+  final bool onPage;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -28,7 +32,7 @@ class GlassField extends StatelessWidget {
     );
     return SizedBox(
       height: TinodeAppBar.rowHeight,
-      child: theme.brightness == Brightness.light
+      child: theme.brightness == Brightness.light && !onPage
           ? Material(
               color: theme.colorScheme.surfaceContainerHighest,
               shape: const StadiumBorder(),

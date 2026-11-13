@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
 import 'package:tinode_flutter_chat/src/new_chat/domain/new_group.dart';
 import 'package:tinode_flutter_chat/src/new_chat/domain/search_result.dart';
+import 'package:tinode_flutter_chat/src/profile/domain/my_profile.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
 
@@ -18,11 +20,16 @@ class NewGroupController extends _$NewGroupController {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  /// Creates a group named [name] with [members], and returns it once
-  /// created; null when it could not be (the state says why) or [name] is
-  /// blank. A member the server refuses doesn't undo the group: they are
-  /// listed in [NewGroup.notAdded].
-  Future<NewGroup?> create(String name, List<SearchResult> members) async {
+  /// Creates a group named [name] with [members], and [photo] when given,
+  /// and returns it once created; null when it could not be (the state
+  /// says why) or [name] is blank. The photo is uploaded first, and a
+  /// failed upload creates nothing. A member the server refuses doesn't
+  /// undo the group: they are listed in [NewGroup.notAdded].
+  Future<NewGroup?> create(
+    String name,
+    List<SearchResult> members, {
+    PickedFile? photo,
+  }) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty || state.isLoading) {
       return null;
@@ -34,7 +41,25 @@ class NewGroupController extends _$NewGroupController {
       if (session == null) {
         throw const ConnectionLostException();
       }
-      final topic = await session.createGroup(public: Profile(name: trimmed));
+      final upload = photo == null
+          ? null
+          : await session.upload(
+              photo.openRead,
+              length: photo.length,
+              filename: photo.name,
+              mimeType: photo.mimeType,
+            );
+      final topic = await session.createGroup(
+        public: Profile(
+          name: trimmed,
+          photo: upload == null
+              ? null
+              : ProfilePhoto(
+                  type: MyProfile.photoType(photo?.mimeType),
+                  ref: upload.ref,
+                ),
+        ),
+      );
       final List<String?> refused;
       try {
         refused = await Future.wait([

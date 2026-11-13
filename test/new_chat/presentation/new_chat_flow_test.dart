@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
 import 'package:tinode_flutter_chat/src/new_chat/application/find_controller.dart';
+import 'package:tinode_flutter_chat/src/new_chat/presentation/add_members_screen.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen.dart';
+import 'package:tinode_flutter_chat/src/new_chat/presentation/group_photo_button.dart';
 import 'package:tinode_flutter_chat/src/new_chat/presentation/new_group_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/back_button.dart';
+import '../../support/fake_attachment_picker.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
@@ -34,11 +38,15 @@ void main() {
     ];
   });
 
-  Future<void> openSearch(WidgetTester tester) async {
+  Future<void> openSearch(
+    WidgetTester tester, {
+    FakeAttachmentPicker? picker,
+  }) async {
     await pumpTinodeChat(
       tester,
       session,
       credentials: TinodeCredentials.token(session.token),
+      attachmentPicker: picker,
     );
     await tester.tap(find.byTooltip(strings.newChat));
     await tester.pumpAndSettle();
@@ -103,42 +111,87 @@ void main() {
     expect(find.byType(FindPeopleScreen), findsNothing);
   });
 
-  testWidgets('back from a new group is the chevron', (tester) async {
-    await openSearch(tester);
+  Future<void> openAddMembers(
+    WidgetTester tester, {
+    FakeAttachmentPicker? picker,
+  }) async {
+    await openSearch(tester, picker: picker);
     await tester.tap(find.text(strings.newGroup));
     await tester.pumpAndSettle();
+    expect(find.byType(AddMembersScreen), findsOneWidget);
+  }
+
+  Finder pickedMarks() => find.byIcon(const TinodeChatIcons().picked);
+
+  Finder createButton() => find.widgetWithText(TextButton, strings.createGroup);
+
+  Future<void> next(WidgetTester tester) async {
+    await tester.tap(find.widgetWithText(TextButton, strings.next));
+    await tester.pumpAndSettle();
+    expect(find.byType(NewGroupScreen), findsOneWidget);
+  }
+
+  testWidgets('back from adding members is the chevron', (tester) async {
+    await openAddMembers(tester);
     expect(backText(), findsNothing);
 
     await tester.tap(backButton());
     await tester.pumpAndSettle();
-    expect(find.byType(NewGroupScreen), findsNothing);
+    expect(find.byType(AddMembersScreen), findsNothing);
     expect(find.byType(FindPeopleScreen), findsOneWidget);
   });
 
-  testWidgets('creates a group with a member and opens it', (tester) async {
-    await openSearch(tester);
-    await tester.tap(find.text(strings.newGroup));
+  testWidgets('suggests the direct chats and finds others', (tester) async {
+    session.chats.add(chat(friends, name: 'Friends', lastMessageAt: at(2)));
+    await openAddMembers(tester);
+    expect(find.text(strings.suggestedMembers.toUpperCase()), findsOneWidget);
+    expect(find.text('Carol'), findsOneWidget);
+    // Groups aren't suggested.
+    expect(find.text('Friends'), findsNothing);
+
+    await tester.tap(find.text('Carol'));
     await tester.pumpAndSettle();
-    expect(find.byType(NewGroupScreen), findsOneWidget);
+    expect(pickedMarks(), findsOneWidget);
+    expect(find.text(strings.selectedCount(1)), findsOneWidget);
+    // The tile and the picked card.
+    expect(find.text('Carol'), findsNWidgets(2));
 
-    final create = find.widgetWithText(TextButton, strings.createGroup);
-    expect(tester.widget<TextButton>(create).onPressed, isNull);
-    await tester.enterText(find.byType(TextField).first, 'Hikers');
-    await tester.pump();
-    expect(tester.widget<TextButton>(create).onPressed, isNotNull);
-
-    await search(tester, find.byType(TextField).last, 'bob');
+    await search(tester, find.byType(TextField), 'bob');
+    expect(find.text(strings.moreMembers.toUpperCase()), findsOneWidget);
+    expect(find.text('Bob'), findsOneWidget);
     // Only people can be members.
     expect(find.text('Bob fans'), findsNothing);
-    await tester.tap(find.text('Bob'));
-    await tester.pump();
-    expect(find.byType(InputChip), findsOneWidget);
-    expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isTrue);
+    // Carol doesn't match: only her picked card is left.
+    expect(find.text('Carol'), findsOneWidget);
 
-    await tester.tap(create);
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+    expect(find.text(strings.selectedCount(2)), findsOneWidget);
+  });
+
+  testWidgets('a filter matching nobody says so', (tester) async {
+    await openAddMembers(tester);
+    await search(tester, find.byType(TextField), 'nobody');
+    expect(find.text('Carol'), findsNothing);
+    expect(find.text(strings.nobodyFound), findsOneWidget);
+  });
+
+  testWidgets('creates a group with a member and opens it', (tester) async {
+    await openAddMembers(tester);
+    await tester.tap(find.text('Carol'));
+    await tester.pumpAndSettle();
+    await next(tester);
+    expect(find.text(strings.membersCount(1).toUpperCase()), findsOneWidget);
+
+    expect(tester.widget<TextButton>(createButton()).onPressed, isNull);
+    await tester.enterText(find.byType(TextField), 'Hikers');
+    await tester.pump();
+    expect(tester.widget<TextButton>(createButton()).onPressed, isNotNull);
+
+    await tester.tap(createButton());
     await tester.pumpAndSettle();
     expect(session.calls, containsAllInOrder(['createGroup Hikers']));
-    expect(session.addedMembers['grpNew1'], [bob]);
+    expect(session.addedMembers['grpNew1'], [carol]);
     expect(find.byType(ChatScreen), findsOneWidget);
     expect(find.text('Hikers'), findsOneWidget);
 
@@ -148,17 +201,86 @@ void main() {
     expect(find.text('Hikers'), findsOneWidget);
   });
 
-  testWidgets('a member the server refuses is reported', (tester) async {
-    session.refuseMembers.add(bob);
-    await openSearch(tester);
-    await tester.tap(find.text(strings.newGroup));
+  testWidgets('the group name card starts below the bar', (tester) async {
+    tester.view.padding = const FakeViewPadding(top: 120);
+    addTearDown(tester.view.resetPadding);
+    await openAddMembers(tester);
+    await tester.tap(find.text('Carol'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Hikers');
-    await search(tester, find.byType(TextField).last, 'bob');
-    await tester.tap(find.text('Bob'));
+    await next(tester);
+
+    final screen = find.byType(NewGroupScreen);
+    final bar = find.descendant(
+      of: screen,
+      matching: find.byType(TinodeAppBar),
+    );
+    final card = find.ancestor(
+      of: find.byType(GroupPhotoButton),
+      matching: find.byType(DecoratedBox),
+    );
+    expect(
+      tester.getRect(card.first).top,
+      greaterThanOrEqualTo(tester.getRect(bar).bottom),
+    );
+  });
+
+  testWidgets('a member removed when naming the group is unpicked', (
+    tester,
+  ) async {
+    await openAddMembers(tester);
+    await tester.tap(find.text('Carol'));
+    await tester.pumpAndSettle();
+    await next(tester);
+
+    await tester.tap(find.byTooltip(strings.removePicked('Carol')));
+    await tester.pumpAndSettle();
+    expect(find.text(strings.membersCount(0).toUpperCase()), findsOneWidget);
+    expect(find.text('Carol'), findsNothing);
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(AddMembersScreen), findsOneWidget);
+    expect(pickedMarks(), findsNothing);
+    expect(find.text(strings.selectedCount(1)), findsNothing);
+  });
+
+  testWidgets('the group gets the photo picked', (tester) async {
+    final picker = FakeAttachmentPicker(hasCamera: false)
+      ..next = pickedFile(
+        'hills.png',
+        pngBytes,
+        mimeType: 'image/png',
+        isImage: true,
+      );
+    await openAddMembers(tester, picker: picker);
+    await next(tester);
+
+    await tester.tap(find.byTooltip(strings.groupPhoto));
+    await tester.pumpAndSettle();
+    expect(picker.picks, [AttachmentSource.gallery]);
+    expect(find.byType(Image), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Hikers');
+    await tester.pump();
+    await tester.tap(createButton());
+    await tester.pumpAndSettle();
+    expect(
+      session.calls,
+      containsAllInOrder(['upload hills.png', 'createGroup Hikers']),
+    );
+    expect(session.chats.last.public?.photo?.type, 'png');
+  });
+
+  testWidgets('a member the server refuses is reported', (tester) async {
+    session.refuseMembers.add(carol);
+    await openAddMembers(tester);
+    await tester.tap(find.text('Carol'));
+    await tester.pumpAndSettle();
+    await next(tester);
+    await tester.enterText(find.byType(TextField), 'Hikers');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(TextButton, strings.createGroup));
+    await tester.tap(createButton());
     await tester.pumpAndSettle();
     expect(find.text(strings.membersNotAdded), findsOneWidget);
     expect(find.byType(ChatScreen), findsOneWidget);
@@ -166,13 +288,12 @@ void main() {
 
   testWidgets('a group the server refuses stays on the screen', (tester) async {
     session.failCreateGroup = const ServerException(403, 'denied');
-    await openSearch(tester);
-    await tester.tap(find.text(strings.newGroup));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Hikers');
+    await openAddMembers(tester);
+    await next(tester);
+    await tester.enterText(find.byType(TextField), 'Hikers');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(TextButton, strings.createGroup));
+    await tester.tap(createButton());
     await tester.pumpAndSettle();
     expect(find.text(strings.rejected), findsOneWidget);
     expect(find.byType(NewGroupScreen), findsOneWidget);

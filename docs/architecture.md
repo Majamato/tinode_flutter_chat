@@ -207,7 +207,8 @@ TinodeChat                      owns the container
               ├ ProfileScreen       pushed from settings or the account menu; ChangePasswordScreen
               │                     over it
               ├ AppearanceScreen    pushed from settings or the account menu
-              ├ FindPeopleScreen    pushed by NewChatButton, the header's compose or ChatSearchField
+              ├ FindPeopleScreen    pushed by NewChatButton or the header's compose
+              ├ ChatSearchScreen    pushed by ChatSearchField
               ├ NewGroupScreen      pushed from the search
               ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`): ChatWallpaper,
               │                     MessageList scrolling under the glass ChatHeader (back

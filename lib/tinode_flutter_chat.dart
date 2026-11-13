@@ -40,6 +40,7 @@ export 'src/session/presentation/tinode_login_view.dart' show TinodeLoginView;
 export 'src/shared/domain/tinode_screen.dart'
     show
         TinodeAccountScreen,
+        TinodeAddMembersScreen,
         TinodeAppearanceScreen,
         TinodeAttachmentPreviewScreen,
         TinodeCallsScreen,
@@ -47,6 +48,7 @@ export 'src/shared/domain/tinode_screen.dart'
         TinodeChatInfoScreen,
         TinodeChatListScreen,
         TinodeChatScreen,
+        TinodeChatSearchScreen,
         TinodeConfirmEmailScreen,
         TinodeFindPeopleScreen,
         TinodeImageViewerScreen,

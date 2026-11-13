@@ -325,8 +325,15 @@ leaves the list and the cache; an open one says it is no longer available. *In c
 Finding people and groups to chat with, by their tags, as the user types. It needs the server.
 *In code:* `FindController`, `FindState`. The client's term is `fnd`; see its glossary.
 *Avoid:* "contacts". A result isn't in the chat list until a chat with it exists. The chat
-list's search button opens it (`FindPeopleButton`). Finding messages is **message search**,
-never plain "search".
+list's new chat button opens it. Finding messages is **message search**, and finding the
+user's own chats is **chat search**, never plain "search".
+
+**Chat search**
+Finding the user's own chats, direct and groups, by name as the user types, from the chat
+list's search pill. Every word must start a word of the name; accents don't count. It filters
+the chat list on the device and never asks the server, so it finds no one new.
+*In code:* `ChatMatches`, `chatSearchResultsProvider`, `ChatSearchScreen`.
+*Avoid:* plain "search" (that finds people to start a chat with).
 
 **Search result**
 A user or group the search found, shown as a tile. A user's result is named by their user ID,
@@ -337,8 +344,18 @@ Which screen a search belongs to: the new chat search, or the member search of a
 *In code:* `FindScope`.
 
 **New group**
-A group the user creates with a name and members picked from a search; the user owns it.
-*In code:* `NewGroupController`, `NewGroup` (with the members not added).
+A group the user creates in two steps: picking its members (**add members**), then giving it a
+name and, optionally, a photo; the user owns it. *In code:* `AddMembersScreen`, `NewGroupScreen`,
+`NewGroupController`, `NewGroup` (with the members not added).
+
+**Suggested members**
+The people suggested when picking a new group's members: the other users of the user's direct
+chats, most recent first, filtered by name as the user types. *In code:* `MemberSuggestions`,
+`memberSuggestionsProvider`. *Avoid:* "contacts" (Tinode has none) and "frequently contacted".
+
+**Picked members**
+The people picked so far for a new group, shared by its two screens. *In code:* `PickedMembers`,
+`NewGroupMembersController`. *Avoid:* "selected" in code (the UI says "1 selected").
 
 **Add a member**
 Making a user a member of a group (`set sub` on the wire), which needs `S`. The member can read the

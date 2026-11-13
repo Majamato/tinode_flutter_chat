@@ -51,7 +51,7 @@ final class NewGroupControllerProvider
 }
 
 String _$newGroupControllerHash() =>
-    r'a9c58a5261bffcec9ce6b4deef944e9cbf67533d';
+    r'7016a9b47a50cc38e8aad8087df9611d51e112e7';
 
 /// Creating a group: loading while the server creates it and adds its
 /// members, an error when the group could not be created. Only the new

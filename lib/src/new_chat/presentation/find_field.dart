@@ -10,12 +10,16 @@ class FindField extends ConsumerStatefulWidget {
     required this.scope,
     required this.hint,
     this.autofocus = true,
+    this.onChanged,
     super.key,
   });
 
   final FindScope scope;
   final String hint;
   final bool autofocus;
+
+  /// Also told each change, after the search.
+  final ValueChanged<String>? onChanged;
 
   @override
   ConsumerState<FindField> createState() => _FindFieldState();
@@ -30,6 +34,11 @@ class _FindFieldState extends ConsumerState<FindField> {
     super.dispose();
   }
 
+  void _changed(String text) {
+    ref.read(findControllerProvider(widget.scope).notifier).search(text);
+    widget.onChanged?.call(text);
+  }
+
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -42,8 +51,7 @@ class _FindFieldState extends ConsumerState<FindField> {
         prefixIcon: Icon(TinodeChatIcons.of(context).search),
         border: InputBorder.none,
       ),
-      onChanged: (text) =>
-          ref.read(findControllerProvider(widget.scope).notifier).search(text),
+      onChanged: _changed,
     );
   }
 }

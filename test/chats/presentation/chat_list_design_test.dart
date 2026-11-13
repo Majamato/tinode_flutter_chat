@@ -7,7 +7,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_list_t
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_online_dot.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_preview_line.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_unread_badge.dart';
-import 'package:tinode_flutter_chat/src/new_chat/presentation/find_people_screen.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat_search/chat_search_screen.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_tinode_session.dart';
@@ -165,12 +165,12 @@ void main() {
     expect(find.text('${strings.youLabel}:'), findsNWidgets(2));
   });
 
-  testWidgets('the search field opens the people search', (tester) async {
+  testWidgets('the search field opens the chat search', (tester) async {
     await pumpList(tester);
 
     await tester.tap(find.text(strings.searchChats));
     await tester.pumpAndSettle();
-    expect(find.byType(FindPeopleScreen), findsOneWidget);
+    expect(find.byType(ChatSearchScreen), findsOneWidget);
   });
 
   testWidgets('the chats scroll under the app bar, starting below it', (
