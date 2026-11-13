@@ -18,12 +18,14 @@ enum PasswordResetMode {
 /// all, e.g. one whose accounts an admin creates, or apps that can't use
 /// them.
 final class TinodeChatFeatures with ValueObject {
-  /// Creates the switches; by default users can sign up, reset their
-  /// password where the server sends email, make voice and video calls,
-  /// record voice messages, see who is online and when they were last
-  /// seen, and calls use the phone's own call screens.
+  /// Creates the switches; by default users can sign up, give an email
+  /// when signing up, reset their password where the server sends email,
+  /// make voice and video calls, record voice messages, see who is online
+  /// and when they were last seen, and calls use the phone's own call
+  /// screens.
   const TinodeChatFeatures({
     this.signUp = true,
+    this.signUpEmail = true,
     this.passwordReset = PasswordResetMode.automatic,
     this.voiceCalls = true,
     this.videoCalls = true,
@@ -34,6 +36,10 @@ final class TinodeChatFeatures with ValueObject {
 
   /// Whether the login screen offers to create an account.
   final bool signUp;
+
+  /// Whether the sign-up form asks for an optional email. Where the server
+  /// requires one, the form asks for it either way.
+  final bool signUpEmail;
 
   /// When the login screen offers to reset a forgotten password.
   final PasswordResetMode passwordReset;
@@ -81,6 +87,7 @@ final class TinodeChatFeatures with ValueObject {
   @override
   List<Object?> get props => [
     signUp,
+    signUpEmail,
     passwordReset,
     voiceCalls,
     videoCalls,

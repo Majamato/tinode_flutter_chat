@@ -265,3 +265,52 @@ final class SignUpNeedsEmailProvider
 }
 
 String _$signUpNeedsEmailHash() => r'e5ecd6bee6acb11739222a4341f7cdbf772b920e';
+
+/// Whether the sign-up form has an email field: where the server needs an
+/// email, or where the host lets users give one.
+
+@ProviderFor(signUpAsksEmail)
+final signUpAsksEmailProvider = SignUpAsksEmailProvider._();
+
+/// Whether the sign-up form has an email field: where the server needs an
+/// email, or where the host lets users give one.
+
+final class SignUpAsksEmailProvider
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  /// Whether the sign-up form has an email field: where the server needs an
+  /// email, or where the host lets users give one.
+  SignUpAsksEmailProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'signUpAsksEmailProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$signUpAsksEmailHash();
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    return signUpAsksEmail(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$signUpAsksEmailHash() => r'6642b5bece7cbb44d1ed226dc945a948ee604a05';

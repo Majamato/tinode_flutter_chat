@@ -1,5 +1,11 @@
 ## Unreleased
 
+- **New:** `TinodeChatFeatures.signUpEmail` (on by default): off, the sign-up form leaves out the
+  optional email. A server that requires an email at sign-up still gets the field.
+- **Behaviour change:** the sign-up form marks its required fields with " *", and the login
+  field says it is unique: the user signs in with it, and others find them by it. The fields
+  go name, login, password, then the email, so the login sits right above the password as on
+  sign-in. `TinodeChatStrings` has `signUpLoginField` and `signUpLoginHelper`.
 - **Behaviour change:** the chat list's search pill opens the **chat search**. It filters the
   user's own chats (direct and groups) by name as they type, on the device, and opens the chat
   tapped. Finding new people and groups, and creating a group, is the new chat button's

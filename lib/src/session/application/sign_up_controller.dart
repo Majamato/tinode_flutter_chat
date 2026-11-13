@@ -91,3 +91,12 @@ bool signUpNeedsEmail(Ref ref) => ref.watch(
     },
   ),
 );
+
+/// Whether the sign-up form has an email field: where the server needs an
+/// email, or where the host lets users give one.
+@riverpod
+bool signUpAsksEmail(Ref ref) =>
+    ref.watch(signUpNeedsEmailProvider) ||
+    ref.watch(
+      tinodeChatFeaturesProvider.select((features) => features.signUpEmail),
+    );

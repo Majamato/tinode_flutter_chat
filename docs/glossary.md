@@ -259,8 +259,10 @@ credentials. The **call log** stays for the user's next login. *In code:*
 ## Account and profile
 
 **Sign up**
-Creating an account from the login screen's Sign up side with a name, a login and a password; it
-logs in as the new user. *In code:* `SessionController.signUp`, `SignUpController`, `SignUpForm`.
+Creating an account from the login screen's Sign up side with a name, a login and a password,
+then an email where the server requires one or the host lets users give one; it logs in as the new
+user. The login must be unique: the user signs in with it, and others find them by it. *In code:*
+`SessionController.signUp`, `SignUpController`, `SignUpForm`, `signUpAsksEmail`.
 *Avoid:* "register".
 
 **Auth mode**
@@ -273,9 +275,10 @@ plain data, not providers, and resetting a password and confirming an email stay
 *In code:* `TinodeChat.loginBuilder`, `TinodeLoginBuilder`, `TinodeLoginView`, `DefaultLogin`.
 
 **Account features**
-What the login screen offers besides logging in: signing up, and resetting a forgotten password.
-The host switches them (`TinodeChatFeatures`); the reset defaults to servers that require an
-email. *In code:* `signUpOffered`, `passwordResetOffered`.
+What the login screen offers besides logging in: signing up, an optional email at sign-up, and
+resetting a forgotten password. The host switches them (`TinodeChatFeatures`); the reset defaults
+to servers that require an email, and a server that requires an email at sign-up gets one either
+way. *In code:* `signUpOffered`, `signUpAsksEmail`, `passwordResetOffered`.
 
 **Confirm email**
 Entering the code the server mailed to the email given at sign-up. Servers that send mail usually

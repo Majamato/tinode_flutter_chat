@@ -197,6 +197,9 @@ class TinodeChatStrings {
     this.showPassword = 'Show password',
     this.hidePassword = 'Hide password',
     this.displayNameField = 'Your name',
+    this.signUpLoginField = 'Username',
+    this.signUpLoginHelper =
+        'Unique. You sign in with it, and others find you by it.',
     this.signUp = 'Create account',
     this.forgotPassword = 'Forgot password?',
     this.resetPasswordTitle = 'Reset password',
@@ -465,6 +468,8 @@ class TinodeChatStrings {
     this.showPassword = 'Mostrar contraseña',
     this.hidePassword = 'Ocultar contraseña',
     this.displayNameField = 'Tu nombre',
+    this.signUpLoginField = 'Nombre de usuario',
+    this.signUpLoginHelper = 'Único. Con él inicias sesión y te encuentran.',
     this.signUp = 'Crear cuenta',
     this.forgotPassword = '¿Olvidaste tu contraseña?',
     this.resetPasswordTitle = 'Restablecer contraseña',
@@ -738,6 +743,9 @@ class TinodeChatStrings {
     this.showPassword = 'Afficher le mot de passe',
     this.hidePassword = 'Masquer le mot de passe',
     this.displayNameField = 'Votre nom',
+    this.signUpLoginField = "Nom d'utilisateur",
+    this.signUpLoginHelper =
+        'Unique. Il sert à vous connecter et à vous trouver.',
     this.signUp = 'Créer un compte',
     this.forgotPassword = 'Mot de passe oublié\u00A0?',
     this.resetPasswordTitle = 'Réinitialiser le mot de passe',
@@ -1402,6 +1410,12 @@ class TinodeChatStrings {
 
   /// Label of the name field on sign-up, shown to others.
   final String displayNameField;
+
+  /// Label of the login field on sign-up.
+  final String signUpLoginField;
+
+  /// Under the login field on sign-up: the login must be unique.
+  final String signUpLoginHelper;
 
   /// Submits the sign-up form.
   final String signUp;

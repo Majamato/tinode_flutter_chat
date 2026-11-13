@@ -9,12 +9,14 @@ import 'package:tinode_flutter_chat/src/session/presentation/sign_up_button.dart
 import 'package:tinode_flutter_chat/src/session/presentation/sign_up_error_text.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 
-/// Name, login, email and password fields; the button sends them once all
-/// are filled, the email only where the server needs one. When the server
-/// mails a code to confirm the email, it opens the screen that takes it,
-/// over the login screen. Under the button, the host's terms, if any.
-/// Watches whether the server needs an email; the button and error text
-/// below watch the submission.
+/// Name, login and password fields, marked required, then the email where
+/// the server needs one or the host lets users give one. The login sits
+/// right above the password, as on sign-in, and says it must be unique.
+/// The button sends them once the required ones are filled. When the
+/// server mails a code to confirm the email, it opens the screen that
+/// takes it, over the login screen. Under the button, the host's terms, if
+/// any. Watches whether there is an email field and whether the server
+/// needs it; the button and error text below watch the submission.
 class SignUpForm extends ConsumerStatefulWidget {
   const SignUpForm({super.key});
 
@@ -38,11 +40,15 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
     super.dispose();
   }
 
+  static String _required(String label) => '$label *';
+
   bool _complete({required bool needsEmail}) =>
       _name.text.trim().isNotEmpty &&
       _login.text.trim().isNotEmpty &&
       _password.text.isNotEmpty &&
       (!needsEmail || _email.text.trim().isNotEmpty);
+
+  void _submit([String? _]) => unawaited(_onSubmit());
 
   Future<void> _onSubmit() async {
     if (!_complete(needsEmail: ref.read(signUpNeedsEmailProvider))) {
@@ -71,13 +77,16 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
   Widget build(BuildContext context) {
     final strings = TinodeChatStrings.of(context);
     final needsEmail = ref.watch(signUpNeedsEmailProvider);
+    final asksEmail = ref.watch(signUpAsksEmailProvider);
     return AutofillGroup(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
             controller: _name,
-            decoration: InputDecoration(labelText: strings.displayNameField),
+            decoration: InputDecoration(
+              labelText: _required(strings.displayNameField),
+            ),
             autofillHints: const [AutofillHints.name],
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
@@ -85,40 +94,48 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
           const SizedBox(height: 12),
           TextField(
             controller: _login,
-            decoration: InputDecoration(labelText: strings.loginField),
-            autofillHints: const [AutofillHints.newUsername],
-            autocorrect: false,
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _email,
             decoration: InputDecoration(
-              labelText: needsEmail
-                  ? strings.emailField
-                  : strings.emailOptionalField,
+              labelText: _required(strings.signUpLoginField),
+              helperText: strings.signUpLoginHelper,
+              helperMaxLines: 2,
             ),
-            autofillHints: const [AutofillHints.email],
-            keyboardType: TextInputType.emailAddress,
+            autofillHints: const [AutofillHints.newUsername],
             autocorrect: false,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 12),
           PasswordField(
             controller: _password,
-            label: strings.passwordField,
+            label: _required(strings.passwordField),
             autofillHints: const [AutofillHints.newPassword],
-            onSubmitted: (_) => unawaited(_onSubmit()),
+            textInputAction: asksEmail
+                ? TextInputAction.next
+                : TextInputAction.done,
+            onSubmitted: asksEmail ? null : _submit,
           ),
+          if (asksEmail) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _email,
+              decoration: InputDecoration(
+                labelText: needsEmail
+                    ? _required(strings.emailField)
+                    : strings.emailOptionalField,
+              ),
+              autofillHints: const [AutofillHints.email],
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              textInputAction: TextInputAction.done,
+              onSubmitted: _submit,
+            ),
+          ],
           const SizedBox(height: 8),
           const SignUpErrorText(),
           const SizedBox(height: 16),
           ListenableBuilder(
             listenable: _filled,
             builder: (_, _) => SignUpButton(
-              onSubmit: _complete(needsEmail: needsEmail)
-                  ? () => unawaited(_onSubmit())
-                  : null,
+              onSubmit: _complete(needsEmail: needsEmail) ? _submit : null,
             ),
           ),
           if (strings.signUpTerms.isNotEmpty) ...[

@@ -11,6 +11,9 @@ import '../../support/fake_tinode_session.dart';
 import '../../support/pump_tinode_chat.dart';
 
 const strings = TinodeChatStrings();
+final nameField = '${strings.displayNameField} *';
+final signUpLoginField = '${strings.signUpLoginField} *';
+final signUpPasswordField = '${strings.passwordField} *';
 
 void main() {
   late FakeTinodeSession session;
@@ -33,9 +36,9 @@ void main() {
 
       final button = find.widgetWithText(FilledButton, strings.signUp);
       expect(tester.widget<FilledButton>(button).onPressed, isNull);
-      await tester.enterText(field(strings.displayNameField), 'Carol');
-      await tester.enterText(field(strings.loginField), 'carol');
-      await tester.enterText(field(strings.passwordField), 'carol123');
+      await tester.enterText(field(nameField), 'Carol');
+      await tester.enterText(field(signUpLoginField), 'carol');
+      await tester.enterText(field(signUpPasswordField), 'carol123');
       await tester.pump();
       await tester.tap(button);
       await tester.pumpAndSettle();
@@ -46,13 +49,45 @@ void main() {
       expect(loggedIn?.token, session.token);
     });
 
+    testWidgets('marks the required fields and asks for an optional email', (
+      tester,
+    ) async {
+      await pumpTinodeChat(tester, session);
+      await openSignUp(tester);
+
+      expect(field(nameField), findsOneWidget);
+      expect(field(signUpLoginField), findsOneWidget);
+      expect(find.text(strings.signUpLoginHelper), findsOneWidget);
+      expect(field(signUpPasswordField), findsOneWidget);
+      expect(field(strings.emailOptionalField), findsOneWidget);
+    });
+
+    testWidgets('the host can leave the optional email out', (tester) async {
+      await pumpTinodeChat(
+        tester,
+        session,
+        features: const TinodeChatFeatures(signUpEmail: false),
+      );
+      await openSignUp(tester);
+      expect(field(strings.emailOptionalField), findsNothing);
+
+      await tester.enterText(field(nameField), 'Carol');
+      await tester.enterText(field(signUpLoginField), 'carol');
+      await tester.enterText(field(signUpPasswordField), 'carol123');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(session.calls, contains('createAccount carol Carol'));
+      expect(find.text(strings.chatListTitle), findsOneWidget);
+    });
+
     testWidgets('a taken login says so and stays', (tester) async {
       await pumpTinodeChat(tester, session);
       await openSignUp(tester);
 
-      await tester.enterText(field(strings.displayNameField), 'Alice');
-      await tester.enterText(field(strings.loginField), 'alice');
-      await tester.enterText(field(strings.passwordField), 'pw');
+      await tester.enterText(field(nameField), 'Alice');
+      await tester.enterText(field(signUpLoginField), 'alice');
+      await tester.enterText(field(signUpPasswordField), 'pw');
       await tester.pump();
       await tester.tap(find.widgetWithText(FilledButton, strings.signUp));
       await tester.pumpAndSettle();
@@ -72,12 +107,26 @@ void main() {
 
       expect(find.byType(SignUpForm), findsNothing);
       expect(find.text(strings.loginHeadline), findsOneWidget);
-      expect(field(strings.displayNameField), findsNothing);
+      expect(field(nameField), findsNothing);
     });
   });
 
   group('email confirmation', () {
     setUp(() => session.requireEmails());
+
+    testWidgets('asks for the email even where the host leaves it out', (
+      tester,
+    ) async {
+      await pumpTinodeChat(
+        tester,
+        session,
+        features: const TinodeChatFeatures(signUpEmail: false),
+      );
+      await tester.tap(find.text(strings.signUpTab));
+      await tester.pumpAndSettle();
+
+      expect(field('${strings.emailField} *'), findsOneWidget);
+    });
 
     testWidgets('a sign-up needs the email, then its mailed code', (
       tester,
@@ -87,14 +136,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(field(strings.emailOptionalField), findsNothing);
 
-      await tester.enterText(field(strings.displayNameField), 'Carol');
-      await tester.enterText(field(strings.loginField), 'carol');
-      await tester.enterText(field(strings.passwordField), 'carol123');
+      await tester.enterText(field(nameField), 'Carol');
+      await tester.enterText(field(signUpLoginField), 'carol');
+      await tester.enterText(field(signUpPasswordField), 'carol123');
       await tester.pump();
       final button = find.widgetWithText(FilledButton, strings.signUp);
       expect(tester.widget<FilledButton>(button).onPressed, isNull);
 
-      await tester.enterText(field(strings.emailField), 'carol@example.com');
+      await tester.enterText(
+        field('${strings.emailField} *'),
+        'carol@example.com',
+      );
       await tester.pump();
       await tester.tap(button);
       await tester.pumpAndSettle();

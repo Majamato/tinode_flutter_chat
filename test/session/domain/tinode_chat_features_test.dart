@@ -5,6 +5,7 @@ void main() {
   test('automatic offers the reset only where email is required', () {
     const features = TinodeChatFeatures();
     expect(features.signUp, isTrue);
+    expect(features.signUpEmail, isTrue);
     expect(features.offersPasswordReset(const ['email']), isTrue);
     expect(features.offersPasswordReset(const []), isFalse);
     expect(features.offersPasswordReset(const ['tel']), isFalse);
@@ -15,6 +16,13 @@ void main() {
     const never = TinodeChatFeatures(passwordReset: PasswordResetMode.never);
     expect(always.offersPasswordReset(const []), isTrue);
     expect(never.offersPasswordReset(const ['email']), isFalse);
+  });
+
+  test('switching off the sign-up email makes other features', () {
+    expect(
+      const TinodeChatFeatures(signUpEmail: false),
+      isNot(const TinodeChatFeatures()),
+    );
   });
 
   test('presence is on by default', () {
