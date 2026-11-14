@@ -22,15 +22,23 @@ final class ChatMatches with ValueObject {
 
   bool get isEmpty => chats.isEmpty;
 
-  /// Those whose name matches [input]; see [nameMatches].
+  /// Those whose name matches [input], exact matches first; see
+  /// [matchName].
   ChatMatches matching(String input) {
-    final matched = [
-      for (final chat in chats)
-        if (nameMatches(chat.title, input)) chat,
-    ];
-    return matched.length == chats.length
+    final exact = <SearchResult>[];
+    final typos = <SearchResult>[];
+    for (final chat in chats) {
+      switch (matchName(chat.title, input)) {
+        case NameMatch.exact:
+          exact.add(chat);
+        case NameMatch.typo:
+          typos.add(chat);
+        case NameMatch.none:
+      }
+    }
+    return exact.length == chats.length
         ? this
-        : ChatMatches(List.unmodifiable(matched));
+        : ChatMatches(List.unmodifiable([...exact, ...typos]));
   }
 
   @override

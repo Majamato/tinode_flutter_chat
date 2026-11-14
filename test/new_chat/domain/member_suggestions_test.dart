@@ -36,6 +36,20 @@ void main() {
     expect(suggestions.matching(''), same(suggestions));
   });
 
+  test('a letter off still matches, after the exact matches', () {
+    final suggestions = MemberSuggestions.fromChatList(
+      const ChatListState.loading().loaded([
+        _summary(bob, 'Alice', 5),
+        _summary(carol, 'Alce', 3),
+      ]),
+    );
+    expect(suggestions.matching('alce').people.map((p) => p.topic), [
+      carol,
+      bob,
+    ]);
+    expect(suggestions.matching('al'), same(suggestions));
+  });
+
   test('a new message changes nothing', () {
     final before = MemberSuggestions.fromChatList(list);
     final after = MemberSuggestions.fromChatList(

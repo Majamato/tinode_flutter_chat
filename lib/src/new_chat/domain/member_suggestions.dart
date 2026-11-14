@@ -29,15 +29,23 @@ final class MemberSuggestions with ValueObject {
   /// Whether the person named [topic] is suggested.
   bool has(String topic) => people.any((p) => p.topic == topic);
 
-  /// Those whose name matches [input]; see [nameMatches].
+  /// Those whose name matches [input], exact matches first; see
+  /// [matchName].
   MemberSuggestions matching(String input) {
-    final matched = [
-      for (final person in people)
-        if (nameMatches(person.title, input)) person,
-    ];
-    return matched.length == people.length
+    final exact = <SearchResult>[];
+    final typos = <SearchResult>[];
+    for (final person in people) {
+      switch (matchName(person.title, input)) {
+        case NameMatch.exact:
+          exact.add(person);
+        case NameMatch.typo:
+          typos.add(person);
+        case NameMatch.none:
+      }
+    }
+    return exact.length == people.length
         ? this
-        : MemberSuggestions(List.unmodifiable(matched));
+        : MemberSuggestions(List.unmodifiable([...exact, ...typos]));
   }
 
   @override

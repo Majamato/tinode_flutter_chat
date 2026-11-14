@@ -31,7 +31,18 @@ void main() {
     final matches = ChatMatches.fromChatList(list);
     expect(matches.matching('jose').chats.map((c) => c.topic), [friends]);
     expect(matches.matching('ma mar').chats.map((c) => c.topic), [carol]);
-    expect(matches.matching('artinez').isEmpty, isTrue);
+    expect(matches.matching('tinez').isEmpty, isTrue);
+  });
+
+  test('a letter off still matches, after the exact matches', () {
+    final matches = ChatMatches.fromChatList(
+      const ChatListState.loading().loaded([
+        _summary(bob, 'Alice', 5),
+        _summary(carol, 'Alce', 3),
+      ]),
+    );
+    expect(matches.matching('alce').chats.map((c) => c.topic), [carol, bob]);
+    expect(matches.matching('al'), same(matches));
   });
 
   test('a read marker changes nothing', () {
