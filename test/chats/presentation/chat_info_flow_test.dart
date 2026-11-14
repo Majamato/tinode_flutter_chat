@@ -1,13 +1,18 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
+import 'package:tinode_flutter_chat/src/attachments/presentation/image_viewer_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_header.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_presence_line.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_info_screen.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_photo.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/confirm_sheet.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/back_button.dart';
+import '../../support/fake_attachment_picker.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
@@ -69,6 +74,70 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ChatInfoScreen), findsNothing);
     expect(find.byType(ChatScreen), findsOneWidget);
+  });
+
+  Future<void> openPhoto(WidgetTester tester) async {
+    await tester.tap(inInfo(find.byType(ChatPhoto)));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets("a tap on the peer's photo opens it full screen", (tester) async {
+    session.chats[0] = chat(
+      bob,
+      name: 'Bob',
+      lastSeq: 1,
+      lastMessageAt: at(1),
+      photo: ProfilePhoto(type: 'png', data: base64.encode(pngBytes)),
+    );
+    await openInfo(tester, 'Bob');
+
+    await openPhoto(tester);
+    expect(find.byType(ImageViewerScreen), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ImageViewerScreen),
+        matching: find.text('Bob'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(backButton());
+    await tester.pumpAndSettle();
+    expect(find.byType(ImageViewerScreen), findsNothing);
+    expect(find.byType(ChatInfoScreen), findsOneWidget);
+  });
+
+  testWidgets("a group's photo given by ref opens full screen once "
+      'downloaded', (tester) async {
+    const photoRef = '/v0/file/s/friends.png';
+    session.files[photoRef] = pngBytes;
+    session.chats[1] = chat(
+      friends,
+      name: 'Friends',
+      lastSeq: 1,
+      lastMessageAt: at(2),
+      mode: 'JRWPASDO',
+      photo: const ProfilePhoto(type: 'png', ref: photoRef),
+    );
+    await openInfo(tester, 'Friends');
+
+    await openPhoto(tester);
+    expect(find.byType(ImageViewerScreen), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ImageViewerScreen),
+        matching: find.text('Friends'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('initials open nothing', (tester) async {
+    await openInfo(tester, 'Bob');
+
+    await openPhoto(tester);
+    expect(find.byType(ImageViewerScreen), findsNothing);
+    expect(find.byType(ChatInfoScreen), findsOneWidget);
   });
 
   testWidgets("a direct chat's info says when the peer was last seen", (

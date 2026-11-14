@@ -65,8 +65,13 @@ class ImageBubbleContent extends ConsumerWidget {
             // Until its first frame the image paints nothing, so what is
             // under it shows: the stand-in, or the placeholder's grey.
             final provider? => GestureDetector(
-              onTap: () =>
-                  unawaited(ImageViewerScreen.open(context, image, provider)),
+              onTap: () => unawaited(
+                ImageViewerScreen.open(
+                  context,
+                  provider,
+                  image.name ?? TinodeChatStrings.of(context).imageLabel,
+                ),
+              ),
               child: Stack(
                 fit: StackFit.expand,
                 children: [

@@ -5,7 +5,7 @@ import 'package:tinode_flutter_chat/src/chats/application/chat_actions_controlle
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_presence_line.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_exit_tile.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_members_section.dart';
-import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_avatar.dart';
+import 'package:tinode_flutter_chat/src/chats/presentation/chat_info/chat_photo.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_list/chat_title.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/failure_message.dart';
@@ -14,9 +14,10 @@ import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_str
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
-/// About one chat: its photo and name, whether the peer of a direct chat
-/// is online or when they were last seen, a group's members, and deleting
-/// or leaving it. A failed action shows in a snack bar.
+/// About one chat: its photo, which a tap opens full screen, and name,
+/// whether the peer of a direct chat is online or when they were last
+/// seen, a group's members, and deleting or leaving it. A failed action
+/// shows in a snack bar.
 class ChatInfoScreen extends ConsumerWidget {
   const ChatInfoScreen({required this.topic, super.key});
 
@@ -49,7 +50,7 @@ class ChatInfoScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 24),
           children: [
-            Center(child: ChatAvatar(topic: topic, radius: 48)),
+            Center(child: ChatPhoto(topic: topic, radius: 48)),
             const SizedBox(height: 12),
             Center(
               child: DefaultTextStyle.merge(

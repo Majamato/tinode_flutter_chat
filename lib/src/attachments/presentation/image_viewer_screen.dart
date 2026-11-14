@@ -1,33 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:tinode_flutter_chat/src/attachments/domain/message_attachment.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
-/// An image full screen, to zoom and pan, always on black. Watches nothing
-/// itself: the bubble hands it the image it already has.
+/// An image full screen, titled [title], to zoom and pan, always on black.
+/// Watches nothing itself: whoever opens it hands it the image it already
+/// has.
 class ImageViewerScreen extends StatelessWidget {
   const ImageViewerScreen({
-    required this.image,
     required this.provider,
+    required this.title,
     super.key,
   });
 
-  /// Pushes the viewer for [image], shown from [provider].
+  /// Pushes the viewer for the image of [provider], titled [title].
   static Future<void> open(
     BuildContext context,
-    ImageAttachment image,
     ImageProvider<Object> provider,
+    String title,
   ) => Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => ImageViewerScreen(image: image, provider: provider),
+      builder: (_) => ImageViewerScreen(provider: provider, title: title),
     ),
   );
 
-  final ImageAttachment image;
   final ImageProvider<Object> provider;
+
+  /// The app bar's title: the image's name, or whose photo it is.
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +39,7 @@ class ImageViewerScreen extends StatelessWidget {
         fadeColor: Colors.black,
         opaque: true,
         overlayBrightness: Brightness.dark,
-        title: Text(
-          image.name ?? TinodeChatStrings.of(context).imageLabel,
-          style: const TextStyle(color: Colors.white),
-        ),
+        title: Text(title, style: const TextStyle(color: Colors.white)),
         leading: const TinodeBackButton(),
       ),
       body: SafeArea(

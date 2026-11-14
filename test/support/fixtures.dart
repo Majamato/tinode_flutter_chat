@@ -20,6 +20,7 @@ Subscription chat(
   String? want,
   bool online = false,
   DateTime? seen,
+  ProfilePhoto? photo,
 }) => Subscription(
   topic: topic,
   lastSeq: lastSeq,
@@ -27,7 +28,7 @@ Subscription chat(
   lastMessageAt: lastMessageAt,
   online: online,
   seen: seen == null ? null : LastSeen(when: seen, userAgent: 'test'),
-  public: Profile(name: name ?? topic),
+  public: Profile(name: name ?? topic, photo: photo),
   access: Access(
     want: AccessMode.parse(want ?? mode),
     given: AccessMode.parse(mode),
