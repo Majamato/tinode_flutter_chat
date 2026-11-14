@@ -83,7 +83,7 @@ A drop-in Flutter chat UI for the [Tinode](https://github.com/tinode/chat) chat 
   on the device and ignoring accents. A result goes back to the chat scrolled to the message,
   highlighted for a moment. Tinode has no server-side message search, so it works offline too.
   The chat list's search button finds people and groups.
-- Keeps the cache small: each chat keeps its newest 1000 messages and the downloaded files
+- Keeps the cache small: each chat keeps its newest 5000 messages and the downloaded files
   stay under 200 MiB, both adjustable with `TinodeCacheLimits`.
 - A floating tab bar with the chats, the calls history and the settings (turn it off with
   `TinodeChat(tabBar: false)`), and an Appearance screen where the user picks one of your
@@ -413,7 +413,7 @@ and files left behind by a message that was never sent, go too.
 TinodeChat(
   config: config,
   cacheLimits: const TinodeCacheLimits(
-    messagesPerChat: 5000, // default 1000
+    messagesPerChat: 10000, // default 5000
     fileCacheBytes: 500 * 1024 * 1024, // default 200 MiB
   ),
 )

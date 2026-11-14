@@ -11,10 +11,10 @@ import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
 /// Message search runs over the cache, so it finds only the messages kept:
 /// raise [messagesPerChat] to search further back.
 final class TinodeCacheLimits with ValueObject {
-  /// Creates the limits; by default 1000 messages per chat and 200 MiB of
+  /// Creates the limits; by default 5000 messages per chat and 200 MiB of
   /// files.
   const TinodeCacheLimits({
-    this.messagesPerChat = 1000,
+    this.messagesPerChat = 5000,
     this.fileCacheBytes = 200 * 1024 * 1024,
   }) : assert(messagesPerChat > 0, 'keep at least one message per chat'),
        assert(fileCacheBytes >= 0, 'a size is never negative');

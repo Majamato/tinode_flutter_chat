@@ -1,5 +1,8 @@
 ## Unreleased
 
+- **Behaviour change:** `TinodeCacheLimits.messagesPerChat` defaults to 5000 (was 1000), so
+  message search reaches further back. A chat only stores what the device has loaded, so this
+  caps the busiest chats rather than growing every one.
 - **New:** `TinodeChatFeatures.signUpEmail` (on by default): off, the sign-up form leaves out the
   optional email. A server that requires an email at sign-up still gets the field.
 - **Behaviour change:** the sign-up form marks its required fields with " *", and the login
