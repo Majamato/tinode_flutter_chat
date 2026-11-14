@@ -79,16 +79,24 @@ class _Bar extends ConsumerWidget {
                   style: style,
                   child: Row(
                     children: [
-                      Icon(
-                        call.video ? icons.videoCall : icons.voiceCall,
-                        size: ChatIconSize.label,
-                        color: colors.onPrimary,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              call.video ? icons.videoCall : icons.voiceCall,
+                              size: ChatIconSize.label,
+                              color: colors.onPrimary,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(child: ChatTitle(topic: call.topic)),
+                            Text(' · ', style: style),
+                            CallStatusText(
+                              textAlign: TextAlign.start,
+                              style: style,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      Flexible(child: ChatTitle(topic: call.topic)),
-                      Text(' · ', style: style),
-                      CallStatusText(textAlign: TextAlign.start, style: style),
-                      const Spacer(),
                       Icon(icons.restoreCall, color: colors.onPrimary),
                     ],
                   ),
