@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_body.dart';
+import 'package:tinode_flutter_chat/src/calls/presentation/history/call_search_field.dart';
 import 'package:tinode_flutter_chat/src/session/presentation/reconnecting_title.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/tinode_screen.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart';
@@ -8,7 +9,7 @@ import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart'
 
 /// The calls tab: the calls of the direct chats, newest first, scrolling
 /// under the glass app bar, whose title shows when the link is being
-/// restored. Watches nothing.
+/// restored, with the search pill under it. Watches nothing.
 class CallsScreen extends StatelessWidget {
   const CallsScreen({super.key});
 
@@ -20,6 +21,7 @@ class CallsScreen extends StatelessWidget {
         title: ReconnectingTitle(
           title: Text(TinodeChatStrings.of(context).callsTitle),
         ),
+        bottom: const CallSearchField(),
       ),
       body: const CallHistoryBody(),
     );

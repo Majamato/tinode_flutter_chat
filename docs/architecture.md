@@ -91,16 +91,16 @@ lib/
     calls/                        1:1 voice and video calls
       domain/                     ActiveCall, CallInvite, CallFailure, the CallMedia and
                                   SystemCalls interfaces, SystemCall, SystemCallTexts,
-                                  CallHistory, CallHistoryEntry
+                                  CallHistory, CallHistoryEntry, CallMatches
       data/                       WebRtcCallMedia (flutter_webrtc), CallKitSystemCalls
                                   (flutter_callkit_incoming), NoSystemCalls, systemCallId, the
                                   background hang-up
       application/                CallController, CallResources, CallMinimized, callsAvailable,
                                   callMediaFactory, systemCalls, handleCallPush,
-                                  CallHistoryController
+                                  CallHistoryController, callSearchResults
       presentation/               call layer, ringing, voice and video call screens, call bar,
                                   backdrop, avatar rings, round call buttons, systemCallTextsOf;
-                                  history/: the calls tab
+                                  history/: the calls tab; call_search/: the call search
     profile/                      the user's own profile and account
       domain/                     MyProfile
       application/                ProfileController, saving, photo, password, deleting the account
@@ -209,6 +209,7 @@ TinodeChat                      owns the container
               ├ AppearanceScreen    pushed from settings or the account menu
               ├ FindPeopleScreen    pushed by NewChatButton or the header's compose
               ├ ChatSearchScreen    pushed by ChatSearchField
+              ├ CallSearchScreen    pushed by CallSearchField, under the calls tab's title
               ├ NewGroupScreen      pushed from the search
               ├ ChatScreen(topic)   pushed per chat (route `ChatScreen.routeName`): ChatWallpaper,
               │                     MessageList scrolling under the glass ChatHeader (back

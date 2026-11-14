@@ -10,6 +10,12 @@
   user's own chats (direct and groups) by name as they type, on the device, and opens the chat
   tapped. Finding new people and groups, and creating a group, is the new chat button's
   (the plus).
+- **New:** the calls tab has a search pill under "Calls", like the chat list's, which opens the
+  **call search**: the calls history's voice and video calls filtered by the chat's name as the
+  user types, on the device, with a letter off still matching after the exact matches. Its rows
+  are the history's: a tap calls back, the button opens the chat.
+- **New:** `TinodeCallSearchScreen` for `TinodeChat.appBarBuilder`. `TinodeChatStrings` has
+  `searchCalls`, `callSearchHint` and `noCallsFound`.
 - **New:** `TinodeChatSearchScreen` for `TinodeChat.appBarBuilder`. `TinodeChatStrings` has
   `chatSearchHint` and `noChatsFound`; `findPeople` is no longer used.
 - **New:** creating a group takes two screens, on cards like the settings. **Add members**

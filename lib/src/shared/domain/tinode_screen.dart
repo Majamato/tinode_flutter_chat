@@ -71,6 +71,12 @@ final class TinodeChatSearchScreen extends TinodeScreen {
   const TinodeChatSearchScreen();
 }
 
+/// Finding calls by the chat's name, from the calls history.
+final class TinodeCallSearchScreen extends TinodeScreen {
+  /// The call search.
+  const TinodeCallSearchScreen();
+}
+
 /// Picking the members of a new group, its first step.
 final class TinodeAddMembersScreen extends TinodeScreen {
   /// The add members screen.

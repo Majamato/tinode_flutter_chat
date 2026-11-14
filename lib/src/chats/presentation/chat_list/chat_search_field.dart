@@ -1,70 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat_search/chat_search_screen.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/glass_surface.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/icons/tinode_chat_icons.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/l10n/tinode_chat_strings.dart';
-import 'package:tinode_flutter_chat/src/shared/presentation/theme/tinode_chat_theme.dart';
+import 'package:tinode_flutter_chat/src/shared/presentation/search_pill.dart';
 
-/// What looks like a search field under the chat list's app bar: a pill
-/// that opens the chat search, filled like an input in light mode and
-/// glass in dark mode. Watches nothing.
+/// The search pill under the chat list's app bar, which opens the chat
+/// search. Watches nothing.
 class ChatSearchField extends StatelessWidget implements PreferredSizeWidget {
   const ChatSearchField({super.key});
 
   /// Its height.
-  static const height = 40.0;
+  static const double height = SearchPill.height;
 
   @override
   Size get preferredSize => const Size.fromHeight(height);
 
+  void _open(BuildContext context) => ChatSearchScreen.open(context);
+
   @override
   Widget build(BuildContext context) {
     final strings = TinodeChatStrings.of(context);
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.outline;
-    final content = InkWell(
-      customBorder: const StadiumBorder(),
-      onTap: () => ChatSearchScreen.open(context),
-      child: SizedBox(
-        height: height,
-        child: Row(
-          children: [
-            const SizedBox(width: 14),
-            Icon(
-              TinodeChatIcons.of(context).search,
-              size: ChatIconSize.label,
-              color: TinodeChatTheme.of(context).iconPassiveColor,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                strings.searchChats,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyLarge?.copyWith(color: muted),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    return Semantics(
-      button: true,
-      label: strings.chatSearchHint,
-      excludeSemantics: true,
-      child: theme.brightness == Brightness.light
-          // On a white list white glass vanishes: a filled field, as in
-          // iOS, shows where the search starts.
-          ? Material(
-              color: theme.colorScheme.surfaceContainerHighest,
-              shape: const StadiumBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: content,
-            )
-          : GlassSurface(
-              child: Material(type: MaterialType.transparency, child: content),
-            ),
+    return SearchPill(
+      label: strings.searchChats,
+      semanticsLabel: strings.chatSearchHint,
+      onTap: () => _open(context),
     );
   }
 }

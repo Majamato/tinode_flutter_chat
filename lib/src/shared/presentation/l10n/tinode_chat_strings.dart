@@ -128,6 +128,9 @@ class TinodeChatStrings {
     this.nobodyFound = 'Nobody found',
     this.chatSearchHint = 'Search chats',
     this.noChatsFound = 'No chats found',
+    this.searchCalls = 'Search',
+    this.callSearchHint = 'Search calls',
+    this.noCallsFound = 'No calls found',
     this.groupLabel = 'Group',
     this.channelLabel = 'Channel',
     this.newGroup = 'New group',
@@ -398,6 +401,9 @@ class TinodeChatStrings {
     this.nobodyFound = 'No se encontró a nadie',
     this.chatSearchHint = 'Buscar chats',
     this.noChatsFound = 'No se encontraron chats',
+    this.searchCalls = 'Buscar',
+    this.callSearchHint = 'Buscar llamadas',
+    this.noCallsFound = 'No se encontraron llamadas',
     this.groupLabel = 'Grupo',
     this.channelLabel = 'Canal',
     this.newGroup = 'Nuevo grupo',
@@ -673,6 +679,9 @@ class TinodeChatStrings {
     this.nobodyFound = 'Aucun résultat',
     this.chatSearchHint = 'Rechercher des discussions',
     this.noChatsFound = 'Aucune discussion trouvée',
+    this.searchCalls = 'Rechercher',
+    this.callSearchHint = 'Rechercher des appels',
+    this.noCallsFound = 'Aucun appel trouvé',
     this.groupLabel = 'Groupe',
     this.channelLabel = 'Canal',
     this.newGroup = 'Nouveau groupe',
@@ -1194,6 +1203,16 @@ class TinodeChatStrings {
 
   /// A chat search that matched no chat.
   final String noChatsFound;
+
+  /// The hint of the calls history's search field.
+  final String searchCalls;
+
+  /// Hint of the call search field, and what screen readers call the
+  /// calls history's search field.
+  final String callSearchHint;
+
+  /// A call search that matched no call.
+  final String noCallsFound;
 
   /// Under a search result that is a group.
   final String groupLabel;

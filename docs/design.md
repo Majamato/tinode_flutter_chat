@@ -241,12 +241,16 @@ them.
 
 ## Calls history
 
-- The calls of direct chats, newest first, scrolling under a "Calls" glass app bar: 72 px rows with a
+- The calls of direct chats, newest first, scrolling under a "Calls" glass app bar with a 40 px
+  search pill under it, as on the chat list (`SearchPill`): 72 px rows with a
   48 px avatar, the chat's name (`missedCallColor` when the user missed the call), then the
   direction arrow (bent when the call didn't happen), the kind and how it went ("Voice call ·
   4:12", "Video call · Missed") in `outline`, the time as in the chat list, and a button to the
   chat in `iconColor`. A tap calls back, by the same kind, or the other when the host leaves that
   one out. Pull to fetch again.
+- The pill opens the **call search**: the back chevron and a field on a `GlassField`
+  ("Search calls"), then the same rows filtered by the chat's name as the user types, or "No
+  calls found" centred in `outline`.
 - "Calls" turns into the reconnecting title while the link is down, as on the chat list.
   Settings and Appearance don't show it.
 
