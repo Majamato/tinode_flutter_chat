@@ -6,12 +6,14 @@ import 'package:tinode_flutter_chat/src/calls/presentation/call_search/call_sear
 import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_tile.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/history/call_search_field.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/history/calls_screen.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/back_button.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
+import '../../support/stored_calls.dart';
 
 const strings = TinodeChatStrings();
 
@@ -44,12 +46,16 @@ void main() {
     );
   });
 
-  Future<void> openSearch(WidgetTester tester) async {
+  Future<void> openSearch(
+    WidgetTester tester, {
+    ChatStoreOpener? stores,
+  }) async {
     await pumpTinodeChat(
       tester,
       session,
       credentials: TinodeCredentials.token(session.token),
       tabBar: true,
+      storeOpener: stores,
     );
     await tester.tap(
       find.descendant(
@@ -86,7 +92,7 @@ void main() {
           matching: find.byType(CallHistoryTile),
         ),
       )
-      .map((tile) => tile.id.topic);
+      .map((tile) => tile.entry.topic);
 
   testWidgets('the search pill filters the calls by the chat name', (
     tester,
@@ -104,6 +110,57 @@ void main() {
     expect(shown(tester), isEmpty);
     expect(find.text(strings.noCallsFound), findsOneWidget);
     expect(session.calls.where((c) => c.startsWith('find ')), isEmpty);
+  });
+
+  testWidgets('finds and draws a call far older than the first page', (
+    tester,
+  ) async {
+    // Bob's one call is the oldest of 120.
+    final stores = await tester.runAsync(
+      () => storesWithCalls([
+        callMessage(bob, 1, audioOnly: true),
+        for (var seq = 2; seq <= 120; seq++) callMessage(carol, seq),
+      ]),
+    );
+    session = FakeTinodeSession(
+      chats: [
+        chat(bob, name: 'Bob Núñez', lastSeq: 1, lastMessageAt: at(1)),
+        chat(carol, name: 'Carol', lastSeq: 120, lastMessageAt: at(120)),
+      ],
+    );
+    await openSearch(tester, stores: stores);
+    expect(shown(tester), everyElement(carol));
+
+    await type(tester, 'nunez');
+    expect(shown(tester), [bob]);
+    expect(
+      find.descendant(
+        of: find.byType(CallSearchScreen),
+        matching: find.text('Bob Núñez'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a screen taller than the found calls reads more at once', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(400, 12000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final stores = await tester.runAsync(
+      () => storesWithCalls([
+        for (var seq = 1; seq <= 120; seq++) callMessage(carol, seq),
+      ]),
+    );
+    session = FakeTinodeSession(
+      chats: [chat(carol, name: 'Carol', lastSeq: 120, lastMessageAt: at(120))],
+    );
+
+    await openSearch(tester, stores: stores);
+
+    expect(shown(tester), hasLength(120));
   });
 
   testWidgets('a found call calls back', (tester) async {

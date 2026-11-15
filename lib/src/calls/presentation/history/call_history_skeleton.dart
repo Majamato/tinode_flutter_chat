@@ -4,14 +4,17 @@ import 'package:tinode_flutter_chat/src/shared/presentation/icons/chat_icon_size
 import 'package:tinode_flutter_chat/src/shared/presentation/skeleton/skeleton_bone.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/skeleton/skeleton_shimmer.dart';
 
-/// Rows shaped like [CallHistoryTile]s until the call log was read, under
-/// the app bar (the top padding of [MediaQuery]) and as many as the screen
-/// shows. Watches nothing.
+/// Rows shaped like [CallHistoryTile]s: as many as the screen shows, under
+/// the app bar (the top padding of [MediaQuery]), until the call log was
+/// read, or [rows] at the end of a list while more load. Watches nothing.
 class CallHistorySkeleton extends StatelessWidget {
-  const CallHistorySkeleton({super.key});
+  const CallHistorySkeleton({this.rows, super.key});
+
+  /// How many rows, shrink-wrapped; null fills the screen.
+  final int? rows;
 
   /// More than any screen shows; the list builds only those in view.
-  static const _rows = 24;
+  static const _screenful = 24;
 
   /// How much of the room each row's name and status take.
   static const _names = [0.44, 0.6, 0.36, 0.52, 0.68];
@@ -19,11 +22,14 @@ class CallHistorySkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rows = this.rows;
     return SkeletonShimmer(
       child: ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: rows != null,
+        padding: rows == null ? null : EdgeInsets.zero,
         itemExtent: CallHistoryTile.height,
-        itemCount: _rows,
+        itemCount: rows ?? _screenful,
         itemBuilder: (context, index) => _Row(
           name: _names[index % _names.length],
           status: _statuses[index % _statuses.length],

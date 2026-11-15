@@ -18,6 +18,7 @@ import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
+import '../../support/stored_calls.dart';
 import '../../support/test_container.dart';
 
 /// The real opener on real SQLite files: what memory can't show, such as

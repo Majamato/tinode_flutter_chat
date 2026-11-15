@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/offline/data/call_log_database.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/cached_call.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/call_page.dart';
 
 /// The calls of direct chats the app has seen, kept on the device apart
 /// from the cache: pruning doesn't touch them and they outlive a logout.
@@ -38,6 +39,7 @@ final class CallLog {
             topic: call.topic,
             seq: call.seq,
             replaces: Value(call.head?.replaces),
+            time: Value(call.time.millisecondsSinceEpoch),
             json: jsonEncode(call.toJson()),
           ),
       ]),
@@ -49,28 +51,54 @@ final class CallLog {
       message.head?.callState != null &&
       TopicKind.of(message.topic) == TopicKind.direct;
 
-  /// Every call, or only [topic]'s, with its updates, ordered by chat and
-  /// seq. Updates whose call isn't kept are left out, until it is. A row
-  /// that can't be read is logged and left out too, so it hides only
+  /// The calls, newest first, each with its updates: of [topics] only
+  /// when given, older than [before], no older than [from], at most
+  /// [limit]. Updates whose call isn't kept are left out, until it is. A
+  /// row that can't be read is logged and left out too, so it hides only
   /// itself.
-  Future<List<CachedCall>> calls({String? topic}) async {
+  Future<CallPage> page({
+    Set<String>? topics,
+    CallKey? before,
+    CallKey? from,
+    int? limit,
+  }) async {
+    if (topics != null && topics.isEmpty) {
+      return const CallPage([]);
+    }
     final rows = await _db
         .customSelect(
-          'SELECT b.topic AS topic, b.seq AS seq, b.json AS base, '
-          'u.json AS upd FROM call_messages b '
+          'SELECT b.topic AS topic, b.seq AS seq, b.time AS time, '
+          'b.json AS base, u.json AS upd FROM ( '
+          'SELECT topic, seq, time, json FROM call_messages '
+          'WHERE replaces IS NULL '
+          '${topics == null ? '' : 'AND topic IN (${_marks(topics.length)}) '}'
+          '${before == null ? '' : 'AND (time, topic, seq) < (?, ?, ?) '}'
+          '${from == null ? '' : 'AND (time, topic, seq) >= (?, ?, ?) '}'
+          'ORDER BY time DESC, topic DESC, seq DESC'
+          '${limit == null ? '' : ' LIMIT ?'}'
+          ') b '
           'LEFT JOIN call_messages u ON u.topic = b.topic '
           "AND u.replaces = ':' || b.seq "
-          'WHERE b.replaces IS NULL '
-          '${topic == null ? '' : 'AND b.topic = ? '}'
-          'ORDER BY b.topic, b.seq, u.seq',
-          variables: [if (topic != null) Variable.withString(topic)],
+          'ORDER BY b.time DESC, b.topic DESC, b.seq DESC, u.seq',
+          variables: [
+            for (final topic in topics ?? const <String>{})
+              Variable.withString(topic),
+            ...?_key(before),
+            ...?_key(from),
+            if (limit != null) Variable.withInt(limit),
+          ],
           readsFrom: {_db.callMessages},
         )
         .get();
-    final calls = <(String, int), (DataMessage, List<DataMessage>)?>{};
+    final calls = <CallKey, (DataMessage, List<DataMessage>)?>{};
     for (final row in rows) {
+      final key = (
+        time: row.read<int>('time'),
+        topic: row.read<String>('topic'),
+        seq: row.read<int>('seq'),
+      );
       final call = calls.putIfAbsent(
-        (row.read<String>('topic'), row.read<int>('seq')),
+        key,
         () => switch (_decoded(row.read<String>('base'))) {
           final message? => (message, []),
           null => null,
@@ -85,12 +113,22 @@ final class CallLog {
         }
       }
     }
-    return [
+    return CallPage([
       for (final call in calls.values)
         if (call case (final message, final updates))
           CachedCall(message, updates),
-    ];
+    ], next: limit != null && calls.length >= limit ? calls.keys.last : null);
   }
+
+  static String _marks(int count) => List.filled(count, '?').join(', ');
+
+  static List<Variable<Object>>? _key(CallKey? key) => key == null
+      ? null
+      : [
+          Variable.withInt(key.time),
+          Variable.withString(key.topic),
+          Variable.withInt(key.seq),
+        ];
 
   static DataMessage? _decoded(String json) {
     try {

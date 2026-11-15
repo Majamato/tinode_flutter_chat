@@ -247,10 +247,12 @@ them.
   direction arrow (bent when the call didn't happen), the kind and how it went ("Voice call ·
   4:12", "Video call · Missed") in `outline`, the time as in the chat list, and a button to the
   chat in `iconColor`. A tap calls back, by the same kind, or the other when the host leaves that
-  one out. Pull to fetch again.
+  one out. Pull to fetch again. While older calls are left, one skeleton row ends the list, and
+  the next 50 load as it comes within a screen of view.
 - The pill opens the **call search**: the back chevron and a field on a `GlassField`
-  ("Search calls"), then the same rows filtered by the chat's name as the user types, or "No
-  calls found" centred in `outline`.
+  ("Search calls"), then the same rows for the calls of the whole call log, filtered by the
+  chat's name as the user types and loading 50 at a time as the tab does, or "No calls found"
+  centred in `outline`.
 - "Calls" turns into the reconnecting title while the link is down, as on the chat list.
   Settings and Appearance don't show it.
 

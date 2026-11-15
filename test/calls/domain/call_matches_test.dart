@@ -1,50 +1,46 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tinode_flutter_chat/src/calls/domain/call_history.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_matches.dart';
 
 import '../../support/fixtures.dart';
 
 void main() {
-  const calls = <CallId>[
-    (topic: carol, seq: 9),
-    (topic: bob, seq: 7),
-    (topic: carol, seq: 5),
-    (topic: 'usrDave', seq: 3),
-  ];
+  const dave = 'usrDave';
+  const topics = [bob, carol, dave];
   const titles = {bob: 'Bob Núñez', carol: 'Carol'};
 
-  List<CallId> matching(String input) =>
-      CallMatches.matching(calls, titles, input).ids;
+  CallMatches matching(String input) => CallMatches.of(topics, titles, input);
 
-  test('blank input keeps every call, in order', () {
-    expect(matching(''), calls);
-    expect(matching('  '), calls);
+  test('blank input matches every chat', () {
+    expect(matching(''), const CallMatches.everyChat());
+    expect(matching('  '), const CallMatches.everyChat());
+    expect(matching('').includes('usrAnyone'), isTrue);
   });
 
   test('every typed word starts a word of the chat name', () {
-    expect(matching('carol'), [calls[0], calls[2]]);
-    expect(matching('bob nu'), [calls[1]]);
-    expect(matching('nunez'), [calls[1]]);
-    expect(matching('rol'), isEmpty);
+    expect(matching('carol').exact, {carol});
+    expect(matching('bob nu').exact, {bob});
+    expect(matching('nunez').exact, {bob});
+    expect(matching('rol'), const CallMatches());
   });
 
-  test('a letter off still matches, after the exact matches', () {
-    const mixed = <CallId>[(topic: bob, seq: 4), (topic: carol, seq: 2)];
-    final matches = CallMatches.matching(mixed, const {
-      bob: 'Carl',
-      carol: 'Carol',
-    }, 'caro');
-    expect(matches.ids, [mixed[1], mixed[0]]);
+  test('a letter off matches apart from the exact matches', () {
+    final matches = CallMatches.of(
+      [bob, carol],
+      const {bob: 'Carl', carol: 'Carol'},
+      'caro',
+    );
+
+    expect(matches.exact, {carol});
+    expect(matches.typos, {bob});
+    expect(matches.includes(bob), isTrue);
+    expect(matches.includes(dave), isFalse);
   });
 
   test('a chat without a name matches by its topic', () {
-    expect(matching('usrdave'), [calls[3]]);
+    expect(matching('usrdave').exact, {dave});
   });
 
-  test('the same calls compare equal', () {
-    expect(
-      CallMatches.matching(calls, titles, 'carol'),
-      CallMatches.matching(List.of(calls), titles, 'car'),
-    );
+  test('the same chats compare equal', () {
+    expect(matching('carol'), CallMatches.of(List.of(topics), titles, 'car'));
   });
 }

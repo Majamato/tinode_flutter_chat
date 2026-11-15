@@ -15,6 +15,7 @@ import 'package:tinode_flutter_chat/src/session/application/session_controller.d
 import 'package:tinode_flutter_chat/src/session/domain/tinode_credentials.dart';
 
 import '../support/fake_call_media.dart';
+import '../support/stored_calls.dart';
 import 'account_test.dart' show signUp;
 import 'call_test.dart' show User, config, eventually;
 

@@ -1,68 +1,51 @@
-import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_history_entry.dart';
+import 'package:tinode_flutter_chat/src/calls/domain/call_window.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/call_page.dart';
 
-/// Names one call of the history: its chat and the seq that started it.
-typedef CallId = ({String topic, int seq});
-
-/// The calls history: the calls the call log holds, by chat, and the newest
-/// [limit] of them, newest first.
-///
-/// Updates keep the same [ids] instance while the order is the same, so a
-/// list that selects [ids] doesn't rebuild when only a call changed.
+/// The calls history: the calls of the call log read so far, newest first,
+/// a page at a time as the tab scrolls; see [CallWindow].
 @immutable
 final class CallHistory {
   const CallHistory()
     : loaded = false,
-      byTopic = const {},
-      ids = const [],
-      _byId = const {};
+      loadingMore = false,
+      window = const CallWindow();
 
-  const CallHistory._(this.loaded, this.byTopic, this.ids, this._byId);
+  const CallHistory._(this.loaded, this.loadingMore, this.window);
 
-  /// The most calls the history shows.
-  static const limit = 200;
-
-  /// The call log was read.
+  /// The first page was read, or the log couldn't be.
   final bool loaded;
 
-  final Map<String, List<CallHistoryEntry>> byTopic;
+  /// The next page is being read.
+  final bool loadingMore;
 
-  /// The calls shown, newest first.
-  final List<CallId> ids;
+  final CallWindow window;
 
-  final Map<CallId, CallHistoryEntry> _byId;
+  /// The calls shown, newest first; see [CallWindow.ids].
+  List<CallId> get ids => window.ids;
 
-  CallHistoryEntry? operator [](CallId id) => _byId[id];
+  CallHistoryEntry? operator [](CallId id) => window[id];
 
-  /// The history with [calls] in place of what it held of their chats;
-  /// with [all], of every chat.
-  CallHistory withCalls(
-    Map<String, List<CallHistoryEntry>> calls, {
-    bool all = false,
-  }) {
-    final byTopic = Map<String, List<CallHistoryEntry>>.unmodifiable(
-      <String, List<CallHistoryEntry>>{if (!all) ...this.byTopic, ...calls}
-        ..removeWhere((_, entries) => entries.isEmpty),
-    );
-    final newest = [for (final entries in byTopic.values) ...entries]
-      ..sort(
-        (a, b) => switch (b.time.compareTo(a.time)) {
-          0 => b.seq.compareTo(a.seq),
-          final order => order,
-        },
-      );
-    final shown = newest.take(limit).toList();
-    final ids = [
-      for (final entry in shown) (topic: entry.topic, seq: entry.seq),
-    ];
-    return CallHistory._(
-      true,
-      byTopic,
-      const ListEquality<CallId>().equals(ids, this.ids)
-          ? this.ids
-          : List.unmodifiable(ids),
-      {for (final entry in shown) (topic: entry.topic, seq: entry.seq): entry},
-    );
-  }
+  /// Older calls are left to read.
+  bool get hasMore => loaded && !window.reachedEnd;
+
+  /// The history with [entries], the next page, below what it shows.
+  CallHistory withPage(Iterable<CallHistoryEntry> entries, {CallKey? next}) =>
+      CallHistory._(true, false, window.withPage(entries, next: next));
+
+  /// The history with [entries] in place of [topic]'s calls from [from]
+  /// on; see [CallWindow.withChat].
+  CallHistory withChat(
+    String topic,
+    Iterable<CallHistoryEntry> entries, {
+    CallKey? from,
+  }) => CallHistory._(
+    loaded,
+    loadingMore,
+    window.withChat(topic, entries, from: from),
+  );
+
+  CallHistory withLoadingMore({required bool loading}) =>
+      CallHistory._(loaded, loading, window);
 }

@@ -1,8 +1,12 @@
 import 'package:tinode_flutter_chat/src/chats/domain/call_record.dart';
 import 'package:tinode_flutter_chat/src/chats/domain/chat_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/cached_call.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/call_page.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/value_object.dart';
+
+/// Names one call of the history: its chat and the seq that started it.
+typedef CallId = ({String topic, int seq});
 
 /// One call of the calls history: in which chat, when it started, who
 /// called, and how it went.
@@ -43,6 +47,12 @@ final class CallHistoryEntry with ValueObject {
   /// The user called.
   final bool outgoing;
   final CallRecord call;
+
+  CallId get id => (topic: topic, seq: seq);
+
+  /// Where the call sits in the call log's order.
+  CallKey get key =>
+      (time: time.millisecondsSinceEpoch, topic: topic, seq: seq);
 
   /// Someone called the user, who didn't talk with them.
   bool get missed => !outgoing && call.failed;

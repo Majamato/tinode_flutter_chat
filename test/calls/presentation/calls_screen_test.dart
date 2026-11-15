@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/home/home_tab_bar.dart';
+import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_list.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/history/call_history_tile.dart';
 import 'package:tinode_flutter_chat/src/calls/presentation/history/calls_screen.dart';
 import 'package:tinode_flutter_chat/src/chats/presentation/chat/chat_screen.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/tinode_flutter_chat.dart';
 
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_tinode_chat.dart';
+import '../../support/stored_calls.dart';
 
 const icons = TinodeChatIcons();
 
@@ -47,6 +50,7 @@ void main() {
   Future<void> openCalls(
     WidgetTester tester, {
     TinodeChatFeatures features = const TinodeChatFeatures(),
+    ChatStoreOpener? stores,
   }) async {
     await pumpTinodeChat(
       tester,
@@ -54,6 +58,7 @@ void main() {
       credentials: TinodeCredentials.token(session.token),
       tabBar: true,
       features: features,
+      storeOpener: stores,
     );
     await tester.tap(
       find.descendant(
@@ -69,13 +74,62 @@ void main() {
     matching: find.byType(CallHistoryTile),
   );
 
+  testWidgets('scrolling near the end reads the next page', (tester) async {
+    final stores = await tester.runAsync(
+      () => storesWithCalls([
+        for (var seq = 1; seq <= 120; seq++) callMessage(carol, seq),
+      ]),
+    );
+    session = FakeTinodeSession(
+      chats: [chat(carol, name: 'Carol', lastSeq: 120, lastMessageAt: at(120))],
+    );
+    await openCalls(tester, stores: stores);
+    final oldest = find.byKey(const ValueKey((topic: carol, seq: 1)));
+    expect(oldest, findsNothing);
+
+    // The list's own, not the skeleton row's at its end.
+    final list = find
+        .descendant(
+          of: find.byType(CallHistoryList),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    // Settling lets each page that lands ask for the next while it can.
+    for (var i = 0; i < 40 && oldest.evaluate().isEmpty; i++) {
+      await tester.drag(list, const Offset(0, -600));
+      await tester.pumpAndSettle();
+    }
+    expect(oldest, findsOneWidget);
+  });
+
+  testWidgets('a screen taller than the calls read reads more at once', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(400, 12000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final stores = await tester.runAsync(
+      () => storesWithCalls([
+        for (var seq = 1; seq <= 120; seq++) callMessage(carol, seq),
+      ]),
+    );
+    session = FakeTinodeSession(
+      chats: [chat(carol, name: 'Carol', lastSeq: 120, lastMessageAt: at(120))],
+    );
+
+    await openCalls(tester, stores: stores);
+
+    expect(find.byKey(const ValueKey((topic: carol, seq: 1))), findsOneWidget);
+  });
+
   testWidgets('the calls show, newest first', (tester) async {
     await openCalls(tester);
 
     final rows = tester.widgetList<CallHistoryTile>(
       find.byType(CallHistoryTile),
     );
-    expect(rows.map((r) => r.id.topic), [carol, bob]);
+    expect(rows.map((r) => r.entry.topic), [carol, bob]);
     expect(
       find.descendant(
         of: row('Bob'),

@@ -23,7 +23,7 @@ import 'package:tinode_flutter_chat/src/offline/data/call_log_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_database.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store.dart';
-import 'package:tinode_flutter_chat/src/offline/domain/cached_call.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/call_page.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/chat_merge.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/client_id.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
@@ -638,9 +638,25 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   @override
-  Future<List<CachedCall>> storedCalls({String? topic}) async {
+  Future<CallPage> storedCallPage({
+    Set<String>? topics,
+    CallKey? before,
+    CallKey? from,
+    int? limit,
+  }) async {
     await _writes;
-    return _calls.calls(topic: topic);
+    return _calls.page(
+      topics: topics,
+      before: before,
+      from: from,
+      limit: limit,
+    );
+  }
+
+  @override
+  Future<Set<String>> storedCallTopics() async {
+    await _writes;
+    return _calls.topics();
   }
 
   @override

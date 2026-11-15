@@ -119,9 +119,11 @@ The floating glass bar with the chats, the calls history and the settings, on by
 `HomeTab`, `HomeTabBar`.
 
 **Calls history**
-The calls of direct chats shown newest first, in their own tab, read from the **call log**. The
-tab is the calls history; "call log" means only the file behind it. Its search pill opens the
-**call search**. *In code:* `CallHistoryController`, `CallHistoryEntry`, `CallsScreen`.
+The calls of direct chats shown newest first, in their own tab, read from the **call log** a page
+of 50 at a time: the next page as the user scrolls within a screen of the end, or at once while
+the calls don't fill the screen, until the oldest call. The tab is the calls history; "call log" means only the file behind it. Its search pill
+opens the **call search**. *In code:* `CallHistoryController`, `CallHistoryEntry`, `CallWindow`,
+`CallsScreen`.
 
 **Appearance**
 The palette and the light, dark or system theme the user picks on this device, from the host's
@@ -339,11 +341,12 @@ the chat list on the device and never asks the server, so it finds no one new.
 *Avoid:* plain "search" (that finds people to start a chat with).
 
 **Call search**
-Finding calls of the **calls history**, voice and video, by the chat's name as the user types,
-from the calls tab's search pill. Names match as in the **chat search**, a letter off included;
-exact matches come first, newest first among them. It filters the history on the device and
-never asks the server. *In code:* `CallMatches`, `callSearchResultsProvider`,
-`CallSearchScreen`. *Avoid:* plain "search".
+Finding calls, voice and video, by the chat's name as the user types, from the calls tab's search
+pill. It searches the whole **call log**, not only the calls the tab has read, and pages like the
+**calls history**, 50 at a time. Names match as in the **chat search**, a letter off included:
+the calls of the chats that match exactly come first, newest first, then those a letter off. It
+runs on the device and never asks the server. *In code:* `CallMatches` (which chats match),
+`CallSearchController`, `CallSearchScreen`. *Avoid:* plain "search".
 
 **Search result**
 A user or group the search found, shown as a tile. A user's result is named by their user ID,

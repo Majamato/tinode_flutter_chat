@@ -101,7 +101,7 @@ void main() {
     final rows = tester.widgetList<CallHistoryTile>(
       find.byType(CallHistoryTile),
     );
-    expect(rows.map((r) => r.id.topic), [carol, bob]);
+    expect(rows.map((r) => r.entry.topic), [carol, bob]);
     Finder inRow(String name, String text) => find.descendant(
       of: find.ancestor(
         of: find.text(name),
@@ -165,7 +165,7 @@ void main() {
     final rows = tester.widgetList<CallHistoryTile>(
       find.byType(CallHistoryTile),
     );
-    expect(rows.map((r) => (r.id.topic, r.id.seq)), [
+    expect(rows.map((r) => (r.entry.topic, r.entry.seq)), [
       (bob, 8),
       (carol, 3),
       (bob, 1),
@@ -220,7 +220,7 @@ void main() {
     final rows = tester.widgetList<CallHistoryTile>(
       find.byType(CallHistoryTile),
     );
-    expect(rows.map((r) => r.id.topic), [carol]);
+    expect(rows.map((r) => r.entry.topic), [carol]);
   });
 
   testWidgets('deleting the account leaves nothing for the next login', (

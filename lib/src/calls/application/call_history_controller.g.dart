@@ -8,10 +8,11 @@ part of 'call_history_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// The calls history, read from the call log like the chat list's previews
-/// from the cache: all calls first, then a chat's again when its stored
-/// messages change (`ChatSession.storedChanges`). Only direct chats have
-/// calls.
+/// The calls history, read from the call log a page at a time: the newest
+/// [callPageSize] first, the next ones as the tab scrolls ([loadMore]).
+/// When a chat's stored messages change (`ChatSession.storedChanges`), it
+/// reads that chat's calls again down to the last one read. Only direct
+/// chats have calls.
 ///
 /// It never asks the server: every call the session sees reaches the log,
 /// and its latest catch-up fetches the newest messages of each chat it is
@@ -21,10 +22,11 @@ part of 'call_history_controller.dart';
 @ProviderFor(CallHistoryController)
 final callHistoryControllerProvider = CallHistoryControllerProvider._();
 
-/// The calls history, read from the call log like the chat list's previews
-/// from the cache: all calls first, then a chat's again when its stored
-/// messages change (`ChatSession.storedChanges`). Only direct chats have
-/// calls.
+/// The calls history, read from the call log a page at a time: the newest
+/// [callPageSize] first, the next ones as the tab scrolls ([loadMore]).
+/// When a chat's stored messages change (`ChatSession.storedChanges`), it
+/// reads that chat's calls again down to the last one read. Only direct
+/// chats have calls.
 ///
 /// It never asks the server: every call the session sees reaches the log,
 /// and its latest catch-up fetches the newest messages of each chat it is
@@ -32,10 +34,11 @@ final callHistoryControllerProvider = CallHistoryControllerProvider._();
 /// empty rather than loading forever, and what it shows stays.
 final class CallHistoryControllerProvider
     extends $NotifierProvider<CallHistoryController, CallHistory> {
-  /// The calls history, read from the call log like the chat list's previews
-  /// from the cache: all calls first, then a chat's again when its stored
-  /// messages change (`ChatSession.storedChanges`). Only direct chats have
-  /// calls.
+  /// The calls history, read from the call log a page at a time: the newest
+  /// [callPageSize] first, the next ones as the tab scrolls ([loadMore]).
+  /// When a chat's stored messages change (`ChatSession.storedChanges`), it
+  /// reads that chat's calls again down to the last one read. Only direct
+  /// chats have calls.
   ///
   /// It never asks the server: every call the session sees reaches the log,
   /// and its latest catch-up fetches the newest messages of each chat it is
@@ -69,12 +72,13 @@ final class CallHistoryControllerProvider
 }
 
 String _$callHistoryControllerHash() =>
-    r'dca204b5f1afe19179b47fc7226f370ae1e3cb0f';
+    r'7a00301432add89f9853c4138107daa5450cf520';
 
-/// The calls history, read from the call log like the chat list's previews
-/// from the cache: all calls first, then a chat's again when its stored
-/// messages change (`ChatSession.storedChanges`). Only direct chats have
-/// calls.
+/// The calls history, read from the call log a page at a time: the newest
+/// [callPageSize] first, the next ones as the tab scrolls ([loadMore]).
+/// When a chat's stored messages change (`ChatSession.storedChanges`), it
+/// reads that chat's calls again down to the last one read. Only direct
+/// chats have calls.
 ///
 /// It never asks the server: every call the session sees reaches the log,
 /// and its latest catch-up fetches the newest messages of each chat it is

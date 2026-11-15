@@ -14,9 +14,15 @@
   tapped. Finding new people and groups, and creating a group, is the new chat button's
   (the plus).
 - **New:** the calls tab has a search pill under "Calls", like the chat list's, which opens the
-  **call search**: the calls history's voice and video calls filtered by the chat's name as the
-  user types, on the device, with a letter off still matching after the exact matches. Its rows
-  are the history's: a tap calls back, the button opens the chat.
+  **call search**: the voice and video calls of the whole call log filtered by the chat's name as
+  the user types, on the device, with a letter off still matching after the exact matches. It
+  reads 50 calls at a time, the next as the results scroll. Its rows are the history's: a tap
+  calls back, the button opens the chat.
+- **Behaviour change:** the calls tab reads the call log 50 calls at a time, the next page as the
+  user scrolls near the end, instead of reading the whole log at login and stopping at the newest
+  200. Every call is now reachable.
+- **Behaviour change:** the call log file moves to schema 2, with each message's time for the
+  paging. The rows already there are kept, their times taken from the messages themselves.
 - **New:** `TinodeCallSearchScreen` for `TinodeChat.appBarBuilder`. `TinodeChatStrings` has
   `searchCalls`, `callSearchHint` and `noCallsFound`.
 - **New:** `TinodeChatSearchScreen` for `TinodeChat.appBarBuilder`. `TinodeChatStrings` has

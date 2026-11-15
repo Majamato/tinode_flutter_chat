@@ -9,9 +9,11 @@ import 'package:tinode_flutter_chat/src/calls/domain/call_history_entry.dart';
 import 'package:tinode_flutter_chat/src/offline/data/call_log.dart';
 import 'package:tinode_flutter_chat/src/offline/data/call_log_database.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/cached_call.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/call_page.dart';
 
 import '../../support/faulty_database.dart';
 import '../../support/fixtures.dart';
+import '../../support/stored_calls.dart';
 
 void main() {
   late CallLogDatabase db;
@@ -420,6 +422,109 @@ void main() {
     await CallLog(owned).close();
 
     expect(() => owned.customStatement('SELECT 1'), throwsA(anything));
+  });
+
+  group('page', () {
+    CallKey key(String topic, int seq, {int? minute}) => (
+      time: at(minute ?? seq).millisecondsSinceEpoch,
+      topic: topic,
+      seq: seq,
+    );
+
+    test('is newest first across chats, ties by chat then seq', () async {
+      await log.put([
+        callMessage(bob, 1),
+        callMessage(carol, 2),
+        callMessage(bob, 3),
+        callMessage(bob, 4, time: at(3)),
+        callMessage(carol, 3),
+      ]);
+
+      expect(shape((await log.page()).calls), [
+        entry(carol, 3, <int>[]),
+        entry(bob, 4, <int>[]),
+        entry(bob, 3, <int>[]),
+        entry(carol, 2, <int>[]),
+        entry(bob, 1, <int>[]),
+      ]);
+    });
+
+    test('stops at the limit and says where the next one starts', () async {
+      await log.put([for (var seq = 1; seq <= 5; seq++) callMessage(bob, seq)]);
+
+      final first = await log.page(limit: 2);
+      expect(shape(first.calls), [
+        entry(bob, 5, <int>[]),
+        entry(bob, 4, <int>[]),
+      ]);
+      expect(first.next, key(bob, 4));
+
+      final second = await log.page(before: first.next, limit: 2);
+      expect(shape(second.calls), [
+        entry(bob, 3, <int>[]),
+        entry(bob, 2, <int>[]),
+      ]);
+
+      final last = await log.page(before: second.next, limit: 2);
+      expect(shape(last.calls), [entry(bob, 1, <int>[])]);
+      expect(last.reachedEnd, isTrue);
+      expect((await log.page()).reachedEnd, isTrue);
+    });
+
+    test('counts calls, not their updates', () async {
+      await log.put([
+        callMessage(bob, 1),
+        callUpdate(bob, 5, 1, CallState.accepted),
+        callUpdate(bob, 6, 1, CallState.finished),
+        callMessage(bob, 2),
+      ]);
+
+      final page = await log.page(limit: 1);
+      expect(shape(page.calls), [entry(bob, 2, <int>[])]);
+      expect(shape((await log.page(before: page.next, limit: 1)).calls), [
+        entry(bob, 1, [5, 6]),
+      ]);
+    });
+
+    test('from takes that call and the newer ones', () async {
+      await log.put([for (var seq = 1; seq <= 4; seq++) callMessage(bob, seq)]);
+
+      expect(shape((await log.page(from: key(bob, 2))).calls), [
+        entry(bob, 4, <int>[]),
+        entry(bob, 3, <int>[]),
+        entry(bob, 2, <int>[]),
+      ]);
+    });
+
+    test('of some chats only', () async {
+      await log.put([
+        callMessage(bob, 1),
+        callMessage(carol, 2),
+        callMessage('usrDave', 3),
+      ]);
+
+      expect(shape((await log.page(topics: {bob, 'usrDave'})).calls), [
+        entry('usrDave', 3, <int>[]),
+        entry(bob, 1, <int>[]),
+      ]);
+      expect(await log.page(topics: const {}), const CallPage([]));
+    });
+
+    test('moves on past rows it cannot read', () async {
+      await log.put([for (var seq = 1; seq <= 3; seq++) callMessage(bob, seq)]);
+      await db.customUpdate(
+        "UPDATE call_messages SET json = '{oops' WHERE seq >= 2",
+        updates: {db.callMessages},
+        updateKind: UpdateKind.update,
+      );
+
+      final page = await log.page(limit: 2);
+      expect(page.calls, isEmpty);
+      expect(page.next, key(bob, 2));
+      expect(shape((await log.page(before: page.next, limit: 2)).calls), [
+        entry(bob, 1, <int>[]),
+      ]);
+    });
   });
 
   group('order of arrival never changes the result', () {

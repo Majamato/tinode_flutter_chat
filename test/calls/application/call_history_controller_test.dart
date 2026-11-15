@@ -4,9 +4,11 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_history_controller.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_history.dart';
 import 'package:tinode_flutter_chat/src/chats/application/chat_list_controller.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 
 import '../../support/fake_tinode_session.dart';
 import '../../support/fixtures.dart';
+import '../../support/stored_calls.dart';
 import '../../support/test_container.dart';
 
 void main() {
@@ -22,10 +24,11 @@ void main() {
 
   Future<void> start(
     List<Subscription> chats,
-    Map<String, List<DataMessage>> histories,
-  ) async {
+    Map<String, List<DataMessage>> histories, {
+    ChatStoreOpener? stores,
+  }) async {
     session = FakeTinodeSession(chats: chats, histories: histories);
-    container = (await loggedInContainer(session))
+    container = (await loggedInContainer(session, storeOpener: stores))
       ..listen(chatListControllerProvider, (_, _) {})
       ..listen(callHistoryControllerProvider, (_, _) {});
     await later();
@@ -114,4 +117,64 @@ void main() {
       expect(history().ids, [(topic: bob, seq: 2)]);
     },
   );
+
+  group('a log longer than a page', () {
+    // 120 calls with Bob, the newest last.
+    Future<void> startLong() async => start(
+      [chat(bob, lastSeq: 120, lastMessageAt: at(120))],
+      {},
+      stores: await storesWithCalls([
+        for (var seq = 1; seq <= 120; seq++) callMessage(bob, seq),
+      ]),
+    );
+
+    CallHistoryController notifier() =>
+        container.read(callHistoryControllerProvider.notifier);
+
+    test('reads the newest page, then one at a time', () async {
+      await startLong();
+      await until(() => history().loaded);
+
+      expect(history().ids, hasLength(callPageSize));
+      expect(history().ids.first, (topic: bob, seq: 120));
+      expect(history().ids.last, (topic: bob, seq: 71));
+      expect(history().hasMore, isTrue);
+
+      final loading = notifier().loadMore();
+      expect(history().loadingMore, isTrue);
+      await loading;
+      expect(history().loadingMore, isFalse);
+      expect(history().ids, hasLength(100));
+      expect(history().ids.last, (topic: bob, seq: 21));
+
+      await notifier().loadMore();
+      expect(history().ids, hasLength(120));
+      expect(history().ids.last, (topic: bob, seq: 1));
+      expect(history().hasMore, isFalse);
+
+      await notifier().loadMore();
+      expect(history().ids, hasLength(120));
+    });
+
+    test('a change shows where it was read, and only there', () async {
+      await startLong();
+      await until(() => history().loaded);
+
+      session
+        ..emitMessage(callUpdate(bob, 121, 30, CallState.missed))
+        ..emitMessage(callUpdate(bob, 122, 100, CallState.declined));
+      await later();
+      expect(history()[(topic: bob, seq: 100)]!.call.state, CallState.declined);
+      expect(history()[(topic: bob, seq: 30)], isNull);
+      expect(history().ids, hasLength(callPageSize));
+
+      session.emitMessage(callMessage(bob, 123));
+      await later();
+      expect(history().ids.first, (topic: bob, seq: 123));
+      expect(history().ids, hasLength(callPageSize + 1));
+
+      await notifier().loadMore();
+      expect(history()[(topic: bob, seq: 30)]!.call.state, CallState.missed);
+    });
+  });
 }

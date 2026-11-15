@@ -8,57 +8,78 @@ part of 'call_search.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// What the user typed in the call search field, as typed.
+/// The call search as the user types ([search]): the calls of the chats
+/// whose name matches (see [CallMatches]) in the whole call log, exact
+/// matches first, newest first among each. It reads them a page of
+/// [callPageSize] at a time, the next ones as the results scroll
+/// ([loadMore]), and a changed chat again as the calls history does. It
+/// never asks the server, and opens on every call.
 
-@ProviderFor(CallSearchFilter)
-final callSearchFilterProvider = CallSearchFilterProvider._();
+@ProviderFor(CallSearchController)
+final callSearchControllerProvider = CallSearchControllerProvider._();
 
-/// What the user typed in the call search field, as typed.
-final class CallSearchFilterProvider
-    extends $NotifierProvider<CallSearchFilter, String> {
-  /// What the user typed in the call search field, as typed.
-  CallSearchFilterProvider._()
+/// The call search as the user types ([search]): the calls of the chats
+/// whose name matches (see [CallMatches]) in the whole call log, exact
+/// matches first, newest first among each. It reads them a page of
+/// [callPageSize] at a time, the next ones as the results scroll
+/// ([loadMore]), and a changed chat again as the calls history does. It
+/// never asks the server, and opens on every call.
+final class CallSearchControllerProvider
+    extends $NotifierProvider<CallSearchController, CallSearchState> {
+  /// The call search as the user types ([search]): the calls of the chats
+  /// whose name matches (see [CallMatches]) in the whole call log, exact
+  /// matches first, newest first among each. It reads them a page of
+  /// [callPageSize] at a time, the next ones as the results scroll
+  /// ([loadMore]), and a changed chat again as the calls history does. It
+  /// never asks the server, and opens on every call.
+  CallSearchControllerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'callSearchFilterProvider',
+        name: r'callSearchControllerProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$callSearchFilterHash();
+  String debugGetCreateSourceHash() => _$callSearchControllerHash();
 
   @$internal
   @override
-  CallSearchFilter create() => CallSearchFilter();
+  CallSearchController create() => CallSearchController();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(String value) {
+  Override overrideWithValue(CallSearchState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<String>(value),
+      providerOverride: $SyncValueProvider<CallSearchState>(value),
     );
   }
 }
 
-String _$callSearchFilterHash() => r'123e69ea2feba6766a4249a2e68d2eb4bef3eec2';
+String _$callSearchControllerHash() =>
+    r'2a7a794f2a0399fc9adde47d006c1388bf5472ad';
 
-/// What the user typed in the call search field, as typed.
+/// The call search as the user types ([search]): the calls of the chats
+/// whose name matches (see [CallMatches]) in the whole call log, exact
+/// matches first, newest first among each. It reads them a page of
+/// [callPageSize] at a time, the next ones as the results scroll
+/// ([loadMore]), and a changed chat again as the calls history does. It
+/// never asks the server, and opens on every call.
 
-abstract class _$CallSearchFilter extends $Notifier<String> {
-  String build();
+abstract class _$CallSearchController extends $Notifier<CallSearchState> {
+  CallSearchState build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<String, String>;
+    final ref = this.ref as $Ref<CallSearchState, CallSearchState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<String, String>,
-              String,
+              AnyNotifier<CallSearchState, CallSearchState>,
+              CallSearchState,
               Object?,
               Object?
             >;
@@ -66,51 +87,94 @@ abstract class _$CallSearchFilter extends $Notifier<String> {
   }
 }
 
-/// The calls of the history whose chat's name matches [CallSearchFilter];
-/// see [CallMatches].
+/// One call the call search found, for its row.
 
-@ProviderFor(callSearchResults)
-final callSearchResultsProvider = CallSearchResultsProvider._();
+@ProviderFor(callSearchEntry)
+final callSearchEntryProvider = CallSearchEntryFamily._();
 
-/// The calls of the history whose chat's name matches [CallSearchFilter];
-/// see [CallMatches].
+/// One call the call search found, for its row.
 
-final class CallSearchResultsProvider
-    extends $FunctionalProvider<CallMatches, CallMatches, CallMatches>
-    with $Provider<CallMatches> {
-  /// The calls of the history whose chat's name matches [CallSearchFilter];
-  /// see [CallMatches].
-  CallSearchResultsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'callSearchResultsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+final class CallSearchEntryProvider
+    extends
+        $FunctionalProvider<
+          CallHistoryEntry?,
+          CallHistoryEntry?,
+          CallHistoryEntry?
+        >
+    with $Provider<CallHistoryEntry?> {
+  /// One call the call search found, for its row.
+  CallSearchEntryProvider._({
+    required CallSearchEntryFamily super.from,
+    required (String, int) super.argument,
+  }) : super(
+         retry: null,
+         name: r'callSearchEntryProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
-  String debugGetCreateSourceHash() => _$callSearchResultsHash();
+  String debugGetCreateSourceHash() => _$callSearchEntryHash();
+
+  @override
+  String toString() {
+    return r'callSearchEntryProvider'
+        ''
+        '$argument';
+  }
 
   @$internal
   @override
-  $ProviderElement<CallMatches> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $ProviderElement<CallHistoryEntry?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
-  CallMatches create(Ref ref) {
-    return callSearchResults(ref);
+  CallHistoryEntry? create(Ref ref) {
+    final argument = this.argument as (String, int);
+    return callSearchEntry(ref, argument.$1, argument.$2);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(CallMatches value) {
+  Override overrideWithValue(CallHistoryEntry? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<CallMatches>(value),
+      providerOverride: $SyncValueProvider<CallHistoryEntry?>(value),
     );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is CallSearchEntryProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
   }
 }
 
-String _$callSearchResultsHash() => r'25c0061ea2fa1385f89b9ca5cb57d0659474e32c';
+String _$callSearchEntryHash() => r'eee612a75ebd6b9436d1deedfa32ad92d3bbc162';
+
+/// One call the call search found, for its row.
+
+final class CallSearchEntryFamily extends $Family
+    with $FunctionalFamilyOverride<CallHistoryEntry?, (String, int)> {
+  CallSearchEntryFamily._()
+    : super(
+        retry: null,
+        name: r'callSearchEntryProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// One call the call search found, for its row.
+
+  CallSearchEntryProvider call(String topic, int seq) =>
+      CallSearchEntryProvider._(argument: (topic, seq), from: this);
+
+  @override
+  String toString() => r'callSearchEntryProvider';
+}

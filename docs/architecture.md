@@ -49,9 +49,9 @@ lib/
       presentation/chat_info/     chat info screen: members, delete, leave
     offline/                      the cache, the call log, catching up, the outbox and pruning
       domain/                     SeqRanges, OutgoingMessage, outbox events, merge and retry rules,
-                                  TinodeCacheLimits (public)
+                                  CallPage and CallKey, TinodeCacheLimits (public)
       data/                       ChatDatabase (drift, v3; message search in chat_search.drift),
-                                  ChatStore, CallLogDatabase (drift, v1), CallLog,
+                                  ChatStore, CallLogDatabase (drift, v2), CallLog,
                                   ChatStoreOpener, ChatSession, CachedTinodeSession
       application/                chatStoreOpener, tinodeCacheLimits
     search/                       message search over the cache
@@ -91,13 +91,14 @@ lib/
     calls/                        1:1 voice and video calls
       domain/                     ActiveCall, CallInvite, CallFailure, the CallMedia and
                                   SystemCalls interfaces, SystemCall, SystemCallTexts,
-                                  CallHistory, CallHistoryEntry, CallMatches
+                                  CallHistory, CallHistoryEntry, CallWindow, CallMatches,
+                                  CallSearchState
       data/                       WebRtcCallMedia (flutter_webrtc), CallKitSystemCalls
                                   (flutter_callkit_incoming), NoSystemCalls, systemCallId, the
                                   background hang-up
       application/                CallController, CallResources, CallMinimized, callsAvailable,
                                   callMediaFactory, systemCalls, handleCallPush,
-                                  CallHistoryController, callSearchResults
+                                  CallHistoryController, CallSearchController, CallLogReader
       presentation/               call layer, ringing, voice and video call screens, call bar,
                                   backdrop, avatar rings, round call buttons, systemCallTextsOf;
                                   history/: the calls tab; call_search/: the call search
@@ -110,7 +111,7 @@ lib/
     shared/                       used by several features
       domain/                     ValueObject, ChatFailure, TinodeScreen
       application/                BuildLifetime
-      presentation/               theme, strings, time format, error view,
+      presentation/               theme, strings, time format, error view, LoadMoreRow,
                                   sheets (showChatSheet, ChatSheet, ChatSheetAction,
                                   ConfirmSheet),
                                   progress button, glass (GlassSurface, GlassIconButton,
@@ -466,11 +467,19 @@ ChatPreview>>`):
 
 **Calls history** (`CallHistoryController`, keepAlive, sync `Notifier<CallHistory>`):
 
-1. The call log's messages (`CallLog.calls`), each with its updates (`head.replace`).
+1. The call log's messages (`CallLog.page`), each with its updates (`head.replace`).
    `CallHistoryEntry.of` applies the updates as a bubble does. Direct chats only.
-2. Like the previews, it reads them all on build, then a chat again when `storedChanges` names it.
-   When the log can't be read the history is empty rather than loading forever, and a failed
-   read of a change keeps what shows.
+2. It reads them a page at a time (`callPageSize`, 50), newest first: the first page on build,
+   the next (`loadMore`) when the skeleton row that ends the list while more are left gets built
+   (`LoadMoreRow`). The list builds rows a screen past its end, so that is a screen early, and a
+   page that doesn't fill the screen leaves a new one in reach, which asks again. The log pages by key
+   (`CallKey`: time, chat, seq, each descending, on the partial index `call_messages_newest`), so
+   a page costs the same however long the log is. What was read is a `CallWindow`: every call
+   down to its cursor and none older. So when `storedChanges` names a chat, reading that chat
+   again from the cursor is all it takes, and a page that came in below the cursor meanwhile
+   stays. The reads run one after another (`CallLogReader.queued`), so a page and a chat read
+   again never land out of order. When the log can't be read the history is empty rather than
+   loading forever, and a failed read of a change keeps what shows.
 3. The history only reads. `CachedTinodeSession` fills the log: every page through `history`
    (catch-ups, scrolling, reconciling) and every live message, each in a write of its own queued
    right behind the cache's, so a failure on one side doesn't cost the other and no deletion can
@@ -481,13 +490,21 @@ ChatPreview>>`):
    `openCallLogOrFallBack`, which reads it once, since the file only opens on the first read. Its
    connection waits for a second one (`busy_timeout`): a refused write would be a call lost.
 5. The log starts from the calls in the cache (`ChatStore.callMessages`), before the first
-   pruning, when it is empty.
+   pruning, when it is empty. Schema 2 added `time` for the paging, filled for the rows already
+   there from each one's JSON, to the ms; a row that can't be read keeps 0 and stays left out.
 6. What goes from the server goes from the log: deletions as they arrive and from the delete log;
    a chat that goes (`_forgetChat`, which also stops a page in flight from putting its calls
    back); and, after a log out, the deletions missed (a catch-up with nothing cached reads the
    whole delete log for a chat the log has calls in) and the chats missed (a full, non-empty chat
    list drops the calls of those no longer in it, among the topics logged before it was fetched,
    so that a call landing meanwhile stays).
+7. The **call search** (`CallSearchController`) reads the same log the same way, but only the
+   calls of the chats whose name matches. It matches the chats the log has calls of
+   (`storedCallTopics`) by their names in the chat list (`CallMatches`), then pages the calls of
+   the exact matches newest first, and once those run out, the calls of the chats a letter off.
+   Blank input matches every chat. A chat that changes is read again in whichever of its two
+   windows holds it. A chat new to the log, or one renamed into or out of the matches, starts
+   the search over. Each input drops the answers to the ones before it.
 
 **Chat** (`ChatController(topic)`, autoDispose, sync `Notifier<ChatState>`):
 

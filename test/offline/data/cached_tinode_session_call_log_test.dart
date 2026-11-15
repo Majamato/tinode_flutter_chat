@@ -17,6 +17,7 @@ import '../../support/cached_calls_oracle.dart';
 import '../../support/fake_tinode_session.dart';
 import '../../support/faulty_database.dart';
 import '../../support/fixtures.dart';
+import '../../support/stored_calls.dart';
 
 /// What the session does for the call log. What the log itself does is in
 /// `call_log_test.dart`; that the cache's behaviour didn't change, in

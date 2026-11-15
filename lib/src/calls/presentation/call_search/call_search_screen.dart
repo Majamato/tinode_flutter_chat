@@ -7,9 +7,9 @@ import 'package:tinode_flutter_chat/src/shared/presentation/glass_scaffold.dart'
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_app_bar.dart';
 import 'package:tinode_flutter_chat/src/shared/presentation/tinode_back_button.dart';
 
-/// The call search: the calls of the history, voice and video, filtered by
-/// the chat's name as the user types, without the server. Its rows are
-/// those of the calls history. Watches nothing itself.
+/// The call search: the calls of the whole call log, voice and video,
+/// filtered by the chat's name as the user types, without the server. Its
+/// rows are drawn as the calls history's. Watches nothing itself.
 class CallSearchScreen extends StatelessWidget {
   const CallSearchScreen({super.key});
 

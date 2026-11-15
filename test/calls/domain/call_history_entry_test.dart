@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
-import 'package:tinode_flutter_chat/src/calls/domain/call_history.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_history_entry.dart';
-import 'package:tinode_flutter_chat/src/chats/domain/call_record.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/cached_call.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
 
@@ -58,47 +56,5 @@ void main() {
       ),
       isNull,
     );
-  });
-
-  group('the history', () {
-    CallHistoryEntry entryAt(String topic, int seq, int minutes) =>
-        CallHistoryEntry(
-          topic: topic,
-          seq: seq,
-          time: at(minutes),
-          outgoing: false,
-          call: const CallRecord(state: CallState.finished),
-        );
-
-    test('shows the newest calls first, across chats', () {
-      final history = const CallHistory().withCalls({
-        bob: [entryAt(bob, 1, 1), entryAt(bob, 5, 9)],
-        carol: [entryAt(carol, 3, 4)],
-      });
-
-      expect(history.loaded, isTrue);
-      expect(history.ids, [
-        (topic: bob, seq: 5),
-        (topic: carol, seq: 3),
-        (topic: bob, seq: 1),
-      ]);
-      expect(history[(topic: carol, seq: 3)]?.time, at(4));
-    });
-
-    test('keeps its order instance while the order holds', () {
-      final history = const CallHistory().withCalls({
-        bob: [entryAt(bob, 1, 1)],
-        carol: [entryAt(carol, 3, 4)],
-      });
-
-      final unchanged = history.withCalls({
-        bob: [entryAt(bob, 1, 1)],
-      });
-      final emptied = history.withCalls({bob: const []});
-
-      expect(unchanged.ids, same(history.ids));
-      expect(emptied.ids, [(topic: carol, seq: 3)]);
-      expect(emptied.byTopic.keys, [carol]);
-    });
   });
 }

@@ -46,6 +46,9 @@ NameMatch matchName(String name, String input) {
   return match;
 }
 
+/// Whether [input] has no word to match, so that it matches every name.
+bool matchesEveryone(String input) => _words(input).isEmpty;
+
 /// Whether [typed] is one letter off the start of [word].
 bool _startsWithTypo(String word, String typed) {
   for (var length = typed.length - 1; length <= typed.length + 1; length++) {

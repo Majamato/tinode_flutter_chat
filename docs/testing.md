@@ -148,6 +148,10 @@ The call log can't be fetched again, so it is tested harder than the cache:
   through a batch too, or holds a batch so a test can act in the middle of it:
   `NativeDatabase.memory().interceptWith(fault)`. `FaultyStoreOpener` puts it behind a whole app.
 - `test/session/application/call_log_lifecycle_test.dart` goes through every way a session ends.
+- `test/support/stored_calls.dart`: `calls()` and `storedCalls()` read the whole log by chat and
+  seq, the order the tests compare. `storesWithCalls` hands an opener whose log already holds
+  more calls than a catch-up fetches (32 per chat), to test the paging of the calls history and
+  the call search; in a widget test, call it inside `tester.runAsync`.
 - `test/integration/call_log_test.dart` runs on the real server. A direct chat gives its members
   no `D`, so a peer's "delete for everyone" stays their own: deletions that reach a user come from
   their other devices.

@@ -23,7 +23,7 @@ class _CallSearchInputState extends ConsumerState<CallSearchInput> {
   }
 
   void _changed(String text) =>
-      ref.read(callSearchFilterProvider.notifier).change(text);
+      ref.read(callSearchControllerProvider.notifier).search(text);
 
   @override
   Widget build(BuildContext context) {

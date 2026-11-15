@@ -5,7 +5,7 @@ import 'package:tinode_flutter_chat/src/attachments/domain/local_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/outgoing_attachment.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/picked_file.dart';
 import 'package:tinode_flutter_chat/src/attachments/domain/video_trim.dart';
-import 'package:tinode_flutter_chat/src/offline/domain/cached_call.dart';
+import 'package:tinode_flutter_chat/src/offline/domain/call_page.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
@@ -45,9 +45,17 @@ abstract interface class ChatSession implements TinodeSession {
   /// server; [storedChanges] names the chats to read again.
   Future<Map<String, Set<int>>> storedUncountedSeqs({String? topic});
 
-  /// The call messages in the call log, or only [topic]'s, each with its
-  /// updates; never asks the server.
-  Future<List<CachedCall>> storedCalls({String? topic});
+  /// The calls in the call log, newest first, each with its updates; see
+  /// `CallLog.page`. Never asks the server.
+  Future<CallPage> storedCallPage({
+    Set<String>? topics,
+    CallKey? before,
+    CallKey? from,
+    int? limit,
+  });
+
+  /// The chats the call log holds anything of; never asks the server.
+  Future<Set<String>> storedCallTopics();
 
   /// Up to [limit] messages before [before]: from the cache where it has
   /// them, from the server for the gaps. Offline, only what is cached.

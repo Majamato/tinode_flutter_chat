@@ -38,6 +38,16 @@ class $CallMessagesTable extends CallMessages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _timeMeta = const VerificationMeta('time');
+  @override
+  late final GeneratedColumn<int> time = GeneratedColumn<int>(
+    'time',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _jsonMeta = const VerificationMeta('json');
   @override
   late final GeneratedColumn<String> json = GeneratedColumn<String>(
@@ -48,7 +58,7 @@ class $CallMessagesTable extends CallMessages
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [topic, seq, replaces, json];
+  List<GeneratedColumn> get $columns => [topic, seq, replaces, time, json];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -83,6 +93,12 @@ class $CallMessagesTable extends CallMessages
         replaces.isAcceptableOrUnknown(data['replaces']!, _replacesMeta),
       );
     }
+    if (data.containsKey('time')) {
+      context.handle(
+        _timeMeta,
+        time.isAcceptableOrUnknown(data['time']!, _timeMeta),
+      );
+    }
     if (data.containsKey('json')) {
       context.handle(
         _jsonMeta,
@@ -112,6 +128,10 @@ class $CallMessagesTable extends CallMessages
         DriftSqlType.string,
         data['${effectivePrefix}replaces'],
       ),
+      time: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}time'],
+      )!,
       json: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}json'],
@@ -133,12 +153,18 @@ class CallMessageRow extends DataClass implements Insertable<CallMessageRow> {
   /// updates; null on the message that started a call.
   final String? replaces;
 
+  /// `DataMessage.time` in ms since the epoch, so the calls of every chat
+  /// page newest first. 0 on a row of the first version whose JSON can't
+  /// be read.
+  final int time;
+
   /// `DataMessage.toJson`.
   final String json;
   const CallMessageRow({
     required this.topic,
     required this.seq,
     this.replaces,
+    required this.time,
     required this.json,
   });
   @override
@@ -149,6 +175,7 @@ class CallMessageRow extends DataClass implements Insertable<CallMessageRow> {
     if (!nullToAbsent || replaces != null) {
       map['replaces'] = Variable<String>(replaces);
     }
+    map['time'] = Variable<int>(time);
     map['json'] = Variable<String>(json);
     return map;
   }
@@ -160,6 +187,7 @@ class CallMessageRow extends DataClass implements Insertable<CallMessageRow> {
       replaces: replaces == null && nullToAbsent
           ? const Value.absent()
           : Value(replaces),
+      time: Value(time),
       json: Value(json),
     );
   }
@@ -173,6 +201,7 @@ class CallMessageRow extends DataClass implements Insertable<CallMessageRow> {
       topic: serializer.fromJson<String>(json['topic']),
       seq: serializer.fromJson<int>(json['seq']),
       replaces: serializer.fromJson<String?>(json['replaces']),
+      time: serializer.fromJson<int>(json['time']),
       json: serializer.fromJson<String>(json['json']),
     );
   }
@@ -183,6 +212,7 @@ class CallMessageRow extends DataClass implements Insertable<CallMessageRow> {
       'topic': serializer.toJson<String>(topic),
       'seq': serializer.toJson<int>(seq),
       'replaces': serializer.toJson<String?>(replaces),
+      'time': serializer.toJson<int>(time),
       'json': serializer.toJson<String>(json),
     };
   }
@@ -191,11 +221,13 @@ class CallMessageRow extends DataClass implements Insertable<CallMessageRow> {
     String? topic,
     int? seq,
     Value<String?> replaces = const Value.absent(),
+    int? time,
     String? json,
   }) => CallMessageRow(
     topic: topic ?? this.topic,
     seq: seq ?? this.seq,
     replaces: replaces.present ? replaces.value : this.replaces,
+    time: time ?? this.time,
     json: json ?? this.json,
   );
   CallMessageRow copyWithCompanion(CallMessagesCompanion data) {
@@ -203,6 +235,7 @@ class CallMessageRow extends DataClass implements Insertable<CallMessageRow> {
       topic: data.topic.present ? data.topic.value : this.topic,
       seq: data.seq.present ? data.seq.value : this.seq,
       replaces: data.replaces.present ? data.replaces.value : this.replaces,
+      time: data.time.present ? data.time.value : this.time,
       json: data.json.present ? data.json.value : this.json,
     );
   }
@@ -213,13 +246,14 @@ class CallMessageRow extends DataClass implements Insertable<CallMessageRow> {
           ..write('topic: $topic, ')
           ..write('seq: $seq, ')
           ..write('replaces: $replaces, ')
+          ..write('time: $time, ')
           ..write('json: $json')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(topic, seq, replaces, json);
+  int get hashCode => Object.hash(topic, seq, replaces, time, json);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -227,6 +261,7 @@ class CallMessageRow extends DataClass implements Insertable<CallMessageRow> {
           other.topic == this.topic &&
           other.seq == this.seq &&
           other.replaces == this.replaces &&
+          other.time == this.time &&
           other.json == this.json);
 }
 
@@ -234,12 +269,14 @@ class CallMessagesCompanion extends UpdateCompanion<CallMessageRow> {
   final Value<String> topic;
   final Value<int> seq;
   final Value<String?> replaces;
+  final Value<int> time;
   final Value<String> json;
   final Value<int> rowid;
   const CallMessagesCompanion({
     this.topic = const Value.absent(),
     this.seq = const Value.absent(),
     this.replaces = const Value.absent(),
+    this.time = const Value.absent(),
     this.json = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -247,6 +284,7 @@ class CallMessagesCompanion extends UpdateCompanion<CallMessageRow> {
     required String topic,
     required int seq,
     this.replaces = const Value.absent(),
+    this.time = const Value.absent(),
     required String json,
     this.rowid = const Value.absent(),
   }) : topic = Value(topic),
@@ -256,6 +294,7 @@ class CallMessagesCompanion extends UpdateCompanion<CallMessageRow> {
     Expression<String>? topic,
     Expression<int>? seq,
     Expression<String>? replaces,
+    Expression<int>? time,
     Expression<String>? json,
     Expression<int>? rowid,
   }) {
@@ -263,6 +302,7 @@ class CallMessagesCompanion extends UpdateCompanion<CallMessageRow> {
       if (topic != null) 'topic': topic,
       if (seq != null) 'seq': seq,
       if (replaces != null) 'replaces': replaces,
+      if (time != null) 'time': time,
       if (json != null) 'json': json,
       if (rowid != null) 'rowid': rowid,
     });
@@ -272,6 +312,7 @@ class CallMessagesCompanion extends UpdateCompanion<CallMessageRow> {
     Value<String>? topic,
     Value<int>? seq,
     Value<String?>? replaces,
+    Value<int>? time,
     Value<String>? json,
     Value<int>? rowid,
   }) {
@@ -279,6 +320,7 @@ class CallMessagesCompanion extends UpdateCompanion<CallMessageRow> {
       topic: topic ?? this.topic,
       seq: seq ?? this.seq,
       replaces: replaces ?? this.replaces,
+      time: time ?? this.time,
       json: json ?? this.json,
       rowid: rowid ?? this.rowid,
     );
@@ -296,6 +338,9 @@ class CallMessagesCompanion extends UpdateCompanion<CallMessageRow> {
     if (replaces.present) {
       map['replaces'] = Variable<String>(replaces.value);
     }
+    if (time.present) {
+      map['time'] = Variable<int>(time.value);
+    }
     if (json.present) {
       map['json'] = Variable<String>(json.value);
     }
@@ -311,6 +356,7 @@ class CallMessagesCompanion extends UpdateCompanion<CallMessageRow> {
           ..write('topic: $topic, ')
           ..write('seq: $seq, ')
           ..write('replaces: $replaces, ')
+          ..write('time: $time, ')
           ..write('json: $json, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -326,6 +372,10 @@ abstract class _$CallLogDatabase extends GeneratedDatabase {
     'call_messages_replaces',
     'CREATE INDEX call_messages_replaces ON call_messages (topic, replaces)',
   );
+  late final Index callMessagesNewest = Index(
+    'call_messages_newest',
+    'CREATE INDEX call_messages_newest ON call_messages (time, topic, seq) WHERE replaces IS NULL',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -333,6 +383,7 @@ abstract class _$CallLogDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     callMessages,
     callMessagesReplaces,
+    callMessagesNewest,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -344,6 +395,7 @@ typedef $$CallMessagesTableCreateCompanionBuilder =
       required String topic,
       required int seq,
       Value<String?> replaces,
+      Value<int> time,
       required String json,
       Value<int> rowid,
     });
@@ -352,6 +404,7 @@ typedef $$CallMessagesTableUpdateCompanionBuilder =
       Value<String> topic,
       Value<int> seq,
       Value<String?> replaces,
+      Value<int> time,
       Value<String> json,
       Value<int> rowid,
     });
@@ -377,6 +430,11 @@ class $$CallMessagesTableFilterComposer
 
   ColumnFilters<String> get replaces => $composableBuilder(
     column: $table.replaces,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get time => $composableBuilder(
+    column: $table.time,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -410,6 +468,11 @@ class $$CallMessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get json => $composableBuilder(
     column: $table.json,
     builder: (column) => ColumnOrderings(column),
@@ -433,6 +496,9 @@ class $$CallMessagesTableAnnotationComposer
 
   GeneratedColumn<String> get replaces =>
       $composableBuilder(column: $table.replaces, builder: (column) => column);
+
+  GeneratedColumn<int> get time =>
+      $composableBuilder(column: $table.time, builder: (column) => column);
 
   GeneratedColumn<String> get json =>
       $composableBuilder(column: $table.json, builder: (column) => column);
@@ -478,12 +544,14 @@ class $$CallMessagesTableTableManager
                 Value<String> topic = const Value.absent(),
                 Value<int> seq = const Value.absent(),
                 Value<String?> replaces = const Value.absent(),
+                Value<int> time = const Value.absent(),
                 Value<String> json = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CallMessagesCompanion(
                 topic: topic,
                 seq: seq,
                 replaces: replaces,
+                time: time,
                 json: json,
                 rowid: rowid,
               ),
@@ -492,12 +560,14 @@ class $$CallMessagesTableTableManager
                 required String topic,
                 required int seq,
                 Value<String?> replaces = const Value.absent(),
+                Value<int> time = const Value.absent(),
                 required String json,
                 Value<int> rowid = const Value.absent(),
               }) => CallMessagesCompanion.insert(
                 topic: topic,
                 seq: seq,
                 replaces: replaces,
+                time: time,
                 json: json,
                 rowid: rowid,
               ),
