@@ -24,6 +24,13 @@ final class ChatStore {
   final ChatDatabase _db;
   final bool _ownsDb;
 
+  /// Whether the file keeps a write-ahead log, synced only at checkpoints
+  /// (see `DeviceChatStoreOpener`); read once.
+  late final Future<bool> _logged = _keepsLog();
+
+  /// Outbox writes under way that sync on their own.
+  var _durable = 0;
+
   Future<void> close() async {
     if (_ownsDb) {
       await _db.close();
@@ -59,8 +66,10 @@ final class ChatStore {
     },
   );
 
-  /// Merges the chats changed since the last sync; removed ones go.
-  Future<void> mergeChats(List<Subscription> changes) =>
+  /// Merges the chats changed since the last sync; removed ones go. With
+  /// [stubs] off, as for one chat asked for alone, which never comes as an
+  /// online stub, a chat without its `acs` is kept too.
+  Future<void> mergeChats(List<Subscription> changes, {bool stubs = true}) =>
       _db.transaction(() async {
         for (final change in changes) {
           final topic = change.topic!;
@@ -69,7 +78,7 @@ final class ChatStore {
             continue;
           }
           final stored = await chat(topic);
-          if (stored == null && change.access == null) {
+          if (stubs && stored == null && change.access == null) {
             // Only the online stub of a chat this cache doesn't hold: a new
             // chat always comes with its `acs`.
             continue;
@@ -534,7 +543,7 @@ final class ChatStore {
     MessageContent content,
     DateTime createdAt, {
     OutgoingAttachment? attachment,
-  }) async {
+  }) => _durably(() async {
     final id = await _db
         .into(_db.outbox)
         .insert(
@@ -550,36 +559,38 @@ final class ChatStore {
           ),
         );
     return (await outboxEntry(id))!;
-  }
+  });
 
   /// Replaces the attachment of entry [id], e.g. once it is compressed or
   /// uploaded, and the content that stands for it. Does nothing when the
   /// entry is gone.
   Future<void> setOutboxAttachment(int id, OutgoingAttachment attachment) =>
-      _db.transaction(() async {
-        final entry = await outboxEntry(id);
-        if (entry == null) {
-          return;
-        }
-        await (_db.update(_db.outbox)..where((o) => o.id.equals(id))).write(
-          OutboxCompanion(
-            payload: Value(
-              jsonEncode({
-                ...entry.payload,
-                'content': attachment.content.toJson(),
-                'attachment': attachment.toJson(),
-              }),
+      _durably(
+        () => _db.transaction(() async {
+          final entry = await outboxEntry(id);
+          if (entry == null) {
+            return;
+          }
+          await (_db.update(_db.outbox)..where((o) => o.id.equals(id))).write(
+            OutboxCompanion(
+              payload: Value(
+                jsonEncode({
+                  ...entry.payload,
+                  'content': attachment.content.toJson(),
+                  'attachment': attachment.toJson(),
+                }),
+              ),
             ),
-          ),
-        );
-      });
+          );
+        }),
+      );
 
   Future<OutboxEntry> enqueueDelete(
     String topic,
     List<SeqRange> ranges, {
     required bool hard,
     required DateTime createdAt,
-  }) async {
+  }) => _durably(() async {
     final id = await _db
         .into(_db.outbox)
         .insert(
@@ -594,7 +605,7 @@ final class ChatStore {
           ),
         );
     return (await outboxEntry(id))!;
-  }
+  });
 
   /// Queues a read marker; a newer one replaces an older, unsent one.
   Future<void> enqueueRead(String topic, int seq, DateTime createdAt) =>
@@ -655,26 +666,30 @@ final class ChatStore {
   }
 
   /// Removes an entry; false when it was gone already.
-  Future<bool> removeOutbox(int id) async =>
-      await (_db.delete(_db.outbox)..where((o) => o.id.equals(id))).go() > 0;
+  Future<bool> removeOutbox(int id) => _durably(
+    () async =>
+        await (_db.delete(_db.outbox)..where((o) => o.id.equals(id))).go() > 0,
+  );
 
   /// The server took publish [entry] as [message]: stores the message and
   /// drops the entry in one step. False when another path did it first.
   Future<bool> completePublish(OutboxEntry entry, DataMessage message) =>
-      _db.transaction(() async {
-        final removed = await removeOutbox(entry.id);
-        final covered = await coverage(message.topic);
-        await _db
-            .into(_db.messages)
-            .insertOnConflictUpdate(_messageRow(message));
-        if (message.seq == 1 || covered.covers(message.seq - 1)) {
-          await _setCoverage(
-            message.topic,
-            covered.add(SeqRange.single(message.seq)),
-          );
-        }
-        return removed;
-      });
+      _durably(
+        () => _db.transaction(() async {
+          final removed = await removeOutbox(entry.id);
+          final covered = await coverage(message.topic);
+          await _db
+              .into(_db.messages)
+              .insertOnConflictUpdate(_messageRow(message));
+          if (message.seq == 1 || covered.covers(message.seq - 1)) {
+            await _setCoverage(
+              message.topic,
+              covered.add(SeqRange.single(message.seq)),
+            );
+          }
+          return removed;
+        }),
+      );
 
   Future<void> updateOutbox(
     int id, {
@@ -683,16 +698,57 @@ final class ChatStore {
     int? attempts,
     ChatFailure? failure,
     bool clearFailure = false,
-  }) => (_db.update(_db.outbox)..where((o) => o.id.equals(id))).write(
-    OutboxCompanion(
-      inFlight: Value.absentIfNull(inFlight),
-      sentAfterSeq: Value.absentIfNull(sentAfterSeq),
-      attempts: Value.absentIfNull(attempts),
-      failure: clearFailure
-          ? const Value(null)
-          : Value.absentIfNull(failure?.name),
+  }) => _durably(
+    () => (_db.update(_db.outbox)..where((o) => o.id.equals(id))).write(
+      OutboxCompanion(
+        inFlight: Value.absentIfNull(inFlight),
+        sentAfterSeq: Value.absentIfNull(sentAfterSeq),
+        attempts: Value.absentIfNull(attempts),
+        failure: clearFailure
+            ? const Value(null)
+            : Value.absentIfNull(failure?.name),
+      ),
     ),
   );
+
+  // Durability.
+
+  /// [write], synced to disk as it commits although the log syncs only at
+  /// checkpoints: a message the user sent, and whether it went out, must
+  /// survive a power cut, or it is lost or sent twice. Writes that overlap
+  /// share the stricter sync.
+  Future<T> _durably<T>(Future<T> Function() write) async {
+    if (!await _logged) {
+      return write();
+    }
+    if (_durable++ == 0) {
+      await _synchronous('FULL');
+    }
+    try {
+      return await write();
+    } finally {
+      if (--_durable == 0) {
+        await _synchronous('NORMAL');
+      }
+    }
+  }
+
+  Future<bool> _keepsLog() async {
+    try {
+      final row = await _db.customSelect('PRAGMA journal_mode').getSingle();
+      return row.data.values.firstOrNull == 'wal';
+    } on Object {
+      return false;
+    }
+  }
+
+  Future<void> _synchronous(String level) async {
+    try {
+      await _db.customStatement('PRAGMA synchronous = $level');
+    } on Object {
+      // The write still commits, synced as the file is set.
+    }
+  }
 
   // Rows.
 

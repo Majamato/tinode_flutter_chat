@@ -142,6 +142,16 @@ final class ClientTinodeSession implements TinodeSession {
   ];
 
   @override
+  Future<Subscription?> chat(String topic) async {
+    for (final s in await _client.getSubscriptions('me', chat: topic)) {
+      if (s.topic == topic) {
+        return s;
+      }
+    }
+    return null;
+  }
+
+  @override
   Future<List<Subscription>> members(String topic, {String? userId}) =>
       _client.getSubscriptions(topic, userId: userId);
 

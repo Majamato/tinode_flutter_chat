@@ -1,5 +1,33 @@
 ## Unreleased
 
+- **New:** `TinodeMessages.handlePush` fetches what a push announces while the app is in the
+  background or closed, as Tinode's own apps do: a new message is cached and marked received
+  while its chat is attached, so its sender sees two ticks and the chat shows it offline; a `read`
+  push keeps the read marker; a `sub` push fetches the new chat. Call it from the push service's
+  background handler after `TinodeCalls.handlePush`, with the saved token. While the app lives in
+  the process its own session does the work, woken if suspended; otherwise it logs in for the
+  fetch on a passive session that never sends the outbox, within 15 s. It returns
+  `TinodePushNames` (the chat's name, a group's sender) to name the notification;
+  `TinodeMessages.cachedNames` reads them from the device at once, without the server.
+- **Behaviour change:** messages are fetched as in Tinode's own apps. A chat list sync fetches
+  messages only for the direct chats with unread ones, so their badges leave out a call's later
+  states; groups and read chats wait. A `pres msg` for a chat that isn't open fetches that chat's
+  new messages a second later, whether or not its tile shows, and marks them received while
+  attached. While the calls tab or the call search shows, every direct chat behind is caught up,
+  so its calls reach the call log.
+- **Behaviour change:** received markers go only while their chat is attached, the only time the
+  server keeps them. Read markers for live messages in an open chat go at most once a second,
+  for the newest.
+- **Behaviour change:** a changed profile (`pres upd`), changed access (`pres acs`), a chat new to
+  the list, opening a chat the list lacks and a new group fetch that one chat instead of the whole
+  list. A `pres msg` the user sent from another device marks the chat read; `pres recv` from
+  another device raises the stored received marker.
+- **Fix:** the chat list's "if modified since" is made of the server's times only. A `pres msg`
+  stamped the device's clock on the stored chat, and a clock ahead of the server's could skip
+  changes on the next sync.
+- **Behaviour change:** the cache file keeps a write-ahead log (`synchronous = NORMAL`) and waits
+  for another connection rather than failing (`busy_timeout`), so a push handled in the
+  background and the app can share it. Outbox writes still sync to disk as they commit.
 - **Behaviour change:** `TinodeCacheLimits.messagesPerChat` defaults to 5000 (was 1000), so
   message search reaches further back. A chat only stores what the device has loaded, so this
   caps the busiest chats rather than growing every one.

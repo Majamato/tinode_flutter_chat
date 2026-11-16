@@ -14,6 +14,8 @@ import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/offline/application/offline_inputs.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
+import 'package:tinode_flutter_chat/src/push/application/push_inputs.dart';
+import 'package:tinode_flutter_chat/src/push/data/port_names.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_inputs.dart';
 import 'package:tinode_flutter_chat/src/session/data/network_monitor.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
@@ -49,6 +51,7 @@ ProviderContainer createTinodeContainer({
   VoiceRecorderFactory? voiceRecorder,
   VoicePlayerFactory? voicePlayer,
   VoiceSpeedStorage? voiceSpeedStorage,
+  PortNames? portNames,
 }) => ProviderContainer(
   overrides: [
     tinodeConfigProvider.overrideWithValue(config),
@@ -71,6 +74,7 @@ ProviderContainer createTinodeContainer({
     ?_override(voiceRecorder, voiceRecorderFactoryProvider.overrideWithValue),
     ?_override(voicePlayer, voicePlayerFactoryProvider.overrideWithValue),
     ?_override(voiceSpeedStorage, voiceSpeedStorageProvider.overrideWithValue),
+    ?_override(portNames, pushPortNamesProvider.overrideWithValue),
   ],
   retry: (_, _) => null,
 );

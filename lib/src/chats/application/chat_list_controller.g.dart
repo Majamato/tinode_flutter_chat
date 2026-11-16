@@ -19,8 +19,13 @@ part of 'chat_list_controller.dart';
 /// theirs shows none (`ChatSummary.presenceHidden`).
 ///
 /// It also tells the senders their messages reached this device (`note
-/// recv`): as they arrive, live or as `pres msg`, and after each sync for
-/// what came while the link was down.
+/// recv`) as they arrive live. A chat that isn't attached is marked by the
+/// session when a `pres msg` makes it fetch the chat: the server keeps a
+/// marker only while the chat is attached.
+///
+/// A presence event about one chat (a new chat, a changed profile or
+/// access) fetches that chat alone; the whole list syncs only when the
+/// link comes up and on [refresh].
 ///
 /// A chat's unread count leaves out what isn't an unread message (see
 /// `uncountedBy`), such as how a call ended, or a call that was answered
@@ -44,8 +49,13 @@ final chatListControllerProvider = ChatListControllerProvider._();
 /// theirs shows none (`ChatSummary.presenceHidden`).
 ///
 /// It also tells the senders their messages reached this device (`note
-/// recv`): as they arrive, live or as `pres msg`, and after each sync for
-/// what came while the link was down.
+/// recv`) as they arrive live. A chat that isn't attached is marked by the
+/// session when a `pres msg` makes it fetch the chat: the server keeps a
+/// marker only while the chat is attached.
+///
+/// A presence event about one chat (a new chat, a changed profile or
+/// access) fetches that chat alone; the whole list syncs only when the
+/// link comes up and on [refresh].
 ///
 /// A chat's unread count leaves out what isn't an unread message (see
 /// `uncountedBy`), such as how a call ended, or a call that was answered
@@ -67,8 +77,13 @@ final class ChatListControllerProvider
   /// theirs shows none (`ChatSummary.presenceHidden`).
   ///
   /// It also tells the senders their messages reached this device (`note
-  /// recv`): as they arrive, live or as `pres msg`, and after each sync for
-  /// what came while the link was down.
+  /// recv`) as they arrive live. A chat that isn't attached is marked by the
+  /// session when a `pres msg` makes it fetch the chat: the server keeps a
+  /// marker only while the chat is attached.
+  ///
+  /// A presence event about one chat (a new chat, a changed profile or
+  /// access) fetches that chat alone; the whole list syncs only when the
+  /// link comes up and on [refresh].
   ///
   /// A chat's unread count leaves out what isn't an unread message (see
   /// `uncountedBy`), such as how a call ended, or a call that was answered
@@ -105,7 +120,7 @@ final class ChatListControllerProvider
 }
 
 String _$chatListControllerHash() =>
-    r'88ca6ea744ac1a2dc2a4809c8cde248a4ae12a2e';
+    r'c332e574ebc2c5c42ee0a72bb9d9acd9553fa97d';
 
 /// The chat list of the logged-in user: shown from the cache first, then
 /// synced with the server, kept current from `me` presence and from the
@@ -118,8 +133,13 @@ String _$chatListControllerHash() =>
 /// theirs shows none (`ChatSummary.presenceHidden`).
 ///
 /// It also tells the senders their messages reached this device (`note
-/// recv`): as they arrive, live or as `pres msg`, and after each sync for
-/// what came while the link was down.
+/// recv`) as they arrive live. A chat that isn't attached is marked by the
+/// session when a `pres msg` makes it fetch the chat: the server keeps a
+/// marker only while the chat is attached.
+///
+/// A presence event about one chat (a new chat, a changed profile or
+/// access) fetches that chat alone; the whole list syncs only when the
+/// link comes up and on [refresh].
 ///
 /// A chat's unread count leaves out what isn't an unread message (see
 /// `uncountedBy`), such as how a call ended, or a call that was answered

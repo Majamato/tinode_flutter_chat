@@ -10,6 +10,7 @@ import 'package:tinode_flutter_chat/src/offline/domain/history_page.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/latest_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
+import 'package:tinode_flutter_chat/src/push/domain/tinode_push_names.dart';
 import 'package:tinode_flutter_chat/src/search/domain/found_message.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 
@@ -35,10 +36,24 @@ abstract interface class ChatSession implements TinodeSession {
 
   /// The newest message of each cached chat, or only of [topic], for the
   /// chat list's preview. Never asks the server: the session catches up in
-  /// the background the chats the cache is behind on, after each [chatList]
-  /// sync and on `pres msg`, with the members a preview needs, and
-  /// [storedChanges] then names them.
+  /// the background a chat that gets a `pres msg`, with the members a
+  /// preview needs, and [storedChanges] then names it.
   Future<Map<String, LatestMessage>> storedLatestMessages({String? topic});
+
+  /// Acts on [push], which the host's push service received while this
+  /// session lives, e.g. with the app in the background: the chat it is
+  /// about is brought up to it. Completes once done.
+  Future<void> applyPush(TinodePush push);
+
+  /// What the cache names for a notification of [push]. Never asks the
+  /// server.
+  Future<TinodePushNames> storedPushNames(TinodePush push);
+
+  /// The calls history shows: while it does, the direct chats the cache is
+  /// behind on are caught up, so that their calls reach the call log. Each
+  /// call watches once more, and [unwatchCalls] undoes one.
+  void watchCalls();
+  void unwatchCalls();
 
   /// The seqs past each chat's read marker that the cache shows aren't
   /// unread messages (see `uncountedBy`), or only [topic]'s. Never asks the

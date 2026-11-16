@@ -60,7 +60,7 @@ final class CallSearchControllerProvider
 }
 
 String _$callSearchControllerHash() =>
-    r'2a7a794f2a0399fc9adde47d006c1388bf5472ad';
+    r'bf11d30ae67867b0ef642e31b133370c737ffdbe';
 
 /// The call search as the user types ([search]): the calls of the chats
 /// whose name matches (see [CallMatches]) in the whole call log, exact

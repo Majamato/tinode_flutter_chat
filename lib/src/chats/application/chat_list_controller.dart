@@ -25,8 +25,13 @@ part 'chat_list_controller.g.dart';
 /// theirs shows none (`ChatSummary.presenceHidden`).
 ///
 /// It also tells the senders their messages reached this device (`note
-/// recv`): as they arrive, live or as `pres msg`, and after each sync for
-/// what came while the link was down.
+/// recv`) as they arrive live. A chat that isn't attached is marked by the
+/// session when a `pres msg` makes it fetch the chat: the server keeps a
+/// marker only while the chat is attached.
+///
+/// A presence event about one chat (a new chat, a changed profile or
+/// access) fetches that chat alone; the whole list syncs only when the
+/// link comes up and on [refresh].
 ///
 /// A chat's unread count leaves out what isn't an unread message (see
 /// `uncountedBy`), such as how a call ended, or a call that was answered
@@ -67,7 +72,7 @@ class ChatListController extends _$ChatListController {
     final subscriptions = [
       session.presence
           .where((p) => p.topic == 'me')
-          .listen((p) => _onPresence(session, p)),
+          .listen((p) => _onPresence(session, p, me: me)),
       session.messages.listen((m) => _onMessage(session, m, me: me)),
       session.storedChanges.listen((topic) {
         if (_changed.isEmpty) {
@@ -94,12 +99,18 @@ class ChatListController extends _$ChatListController {
   /// Loads the list again, e.g. after a failure.
   void reload() => ref.invalidateSelf();
 
-  /// Syncs the list with the server, keeping what it shows meanwhile, e.g.
-  /// after this user started a chat: the server sends its creator no
-  /// presence for it.
+  /// Syncs the list with the server, keeping what it shows meanwhile.
   void refresh() {
     if (_session case final session?) {
       unawaited(_sync(session, _lifetime));
+    }
+  }
+
+  /// Fetches the chat [topic] alone and shows it, e.g. one this user just
+  /// started: the server sends its creator no presence for it.
+  void refreshChat(String topic) {
+    if (_session case final session?) {
+      unawaited(_fetchChat(session, topic, _lifetime));
     }
   }
 
@@ -146,17 +157,37 @@ class ChatListController extends _$ChatListController {
       final chats = await session.chatList();
       if (lifetime.isActive) {
         state = state.loaded(chats.map(_summary));
-        for (final chat in chats) {
-          if (chat.lastSeq > chat.received) {
-            session.markReceived(chat.topic!, chat.lastSeq);
-          }
-        }
       }
     } on Object catch (e) {
       if (lifetime.isActive && state.status != LoadStatus.ready) {
         state = state.failed(ChatFailure.of(e));
       }
     }
+  }
+
+  Future<void> _fetchChat(
+    ChatSession session,
+    String topic,
+    BuildLifetime lifetime,
+  ) async {
+    try {
+      final chat = await session.chat(topic);
+      if (chat != null && lifetime.isActive) {
+        _put(chat);
+      }
+    } on Object {
+      // The next sync brings it.
+    }
+  }
+
+  /// Shows [chat] as the session holds it, new or in place of the one
+  /// shown. Last seen never moves back: the description may have told more.
+  void _put(Subscription chat) {
+    final fresh = _summary(chat);
+    state = state.put(switch (state.byTopic[fresh.topic]?.lastSeen) {
+      final seen? => fresh.withLastSeen(seen),
+      null => fresh,
+    });
   }
 
   ChatSummary _summary(Subscription chat) => ChatSummary.fromSubscription(
@@ -189,29 +220,27 @@ class ChatListController extends _$ChatListController {
     state = state.update(topic, (chat) => chat.withUncounted(seqs));
   }
 
-  void _onPresence(ChatSession session, PresMessage presence) {
+  void _onPresence(
+    ChatSession session,
+    PresMessage presence, {
+    required String me,
+  }) {
     final topic = presence.source;
     if (topic == null) {
       return;
-    }
-    if ((presence.event, presence.seq) case (
-      PresenceEvent.message,
-      final seq?,
-    )) {
-      // A message in a chat this device isn't attached to.
-      session.markReceived(topic, seq);
     }
     switch ((presence.event, presence.seq)) {
       case (PresenceEvent.message || PresenceEvent.access, _)
           when !state.contains(topic):
         // A chat this list has not seen yet: someone started it, or added
         // the user to it (`acs`, which carries no seq).
-        unawaited(_sync(session, _lifetime));
+        unawaited(_fetchChat(session, topic, _lifetime));
       case (PresenceEvent.message, final seq?):
-        state = state.update(
-          topic,
-          (chat) => chat.withMessage(seq, DateTime.now()),
-        );
+        state = state.update(topic, (chat) {
+          final updated = chat.withMessage(seq, DateTime.now());
+          // Sent by the user from another device.
+          return presence.actor == me ? updated.withRead(seq) : updated;
+        });
       case (PresenceEvent.read, final seq?):
         // Read on another of the user's devices.
         markRead(topic, seq);
@@ -229,11 +258,11 @@ class ChatListController extends _$ChatListController {
       case (PresenceEvent.updated, _):
         // The peer changed their profile: name, photo, or whether they
         // hide their presence.
-        unawaited(_sync(session, _lifetime));
+        unawaited(_fetchChat(session, topic, _lifetime));
       case (PresenceEvent.access, _):
         // The user's access changed, maybe muted on another device: `acs`
-        // doesn't say how, so the list is synced.
-        unawaited(_sync(session, _lifetime));
+        // doesn't say how, so the chat is fetched.
+        unawaited(_fetchChat(session, topic, _lifetime));
       case _:
         break;
     }

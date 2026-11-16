@@ -74,7 +74,7 @@ class NewGroupController extends _$NewGroupController {
       }
       if (ref.mounted) {
         // The server sends the creator no presence for the new group.
-        ref.read(chatListControllerProvider.notifier).refresh();
+        ref.read(chatListControllerProvider.notifier).refreshChat(topic);
         state = const AsyncData(null);
       }
       return NewGroup(topic: topic, notAdded: refused.nonNulls.toList());

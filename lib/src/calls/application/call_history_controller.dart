@@ -6,6 +6,7 @@ import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/calls/application/call_log_reader.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_history.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/call_history_entry.dart';
+import 'package:tinode_flutter_chat/src/offline/data/chat_session.dart';
 import 'package:tinode_flutter_chat/src/session/application/active_session.dart';
 import 'package:tinode_flutter_chat/src/shared/application/build_lifetime.dart';
 
@@ -22,8 +23,9 @@ const callPageSize = 50;
 /// chats have calls.
 ///
 /// It never asks the server: every call the session sees reaches the log,
-/// and its latest catch-up fetches the newest messages of each chat it is
-/// behind on, calls included. When the log can't be read the history is
+/// and while the history shows, the session fetches the newest messages of
+/// each direct chat it is behind on, calls included
+/// ([watchCallsWhileShown]). When the log can't be read the history is
 /// empty rather than loading forever, and what it shows stays.
 @Riverpod(keepAlive: true)
 class CallHistoryController extends _$CallHistoryController {
@@ -43,6 +45,7 @@ class CallHistoryController extends _$CallHistoryController {
     }
 
     final reader = _reader = CallLogReader(session, me);
+    watchCallsWhileShown(ref, session);
     final changes = session.storedChanges.listen((topic) {
       if (TopicKind.of(topic) != TopicKind.direct) {
         return;
@@ -103,6 +106,38 @@ class CallHistoryController extends _$CallHistoryController {
           }
         }
       });
+}
+
+/// Has [session] catch up the direct chats while [ref]'s provider shows,
+/// so that their calls reach the call log (`ChatSession.watchCalls`); not
+/// while it is hidden, e.g. on another tab.
+void watchCallsWhileShown(Ref ref, ChatSession session) {
+  final watch = _CallsWatch(session)..start();
+  ref
+    ..onCancel(watch.stop)
+    ..onResume(watch.start)
+    ..onDispose(watch.stop);
+}
+
+final class _CallsWatch {
+  _CallsWatch(this._session);
+
+  final ChatSession _session;
+  var _watching = false;
+
+  void start() {
+    if (!_watching) {
+      _watching = true;
+      _session.watchCalls();
+    }
+  }
+
+  void stop() {
+    if (_watching) {
+      _watching = false;
+      _session.unwatchCalls();
+    }
+  }
 }
 
 /// One call of the history, for its row.

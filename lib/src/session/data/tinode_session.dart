@@ -84,8 +84,13 @@ abstract interface class TinodeSession {
 
   /// The chat list: the subscriptions of `me` that name a topic. With
   /// [ifModifiedSince], only the chats changed since; see
-  /// `TinodeClient.getSubscriptions`.
+  /// `TinodeClient.getSubscriptions`. Never more than the server's
+  /// `max_results` (1024 by default), without saying it cut.
   Future<List<Subscription>> chatList({DateTime? ifModifiedSince});
+
+  /// One chat of the list, with its profile; null when the user has no
+  /// such chat.
+  Future<Subscription?> chat(String topic);
 
   /// The members of [topic], with their profiles and read and received
   /// counters; with [userId], just that member, or `[]` when they aren't
@@ -154,9 +159,9 @@ abstract interface class TinodeSession {
   /// connected.
   void markRead(String topic, int seq);
 
-  /// Tells the other members this device received [topic] up to [seq].
-  /// Works for a topic that isn't attached too. Dropped while not
-  /// connected.
+  /// Tells the other members this device received [topic] up to [seq]. The
+  /// topic must be attached: the server keeps the marker only while it has
+  /// the topic loaded. Dropped while not connected.
   void markReceived(String topic, int seq);
 
   /// The server's reply to the latest `hi`, with its ICE servers for calls.

@@ -46,22 +46,26 @@ void main() {
     expect(container.read(chatSummaryProvider(bob))?.unread, 2);
   });
 
-  test('a reconnect reloads the list', () async {
+  test('a reconnect reloads the list, and fetches only the unread direct '
+      'chats', () async {
     await loadList();
     session
       ..calls.clear()
-      ..chats.add(chat(carol, name: 'Carol', lastSeq: 1, lastMessageAt: at(9)))
+      ..chats.addAll([
+        chat(carol, name: 'Carol', lastSeq: 1, lastMessageAt: at(9)),
+        chat('grpHikers', name: 'Hikers', lastSeq: 4, lastMessageAt: at(8)),
+      ])
+      ..histories[carol] = [message(carol, 1, from: carol)]
       ..emitStatus(const Connected());
-    await settle();
+    for (var i = 0; i < 400 && !session.calls.contains('detach $carol'); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
 
-    // Carol's message reached this device while it was away; then the
-    // latest catch-up fetches it.
-    expect(session.calls.take(2), ['chatList', 'markReceived $carol 1']);
-    await settle();
-    expect(
-      session.calls,
-      containsAllInOrder(['attach $carol', 'detach $carol']),
-    );
+    // A group's messages are fetched, and marked received, when a push or
+    // a `pres msg` names it, or when the chat opens.
+    expect(session.calls.first, 'chatList');
+    expect(session.calls, contains('markReceived $carol 1'));
+    expect(session.calls, isNot(contains('attach grpHikers')));
     expect(container.read(chatListControllerProvider).order.first, carol);
   });
 
@@ -127,7 +131,7 @@ void main() {
     expect(container.read(chatListControllerProvider).order.first, carol);
   });
 
-  test('pres acs for a known chat syncs it, e.g. muted elsewhere', () async {
+  test('pres acs for a known chat fetches it, e.g. muted elsewhere', () async {
     await loadList();
     expect(container.read(chatSummaryProvider(bob))?.muted, isFalse);
     session
@@ -142,7 +146,7 @@ void main() {
       );
     await settle();
 
-    expect(session.calls, ['chatList']);
+    expect(session.calls, ['chat $bob']);
     expect(container.read(chatSummaryProvider(bob))?.muted, isTrue);
   });
 
@@ -258,14 +262,30 @@ void main() {
       );
     await settle();
 
-    expect(session.calls, ['chatList']);
+    expect(session.calls, ['chat $bob']);
     expect(container.read(chatSummaryProvider(bob))?.presenceHidden, isTrue);
   });
 
-  test('messages from others are marked received as they arrive', () async {
+  test(
+    'live messages from others are marked received as they arrive',
+    () async {
+      await loadList();
+      session.calls.clear();
+      session
+        ..emitMessage(message(friends, 9, from: carol))
+        ..emitMessage(message(friends, 10, from: alice));
+      await settle();
+
+      expect(session.calls.where((c) => c.startsWith('markReceived')), [
+        'markReceived $friends 9',
+      ]);
+    },
+  );
+
+  test('a pres msg is marked received while its chat is attached', () async {
     await loadList();
-    session.calls.clear();
     session
+      ..calls.clear()
       ..emitPresence(
         const PresMessage(
           topic: 'me',
@@ -273,15 +293,31 @@ void main() {
           source: bob,
           seq: 7,
         ),
-      )
-      ..emitMessage(message(friends, 9, from: carol))
-      ..emitMessage(message(friends, 10, from: alice));
-    await settle();
+      );
 
-    expect(session.calls.where((c) => c.startsWith('markReceived')), [
-      'markReceived $bob 7',
-      'markReceived $friends 9',
-    ]);
+    for (var i = 0; i < 400 && !session.calls.contains('detach $bob'); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    expect(
+      session.calls,
+      containsAllInOrder(['attach $bob', 'markReceived $bob 7', 'detach $bob']),
+    );
+  });
+
+  test('a pres msg the user sent from another device is read', () async {
+    await loadList();
+    session.emitPresence(
+      const PresMessage(
+        topic: 'me',
+        event: PresenceEvent.message,
+        source: bob,
+        seq: 4,
+        actor: alice,
+      ),
+    );
+
+    expect(container.read(chatSummaryProvider(bob))?.lastSeq, 4);
+    expect(container.read(chatSummaryProvider(bob))?.unread, 0);
   });
 
   test('refresh syncs and keeps the list shown meanwhile', () async {

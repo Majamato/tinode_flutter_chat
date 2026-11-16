@@ -56,6 +56,24 @@ final class ChatListState {
     );
   }
 
+  /// The list with [chat], new or in place of the one it had.
+  ChatListState put(ChatSummary chat) {
+    final shown = byTopic[chat.topic];
+    if (shown == chat) {
+      return this;
+    }
+    final chats = Map.of(byTopic)..[chat.topic] = chat;
+    final newOrder = shown != null && shown.lastMessageAt == chat.lastMessageAt
+        ? order
+        : _sorted(chats);
+    return ChatListState._(
+      status,
+      failure,
+      Map.unmodifiable(chats),
+      const ListEquality<String>().equals(newOrder, order) ? order : newOrder,
+    );
+  }
+
   /// Applies [update] to the chat named [topic], if the list has it.
   ChatListState update(
     String topic,

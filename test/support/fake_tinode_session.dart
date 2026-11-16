@@ -6,11 +6,19 @@ import 'package:clock/clock.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 
+import 'fake_chat_server.dart';
+
 /// A scripted [TinodeSession]: chats and histories are plain fields, and
 /// tests push server traffic with [emitMessage], [emitPresence] and
 /// [emitInfo].
+///
+/// With a [server], the chat list is that model's instead of [chats]: cut
+/// at its `maxResults`, "if modified since" as the real server answers it,
+/// and a received marker counts only while attached. Groups created, chats
+/// left and messages sent reach it.
 final class FakeTinodeSession implements TinodeSession {
   FakeTinodeSession({
+    this.server,
     this.userId = 'usrAlice',
     Map<String, String>? passwords,
     List<Subscription>? chats,
@@ -25,6 +33,9 @@ final class FakeTinodeSession implements TinodeSession {
   }) : passwords = passwords ?? {'alice': 'alice123'},
        chats = chats ?? [],
        histories = histories ?? {};
+
+  /// The chat list's server, when the test models one.
+  final FakeChatServer? server;
 
   final String userId;
   final Map<String, String> passwords;
@@ -494,7 +505,26 @@ final class FakeTinodeSession implements TinodeSession {
       failChatList = null;
       throw error;
     }
-    final answer = List.of(chats);
+    final answer = switch (server) {
+      final server? => server.list(ifModifiedSince: ifModifiedSince),
+      null => List.of(chats),
+    };
+    await holdChatList?.future;
+    return answer;
+  }
+
+  @override
+  Future<Subscription?> chat(String topic) async {
+    calls.add('chat $topic');
+    _requireConnected();
+    if (failChatList case final error?) {
+      failChatList = null;
+      throw error;
+    }
+    final answer = switch (server) {
+      final server? => server.one(topic),
+      null => chats.where((c) => c.topic == topic).firstOrNull,
+    };
     await holdChatList?.future;
     return answer;
   }
@@ -536,18 +566,18 @@ final class FakeTinodeSession implements TinodeSession {
       throw error;
     }
     final topic = 'grpNew${++_groups}';
-    chats.add(
-      Subscription(
-        topic: topic,
-        public: public,
-        lastMessageAt: DateTime.utc(2026, 10, 4, 12),
-        access: Access(
-          want: AccessMode.parse('JRWPASDO'),
-          given: AccessMode.parse('JRWPASDO'),
-          mode: AccessMode.parse('JRWPASDO'),
-        ),
+    final created = Subscription(
+      topic: topic,
+      public: public,
+      lastMessageAt: DateTime.utc(2026, 10, 4, 12),
+      access: Access(
+        want: AccessMode.parse('JRWPASDO'),
+        given: AccessMode.parse('JRWPASDO'),
+        mode: AccessMode.parse('JRWPASDO'),
       ),
     );
+    chats.add(created);
+    server?.add(created);
     _holds.update(topic, (holds) => holds + 1, ifAbsent: () => 1);
     return topic;
   }
@@ -585,6 +615,7 @@ final class FakeTinodeSession implements TinodeSession {
     }
     deletedChats.add(topic);
     chats.removeWhere((c) => c.topic == topic);
+    server?.leave(topic);
     _holds.remove(topic);
   }
 
@@ -598,6 +629,7 @@ final class FakeTinodeSession implements TinodeSession {
     }
     leftChats.add(topic);
     chats.removeWhere((c) => c.topic == topic);
+    server?.leave(topic);
     _holds.remove(topic);
   }
 
@@ -789,6 +821,9 @@ final class FakeTinodeSession implements TinodeSession {
       content: content,
     );
     history.add(sent);
+    if (server case final server? when server.topics.contains(topic)) {
+      server.post(topic);
+    }
     if (echo) {
       scheduleMicrotask(() => emitMessage(sent));
     }
@@ -886,9 +921,15 @@ final class FakeTinodeSession implements TinodeSession {
     }
   }
 
+  /// With a [server], counts only while [topic] is attached, as the real
+  /// server does once it unloaded the topic.
   @override
-  void markReceived(String topic, int seq) =>
-      calls.add('markReceived $topic $seq');
+  void markReceived(String topic, int seq) {
+    calls.add('markReceived $topic $seq');
+    if (isAttached(topic)) {
+      server?.receive(topic, seq);
+    }
+  }
 
   @override
   Future<void> close() async {

@@ -32,6 +32,9 @@ import 'package:tinode_flutter_chat/src/offline/domain/outbox_event.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outbox_retry.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/outgoing_message.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
+import 'package:tinode_flutter_chat/src/push/data/stored_push_names.dart'
+    as push_names;
+import 'package:tinode_flutter_chat/src/push/domain/tinode_push_names.dart';
 import 'package:tinode_flutter_chat/src/search/domain/found_message.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/shared/domain/chat_failure.dart';
@@ -64,11 +67,12 @@ const _latestConcurrency = 4;
 /// come without `online` or `seen`, which the store doesn't keep either.
 ///
 /// The latest catch-up keeps the end of each chat as the server has it, for
-/// the chat list's previews: after each chat list sync, and [latestDelay]
-/// after a `pres msg` for a chat that isn't attached, it attaches each chat
-/// the cache is behind on, newest first, a few at a time, catches it up
-/// ([catchUp]) and detaches. It also fetches the members a preview needs: a
-/// group's sender's name, and the counters for the user's own message.
+/// the chat list's previews: [latestDelay] after a `pres msg` for a chat
+/// that isn't attached, a few chats at a time, it attaches the chat,
+/// catches it up ([catchUp]), sends the received marker while attached,
+/// and detaches. It also fetches the members a preview needs: a group's
+/// sender's name, and the counters for the user's own message. A chat list
+/// sync fetches no messages.
 ///
 /// The call log keeps every call message that passes through [history] or
 /// arrives live, apart from the cache: what happens to the one can't cost
@@ -94,17 +98,21 @@ final class CachedTinodeSession implements ChatSession {
     this._attachmentLimits = const TinodeAttachmentLimits(),
     this.keepsPresence = true,
     this.latestDelay = const Duration(seconds: 1),
+    this.passive = false,
   }) : _files = files ?? MemoryFileStore(),
        _calls = calls ?? CallLog(CallLogDatabase(NativeDatabase.memory())) {
-    // Before the pruning, which drops the oldest cached calls.
-    unawaited(_write(_seedCallLog));
-    unawaited(_prune(limits));
     _subscriptions = [
       _remote.messages.listen(_onMessage),
       _remote.presence.listen(_onPresence),
       _remote.info.listen(_onInfo),
       _remote.statusChanges.listen(_onStatus),
     ];
+    if (passive) {
+      return;
+    }
+    // Before the pruning, which drops the oldest cached calls.
+    unawaited(_write(_seedCallLog));
+    unawaited(_prune(limits));
     if (_remote.status is Connected) {
       scheduleMicrotask(_kick);
     } else {
@@ -112,6 +120,13 @@ final class CachedTinodeSession implements ChatSession {
       scheduleMicrotask(() => unawaited(_runCompressions()));
     }
   }
+
+  /// Whether this session only fetches, as a push handled while the app is
+  /// closed needs ([applyPush]): it never sends the outbox, uploads or
+  /// compresses, and doesn't seed the call log or prune the cache. The app's
+  /// own session, which may open the same files later, does all of that; two
+  /// sending one outbox could send a message twice.
+  final bool passive;
 
   final TinodeSession _remote;
   final ChatStore _store;
@@ -139,6 +154,10 @@ final class CachedTinodeSession implements ChatSession {
   /// The tail of the writes queued by arriving events.
   Future<void> _writes = Future.value();
   Future<List<Subscription>>? _chatListSync;
+
+  /// One-chat fetches under way, and the ones asked for meanwhile.
+  final _chatRunning = <String, Future<Subscription?>>{};
+  final _chatNext = <String, Future<Subscription?>>{};
   var _closed = false;
 
   // Outbox drain state.
@@ -189,6 +208,16 @@ final class CachedTinodeSession implements ChatSession {
   /// first.
   final Duration latestDelay;
   final _latestTimers = <String, Timer>{};
+
+  /// The catch-ups a push waits for ([applyPush]), by chat.
+  final _latestDone = <String, Completer<void>>{};
+
+  /// How many times the calls history watches ([watchCalls]).
+  var _callWatchers = 0;
+
+  /// Queued only for the calls history: dropped if it closes before
+  /// their turn.
+  final _callsQueued = <String>{};
 
   // Passed through.
 
@@ -491,8 +520,11 @@ final class CachedTinodeSession implements ChatSession {
   /// acs: {}}`) for each unchanged chat that is online, so the chats it
   /// fetched online are exactly the ones that are.
   ///
-  /// Then the latest catch-up fetches, in the background, the chats the
-  /// cache is behind on.
+  /// It fetches no messages but those of the direct chats with unread
+  /// ones, whose badges leave out a call's later states only once the cache
+  /// has them: a chat's come with a `pres msg`, a push, or when it is
+  /// opened. While the calls history shows, every direct chat is caught up
+  /// after it ([watchCalls]).
   @override
   Future<List<Subscription>> chatList({DateTime? ifModifiedSince}) =>
       _chatListSync ??= _syncChatList().whenComplete(
@@ -519,7 +551,12 @@ final class CachedTinodeSession implements ChatSession {
         if (chat.online) chat.topic,
     };
     final chats = await _store.chats();
-    _queueLatest(_newestFirst(chats));
+    _queueLatest(
+      _newestFirst(chats.where((c) => _isDirect(c) && c.lastSeq > c.read)),
+    );
+    if (_callWatchers > 0) {
+      unawaited(_followCalls());
+    }
     return [
       for (final chat in chats)
         withPresence(chat, online: online.contains(chat.topic)),
@@ -543,17 +580,70 @@ final class CachedTinodeSession implements ChatSession {
     }
   }
 
-  /// The topics of [chats] with messages, the newest message first.
-  static List<String> _newestFirst(List<Subscription> chats) {
-    final epoch = DateTime.utc(0);
-    return [
-      for (final chat
-          in chats.where((c) => c.lastSeq > 0).toList()..sort(
-            (a, b) =>
-                (b.lastMessageAt ?? epoch).compareTo(a.lastMessageAt ?? epoch),
-          ))
-        chat.topic!,
-    ];
+  /// Fetches one chat of the list and keeps it, e.g. once its profile
+  /// changed (`pres upd`), instead of the whole list; returns it as the
+  /// cache then holds it, or null when the user has no such chat, which
+  /// leaves the cache alone. Asks for one chat share a request, and one
+  /// asked meanwhile runs once more after it.
+  @override
+  Future<Subscription?> chat(String topic) {
+    if (_chatNext[topic] case final next?) {
+      return next;
+    }
+    final running = _chatRunning[topic];
+    if (running == null) {
+      return _startChat(topic);
+    }
+    return _chatNext[topic] = _chatAfter(running, topic);
+  }
+
+  Future<Subscription?> _chatAfter(
+    Future<Subscription?> running,
+    String topic,
+  ) async {
+    await _after(running);
+    // This very run: its callers await it already.
+    unawaited(_chatNext.remove(topic));
+    return _startChat(topic);
+  }
+
+  /// Completes when [future] does, failed or not.
+  static Future<void> _after(Future<Object?> future) async {
+    try {
+      await future;
+    } on Object {
+      // Only the end counts.
+    }
+  }
+
+  Future<Subscription?> _startChat(String topic) {
+    final run = _fetchChat(topic);
+    _chatRunning[topic] = run;
+    unawaited(
+      _after(run).then((_) {
+        if (identical(_chatRunning[topic], run)) {
+          unawaited(_chatRunning.remove(topic));
+        }
+      }),
+    );
+    return run;
+  }
+
+  Future<Subscription?> _fetchChat(String topic) async {
+    var fetched = await _remote.chat(topic);
+    if (fetched == null) {
+      return null;
+    }
+    if (!keepsPresence) {
+      fetched = withoutPresence(fetched);
+    }
+    final chat = fetched;
+    await _write(() => _store.mergeChats([chat], stubs: false));
+    await _writes;
+    return switch (await _store.chat(topic)) {
+      final stored? => withPresence(stored, online: chat.online),
+      null => null,
+    };
   }
 
   // Members.
@@ -606,13 +696,21 @@ final class CachedTinodeSession implements ChatSession {
     );
     // Queued together: a deletion must not land between the two.
     unawaited(
-      _write(
-        () => _store.putMessages(
+      _write(() async {
+        await _store.putMessages(
           topic,
           page,
           covering: _covered(page, since: since, before: before, limit: limit),
-        ),
-      ),
+        );
+        if (page.lastOrNull case final newest?) {
+          // The server's time: a `pres msg` brings none.
+          await _store.advanceChat(
+            topic,
+            lastSeq: newest.seq,
+            lastMessageAt: newest.time,
+          );
+        }
+      }),
     );
     await _write(() async {
       if (_forgotten[topic] == forgotten) {
@@ -753,17 +851,38 @@ final class CachedTinodeSession implements ChatSession {
       }
       return CatchUp(page, gap: true);
     }
+    // Asked together, one round trip; applied in order, the page first, so
+    // that a deletion can't be undone by the page it came with.
+    final deletes = _deletesSince(topic);
     final page = await history(topic, since: top.high, limit: limit);
-    await _syncDeletes(topic);
+    await _syncDeletes(topic, first: await deletes);
     return CatchUp(page, gap: page.length >= limit);
   }
 
-  /// Applies the deletions made since the last one this cache applied.
-  Future<void> _syncDeletes(String topic) async {
+  /// The first page of [topic]'s delete log past what this cache applied,
+  /// and where it starts; null when it can't be read, for [_syncDeletes] to
+  /// try again.
+  Future<({int since, DeleteLog log})?> _deletesSince(String topic) async {
+    try {
+      final since = await _store.syncedDeleteId(topic) + 1;
+      return (since: since, log: await _remote.deleteLog(topic, since: since));
+    } on Object {
+      return null;
+    }
+  }
+
+  /// Applies the deletions made since the last one this cache applied,
+  /// starting from [first] when it was read already from there.
+  Future<void> _syncDeletes(
+    String topic, {
+    ({int since, DeleteLog log})? first,
+  }) async {
     try {
       var synced = await _store.syncedDeleteId(topic);
       for (var page = 0; page < _maxDeleteLogPages; page++) {
-        final log = await _remote.deleteLog(topic, since: synced + 1);
+        final log = page == 0 && first != null && first.since == synced + 1
+            ? first.log
+            : await _remote.deleteLog(topic, since: synced + 1);
         if (log.ranges.isEmpty || log.lastDeleteId <= synced) {
           return;
         }
@@ -1105,8 +1224,9 @@ final class CachedTinodeSession implements ChatSession {
     }
   }
 
-  /// Sent only while connected: a received marker isn't worth queueing,
-  /// the chat list's next sync marks what came meanwhile.
+  /// Sent only while connected, and kept by the server only while [topic]
+  /// is attached: a received marker isn't worth queueing, the next `pres
+  /// msg` or push catches the chat up and marks it while attached.
   @override
   void markReceived(String topic, int seq) {
     if (_remote.status is Connected) {
@@ -1118,6 +1238,9 @@ final class CachedTinodeSession implements ChatSession {
   /// Starts a drain, the uploader and the compressor, unless they are
   /// running, in which case they run again.
   void _kick() {
+    if (passive) {
+      return;
+    }
     unawaited(_drain());
     unawaited(_runUploads());
     unawaited(_runCompressions());
@@ -1742,6 +1865,114 @@ final class CachedTinodeSession implements ChatSession {
 
   // Latest catch-up.
 
+  @override
+  void watchCalls() {
+    if (_callWatchers++ == 0 && !_closed) {
+      unawaited(_followCalls());
+    }
+  }
+
+  @override
+  void unwatchCalls() {
+    if (_callWatchers > 0) {
+      _callWatchers--;
+    }
+  }
+
+  /// Acts on [push], which the host's push service received while this
+  /// session lives: a new message catches its chat up and marks it
+  /// received, as a `pres msg` does but at once; a chat the cache lacks is
+  /// fetched; a read marker is kept. What needs the link waits for it.
+  /// Completes once done; a new message the cache marked received already
+  /// needs nothing.
+  @override
+  Future<void> applyPush(TinodePush push) async {
+    switch (push) {
+      case ReadPush(:final topic, seq: final seq?):
+        await _write(() => _store.advanceChat(topic, read: seq));
+      case MessagePush(:final topic, seq: final seq?, callState: null):
+        await _writes;
+        if (((await _store.chat(topic))?.received ?? 0) >= seq) {
+          return;
+        }
+        await _untilConnected();
+        if (await _store.chat(topic) == null &&
+            await _withMe(() => chat(topic)) == null) {
+          // Not one of the user's chats.
+          return;
+        }
+        await _write(() => _store.advanceChat(topic, lastSeq: seq));
+        final done = _latestDone.putIfAbsent(topic, Completer.new);
+        _queueLatest([topic]);
+        await done.future;
+      case SubscriptionPush(:final topic):
+        await _writes;
+        if (await _store.chat(topic) == null) {
+          await _untilConnected();
+          await _withMe(() => chat(topic));
+        }
+      case _:
+        break;
+    }
+  }
+
+  @override
+  Future<TinodePushNames> storedPushNames(TinodePush push) async {
+    await _writes;
+    return push_names.storedPushNames(_store, push);
+  }
+
+  /// [fetch], with `me` attached as its `get sub` needs, and detached
+  /// again unless someone else holds it.
+  Future<T> _withMe<T>(Future<T> Function() fetch) async {
+    await attach('me');
+    try {
+      return await fetch();
+    } finally {
+      unawaited(detach('me').then((_) {}, onError: (_) {}));
+    }
+  }
+
+  Future<void> _untilConnected() async {
+    if (_remote.status is! Connected) {
+      await _remote.statusChanges.firstWhere((s) => s is Connected);
+    }
+  }
+
+  static bool _isDirect(Subscription chat) =>
+      TopicKind.of(chat.topic!) == TopicKind.direct;
+
+  /// The topics of [chats], the newest message first.
+  static List<String> _newestFirst(Iterable<Subscription> chats) {
+    final epoch = DateTime.utc(0);
+    return [
+      for (final chat
+          in chats.toList()..sort(
+            (a, b) =>
+                (b.lastMessageAt ?? epoch).compareTo(a.lastMessageAt ?? epoch),
+          ))
+        chat.topic!,
+    ];
+  }
+
+  /// Queues the direct chats, newest first, for the calls history.
+  Future<void> _followCalls() async {
+    try {
+      await _writes;
+      final topics = _newestFirst(
+        (await _store.chats()).where((c) => _isDirect(c) && c.lastSeq > 0),
+      );
+      _callsQueued.addAll(
+        topics.where(
+          (t) => !_latestQueue.contains(t) && !_latestRunning.contains(t),
+        ),
+      );
+      _queueLatest(topics, forCalls: true);
+    } on Object catch (e, stackTrace) {
+      _log('Could not read the chats for the calls history', e, stackTrace);
+    }
+  }
+
   /// The chat's `lastSeq` when the cache is behind it and this session
   /// hasn't caught it up that far yet; else null.
   Future<int?> _behindAt(String topic) async {
@@ -1754,12 +1985,16 @@ final class CachedTinodeSession implements ChatSession {
   }
 
   /// Queues [topics], in order, for the latest catch-up, and starts
-  /// workers for them; with none, resumes what is queued.
-  void _queueLatest(Iterable<String> topics) {
+  /// workers for them; with none, resumes what is queued. Unless
+  /// [forCalls], they run even if the calls history closes first.
+  void _queueLatest(Iterable<String> topics, {bool forCalls = false}) {
     if (_closed) {
       return;
     }
     for (final topic in topics) {
+      if (!forCalls) {
+        _callsQueued.remove(topic);
+      }
       if (_latestRunning.contains(topic)) {
         _latestAgain.add(topic);
       } else {
@@ -1799,19 +2034,24 @@ final class CachedTinodeSession implements ChatSession {
           _latestQueue.isNotEmpty) {
         final topic = _latestQueue.first;
         _latestQueue.remove(topic);
+        if (_callsQueued.remove(topic) && _callWatchers == 0) {
+          // The calls history closed meanwhile.
+          continue;
+        }
         _latestRunning.add(topic);
-        final bool linkUp;
+        var linkUp = true;
         try {
           linkUp = await _catchUpLatest(topic);
         } finally {
           _latestRunning.remove(topic);
-          if (_latestAgain.remove(topic)) {
+          if (_latestAgain.remove(topic) || !linkUp) {
             _latestQueue.add(topic);
+          } else {
+            _latestDone.remove(topic)?.complete();
           }
         }
         if (!linkUp) {
           // It and the rest wait for the next connect.
-          _latestQueue.add(topic);
           return;
         }
       }
@@ -1822,12 +2062,32 @@ final class CachedTinodeSession implements ChatSession {
     }
   }
 
-  /// Catches [topic] up if the cache is behind it, with the members its
-  /// preview needs. False when the link went down.
+  /// Brings [topic] up to its `lastSeq`: the messages the cache lacks,
+  /// with the members its preview needs, then the received marker, sent
+  /// while attached: the server keeps none from a session that isn't, once
+  /// it unloaded the topic. A chat the app holds (open, or checked for a
+  /// call) gets its messages from whoever holds it: only the marker goes,
+  /// once it is attached. False when the link went down.
   Future<bool> _catchUpLatest(String topic) async {
     await _writes;
-    final lastSeq = await _behindAt(topic);
-    if (lastSeq == null || _closed || _held.containsKey(topic)) {
+    final chat = await _store.chat(topic);
+    if (chat == null || _closed) {
+      return true;
+    }
+    final lastSeq = chat.lastSeq;
+    final behind = await _behindAt(topic) != null;
+    final unmarked =
+        chat.received < lastSeq && lastSeq > (_latestFetchedAt[topic] ?? 0);
+    if (!behind && !unmarked) {
+      return true;
+    }
+    if (_held.containsKey(topic)) {
+      if (_remote.isAttached(topic)) {
+        markReceived(topic, lastSeq);
+      } else {
+        // Still attaching: the marker goes once it is.
+        _queueLatestSoon(topic);
+      }
       return true;
     }
     try {
@@ -1841,15 +2101,11 @@ final class CachedTinodeSession implements ChatSession {
       return true;
     }
     try {
-      final kind = TopicKind.of(topic);
-      if (kind == TopicKind.group && (await _store.members(topic)).isEmpty) {
-        // First, so the preview has the sender's name when it shows.
-        await members(topic);
+      if (behind) {
+        await catchUp(topic, limit: _latestPage);
+        await _fetchPreviewMembers(topic, TopicKind.of(topic));
       }
-      await catchUp(topic, limit: _latestPage);
-      if (await _previewNeedsMembers(topic, kind)) {
-        await members(topic);
-      }
+      markReceived(topic, lastSeq);
       _latestFetchedAt[topic] = lastSeq;
       return true;
     } on ConnectionClosedException {
@@ -1863,24 +2119,29 @@ final class CachedTinodeSession implements ChatSession {
     }
   }
 
-  /// Whether the cached members can't name the sender of [topic]'s newest
-  /// message in a group, or tell how far the user's own got; as
-  /// `ChatPreviewController` reads them.
-  Future<bool> _previewNeedsMembers(String topic, TopicKind kind) async {
+  /// Fetches the members [topic]'s preview needs, as
+  /// `ChatPreviewController` reads them: the sender of a group's newest
+  /// message, to name them, or every member when the newest is the user's
+  /// own and none are cached, for its receipt.
+  Future<void> _fetchPreviewMembers(String topic, TopicKind kind) async {
     if (kind == TopicKind.channel) {
-      return false;
+      return;
     }
     final from = (await _store.latestMessages(
       topic: topic,
     ))[topic]?.message?.from;
     if (from == null) {
-      return false;
+      return;
     }
     final cached = await _store.members(topic);
     if (from == userId) {
-      return cached.isEmpty;
+      if (cached.isEmpty) {
+        await members(topic);
+      }
+    } else if (kind == TopicKind.group &&
+        !cached.any((m) => m.userId == from)) {
+      await members(topic, userId: from);
     }
-    return kind == TopicKind.group && !cached.any((m) => m.userId == from);
   }
 
   // Arriving events.
@@ -1928,12 +2189,15 @@ final class CachedTinodeSession implements ChatSession {
     switch (presence) {
       case PresMessage(topic: 'me', event: PresenceEvent.message, :final seq?)
           when source != null:
+        // No time: the store keeps only the server's, which the chat list's
+        // "if modified since" is made of. The catch-up brings it. One the
+        // user sent from another device is read.
         unawaited(
           _write(
             () => _store.advanceChat(
               source,
               lastSeq: seq,
-              lastMessageAt: clock.now().toUtc(),
+              read: presence.actor == userId ? seq : null,
             ),
           ),
         );
@@ -1941,6 +2205,10 @@ final class CachedTinodeSession implements ChatSession {
       case PresMessage(topic: 'me', event: PresenceEvent.read, :final seq?)
           when source != null:
         unawaited(_write(() => _store.advanceChat(source, read: seq)));
+      case PresMessage(topic: 'me', event: PresenceEvent.received, :final seq?)
+          when source != null:
+        // Received on another of the user's devices.
+        unawaited(_write(() => _store.advanceChat(source, received: seq)));
       case PresMessage(
             :final topic,
             event: PresenceEvent.deleted,
@@ -2154,6 +2422,10 @@ final class CachedTinodeSession implements ChatSession {
       timer.cancel();
     }
     _latestTimers.clear();
+    for (final done in _latestDone.values) {
+      done.complete();
+    }
+    _latestDone.clear();
     for (final subscription in _subscriptions) {
       unawaited(subscription.cancel());
     }

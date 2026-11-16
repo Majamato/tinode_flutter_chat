@@ -21,6 +21,7 @@ export 'src/app/presentation/tinode_appearance.dart'
 export 'src/app/presentation/tinode_calls.dart' show TinodeCalls;
 export 'src/app/presentation/tinode_chat.dart'
     show TinodeChat, TinodeChatController;
+export 'src/app/presentation/tinode_messages.dart' show TinodeMessages;
 export 'src/attachments/domain/tinode_attachment_limits.dart'
     show TinodeAttachmentLimits;
 export 'src/chats/domain/tinode_bubble.dart'
@@ -29,6 +30,7 @@ export 'src/chats/presentation/chat/bubble_builder_scope.dart'
     show TinodeBubbleBuilder;
 export 'src/chats/presentation/chat/bubble_tail.dart' show BubbleTail;
 export 'src/offline/domain/tinode_cache_limits.dart' show TinodeCacheLimits;
+export 'src/push/domain/tinode_push_names.dart' show TinodePushNames;
 export 'src/session/domain/tinode_auth_mode.dart' show TinodeAuthMode;
 export 'src/session/domain/tinode_chat_features.dart'
     show PasswordResetMode, TinodeChatFeatures;

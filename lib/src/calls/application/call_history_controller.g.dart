@@ -15,8 +15,9 @@ part of 'call_history_controller.dart';
 /// chats have calls.
 ///
 /// It never asks the server: every call the session sees reaches the log,
-/// and its latest catch-up fetches the newest messages of each chat it is
-/// behind on, calls included. When the log can't be read the history is
+/// and while the history shows, the session fetches the newest messages of
+/// each direct chat it is behind on, calls included
+/// ([watchCallsWhileShown]). When the log can't be read the history is
 /// empty rather than loading forever, and what it shows stays.
 
 @ProviderFor(CallHistoryController)
@@ -29,8 +30,9 @@ final callHistoryControllerProvider = CallHistoryControllerProvider._();
 /// chats have calls.
 ///
 /// It never asks the server: every call the session sees reaches the log,
-/// and its latest catch-up fetches the newest messages of each chat it is
-/// behind on, calls included. When the log can't be read the history is
+/// and while the history shows, the session fetches the newest messages of
+/// each direct chat it is behind on, calls included
+/// ([watchCallsWhileShown]). When the log can't be read the history is
 /// empty rather than loading forever, and what it shows stays.
 final class CallHistoryControllerProvider
     extends $NotifierProvider<CallHistoryController, CallHistory> {
@@ -41,8 +43,9 @@ final class CallHistoryControllerProvider
   /// chats have calls.
   ///
   /// It never asks the server: every call the session sees reaches the log,
-  /// and its latest catch-up fetches the newest messages of each chat it is
-  /// behind on, calls included. When the log can't be read the history is
+  /// and while the history shows, the session fetches the newest messages of
+  /// each direct chat it is behind on, calls included
+  /// ([watchCallsWhileShown]). When the log can't be read the history is
   /// empty rather than loading forever, and what it shows stays.
   CallHistoryControllerProvider._()
     : super(
@@ -72,7 +75,7 @@ final class CallHistoryControllerProvider
 }
 
 String _$callHistoryControllerHash() =>
-    r'7a00301432add89f9853c4138107daa5450cf520';
+    r'39b298b5bb548b1f7f3076b7d3e3cd21bc7dec56';
 
 /// The calls history, read from the call log a page at a time: the newest
 /// [callPageSize] first, the next ones as the tab scrolls ([loadMore]).
@@ -81,8 +84,9 @@ String _$callHistoryControllerHash() =>
 /// chats have calls.
 ///
 /// It never asks the server: every call the session sees reaches the log,
-/// and its latest catch-up fetches the newest messages of each chat it is
-/// behind on, calls included. When the log can't be read the history is
+/// and while the history shows, the session fetches the newest messages of
+/// each direct chat it is behind on, calls included
+/// ([watchCallsWhileShown]). When the log can't be read the history is
 /// empty rather than loading forever, and what it shows stays.
 
 abstract class _$CallHistoryController extends $Notifier<CallHistory> {

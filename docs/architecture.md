@@ -107,7 +107,10 @@ lib/
       application/                ProfileController, saving, photo, password, deleting the account
       presentation/               profile and password screens
     push/                         push notifications; the host owns the push service
-      application/                PushTokenController, PushRegistration
+      domain/                     TinodePushNames
+      data/                       storedPushNames, AppPushPort and relayToApp (the push relay)
+      application/                PushTokenController, PushRegistration, PushRelay,
+                                  handleMessagePush, cachedPushNames
     shared/                       used by several features
       domain/                     ValueObject, ChatFailure, TinodeScreen
       application/                BuildLifetime
@@ -324,9 +327,15 @@ cache. `CachedTinodeSession` decorates the server session:
   raise the member's counters in the cache. Always a full fetch: counter changes don't move a
   member's `updated`, so "if modified since" can't be trusted for them. Chats leaving the list
   take their members with them.
-- **Chat list sync.** `chatList()` asks `get sub` with "if modified since" the newest change the
-  cache holds and merges the answer: counters never move back, a `public`/`private` left out is
-  unchanged, a chat with `deleted` goes, with its members and messages.
+- **Chat list sync.** `chatList()` asks `get sub` with "if modified since" the newest server time
+  the cache holds (`chatListWatermark`; only the server's times are stored, so a `pres msg` adds
+  none and a fetched page stores its newest message's) and merges the answer: counters never move
+  back, a `public`/`private` left out is unchanged, a chat with `deleted` goes, with its members
+  and messages. As in Tinode's own apps, no chat goes because a listing left it out, and a list
+  cut at the server's `max_results` (1024) isn't detected. A sync fetches messages only for the
+  direct chats with unread ones (the latest catch-up), so their badges leave out a call's later
+  states, which Tinode's apps count. `chat(topic)`
+  fetches one chat (`get sub` on `me` with `topic`), with its `public`, instead of the list.
 - **Chats that go.** Deleting or leaving a chat (`deleteChat`, `leaveChat`) and `pres gone` on
   `me` (the chat was deleted, or the user removed from it, here or on another device) forget it:
   its row, members, messages and outbox, staged files included (`ChatStore.deleteChat`). The
@@ -409,9 +418,10 @@ cache. `CachedTinodeSession` decorates the server session:
 1. Subscribes to `presence` on `me` and to `messages`, **then** shows the cached list, attaches
    `me` and syncs the list, so nothing that arrives during the load is lost. Offline, the cached
    list stays ready; the next `Connected` attaches and syncs.
-2. `pres msg` raises a chat's `lastSeq`; an unknown topic reloads the list (a new chat).
-   `pres read` (another device read it) raises `read`. A `data` message in an attached chat raises
-   `lastSeq`, and also `read` when the user sent it.
+2. `pres msg` raises a chat's `lastSeq`, and also `read` when its `act` is the user (sent from
+   another device); an unknown topic fetches that chat alone (a new chat). `pres read` (another
+   device read it) raises `read`. A `data` message in an attached chat raises `lastSeq`, and also
+   `read` when the user sent it.
 3. After a reconnect the list syncs again: presence sent while the link was down is never
    replayed.
 4. `unread = lastSeq − read`. Order is by `lastMessageAt`, newest first.
@@ -432,30 +442,35 @@ cache. `CachedTinodeSession` decorates the server session:
    can't be told to stop sending presence.
    **A user hides theirs** ("Show my online status", `PresenceVisibilityController`): their
    `public` gets `"x-presence": "hidden"` (`PresenceVisibility`); the server keeps custom keys
-   and sends them in the chat list, and peers get `pres upd`, which syncs their list. Showing
+   and sends them in the chat list, and peers get `pres upd`, which fetches that chat. Showing
    it again writes `"x-presence": "shown"`: the server merges `public` key by key, so a key
    left out would stay `hidden` (only `"␡"` deletes one).
    `ChatSummary.fromSubscription` then keeps `online` false and `lastSeen` null, and
    `withOnline` / `withLastSeen` change nothing. Observed on the server: removing `P` from one's
    own `want` hides nothing (and mutes pushes); only a session that never attaches `me` is
    neither online nor updates its `seen`, which would cost the list its live updates.
-6. `pres acs` for a known chat syncs the list: the user's access changed, maybe muted on another
-   device, and `acs` doesn't say how. A chat is **muted** when the user's `want` lacks `P`.
+6. `pres acs` for a known chat fetches that chat: the user's access changed, maybe muted on
+   another device, and `acs` doesn't say how. A chat is **muted** when the user's `want` lacks `P`.
 
 **Chat list previews** (`ChatPreviewController`, keepAlive, sync `Notifier<Map<String,
 ChatPreview>>`):
 
 1. Tinode sends no message content in the chat list, and `pres msg` only a seq. So the preview is
    the cache's: `ChatStore.latestMessages` gives, per chat, the newest message that is no update
-   (`head.replace`), the updates of it (a call's later state), and the newest seq cached. The
-   cache follows the server through the **latest catch-up** of `CachedTinodeSession`: after each
-   chat list sync, and 1 s after a `pres msg` (a burst fetches once; a call check of a direct
-   chat lands first), it attaches each chat whose `lastSeq` is past its covered seqs and that
-   this session hasn't caught up that far, `catchUp`s 32 messages and detaches, four chats at a
-   time, newest first. A group with no cached members fetches them first, so the first preview
-   names the sender; after the catch-up, members are fetched when the cached ones can't name the
-   newest sender of a group or give the receipt of the user's own message. Offline, the queue
-   waits for `Connected`.
+   (`head.replace`), the updates of it (a call's later state), and the newest seq cached. As in
+   Tinode's own apps, the cache follows the server through the **latest catch-up** of
+   `CachedTinodeSession`: 1 s after a `pres msg` (a burst fetches once; a call check of a direct
+   chat lands first), it attaches the chat if its `lastSeq` is past its covered seqs and this
+   session hasn't caught it up that far, `catchUp`s 32 messages, fetches the newest message's
+   sender when a group's cached members lack them (every member for the user's own message, when
+   none are cached), sends the received marker, and detaches, four chats at a time. A chat whose
+   messages are cached but not yet marked is attached for the marker alone; one the app holds
+   gets the marker without a second attach. A chat list sync queues only the direct chats with
+   unread messages, newest first: an unread count leaves out a call's later states only once the
+   cache has them. While the calls history or the call search shows (`watchCalls`), each sync and
+   the start of the watch queue every direct chat, dropped from the queue when the watch ends. A push
+   queues its chat too (`applyPush`; see **Push fetch**). Offline, the queue waits for
+   `Connected`.
 2. It reads them all on build, then reads a chat again when `ChatSession.storedChanges` names it:
    the cached session fires it after it stores a live message, a fetched page or the members,
    deletes messages, or a member reads further. Changes in one turn are read once.
@@ -558,10 +573,12 @@ both autoDispose):
    bubble's footer watches it, so a marker rebuilds just the ticks that change.
    `messageSender(topic, seq)` gives a group bubble its sender label and avatar at the edges of a
    run. `messageReadBy` feeds the Read by sheet.
-4. `ChatListController` sends the received markers (`note recv`): for each message from someone
-   else as it arrives, live or as `pres msg`, and after each sync for chats whose `lastSeq` is
-   past their `received`. The server takes them from a chat that isn't attached; read markers
-   count only from an attached one.
+4. Received markers (`note recv`) go only while their chat is attached: the server keeps one only
+   while it has the topic loaded (`chat_list_contract.dart` holds it to that). `ChatListController`
+   sends one for each live message from someone else; the latest catch-up after a `pres msg`, and
+   a push fetch, send theirs while attached. Read markers count only from an attached chat too.
+   An open chat sends one at once when it opens or catches up, and for live messages at most one
+   per `readMarkerInterval` (1 s), for the newest, flushed when the chat closes.
 5. `TypingController` lists the members typing (typing `info`), dropping each after
    `typingTimeout` (5 s) or at their message; the composer's `typed()` sends a typing note at
    most every `typingThrottle` (3 s).
@@ -618,6 +635,33 @@ during a call doesn't end the call.
     `HangUpCredentials`, and `registerBackgroundHangUp` registers `hangUpDeclined`, which the
     plugin runs in a background isolate on a decline while the app is closed (Android): log in
     with the token, send `hang-up` (the callee needs no attach for it), close.
+
+**Push fetch** (`TinodeMessages.handlePush`, `handleMessagePush`), in the host's background
+handler, after `TinodeCalls.handlePush`, as Tinode's own apps do on a push:
+
+1. A new message (`MessagePush` with a `seq`, no call state): its chat is brought up to it and the
+   received marker sent while attached, so the sender sees it delivered and the chat shows it
+   offline. A `read` push keeps the read marker; a `sub` push fetches the new chat. Nothing
+   happens without the host's token or a user on the device (`ChatStoreOpener.lastUser`).
+2. While the app lives in the process, its session does it: `PushRelay`, alive while a user is
+   logged in, registers an `AppPushPort` with the `IsolateNameServer`, named after the server.
+   `relayToApp` sends it the push; it answers `taken` at once, wakes a suspended session for one
+   grace (`BackgroundPolicy.wake`), runs `ChatSession.applyPush` within `appPushTimeout` (12 s)
+   and answers with the names. A port that doesn't answer within `relayAckTimeout` (1 s) was left
+   by an app that is gone: it is unregistered and the push handled alone. So while the app lives
+   there is no second login, connection or writer of the cache.
+3. Alone, within `backgroundPushTimeout` (15 s): it opens the cache, and when the push needs the
+   server (a message not yet marked received, a chat the cache lacks) connects with
+   `TinodeConfig.background` (`hi bkg`, so the server defers the user's online status by 5 s and a
+   short fetch never shows them online), logs in with the token, and runs `applyPush` on a
+   **passive** `CachedTinodeSession`, which never drains the outbox, uploads, compresses, seeds
+   the call log or prunes. A chat the cache lacks is fetched with `me` attached for it. Every
+   step leaves the cache consistent; a failure is logged and the app catches up when it opens.
+   The cache keeps a write-ahead log with `busy_timeout`, so an app opened meanwhile waits rather
+   than failing.
+4. It returns `TinodePushNames`, the chat's name and a group's sender, from the cache
+   (`storedPushNames`). `TinodeMessages.cachedNames` reads them without the server, so the host
+   can show the notification at once and name it better once the fetch is done.
 
 **Message search** (`MessageSearchController(topic)`, autoDispose, sync
 `Notifier<MessageSearchState>`), within one chat, from the search button in its app bar:

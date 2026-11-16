@@ -29,6 +29,10 @@ const revealHighlight = Duration(seconds: 2);
 /// How far back from the oldest loaded message a reveal loads at most.
 const maxRevealSpan = 3000;
 
+/// Read markers for live messages reach the server at most this often: a
+/// burst sends one marker, for the newest.
+const readMarkerInterval = Duration(seconds: 1);
+
 /// One open chat: shows what the cache holds, attaches to the topic,
 /// catches up with the server, merges live messages and the outbox, and
 /// marks what the user sees as read. Each attach also syncs the chat's
@@ -39,6 +43,12 @@ class ChatController extends _$ChatController {
   late String _me;
   late BuildLifetime _lifetime;
   var _lastMarkedRead = 0;
+
+  /// While open, a live message's read marker went out less than
+  /// [readMarkerInterval] ago: the next live one waits for it to close, as
+  /// [_readPending].
+  Timer? _readWindow;
+  int? _readPending;
   Timer? _revealTimer;
   var _revealing = false;
 
@@ -55,6 +65,7 @@ class ChatController extends _$ChatController {
     _session = session;
     _me = me;
     _lastMarkedRead = 0;
+    _readPending = null;
     _revealing = false;
     final link = _Link();
     // Alive as long as the chat: it syncs once attached.
@@ -78,6 +89,12 @@ class ChatController extends _$ChatController {
     ];
     ref.onDispose(() {
       _revealTimer?.cancel();
+      _readWindow?.cancel();
+      _readWindow = null;
+      if (_readPending case final seq?) {
+        // While still attached.
+        session.markRead(topic, seq);
+      }
       for (final subscription in subscriptions) {
         unawaited(subscription.cancel());
       }
@@ -199,7 +216,7 @@ class ChatController extends _$ChatController {
         // A chat the user just started, e.g. with someone they found: the
         // server sends its creator no presence for it.
         if (!ref.read(chatListControllerProvider).contains(topic)) {
-          ref.read(chatListControllerProvider.notifier).refresh();
+          ref.read(chatListControllerProvider.notifier).refreshChat(topic);
         }
         unawaited(_refreshLastSeen(lifetime));
       }
@@ -320,7 +337,7 @@ class ChatController extends _$ChatController {
 
   void _onLive(DataMessage message) {
     state = state.withMessages([_toMessage(message)]);
-    _markRead(message.seq);
+    _markRead(message.seq, live: true);
   }
 
   void _onOutbox(OutboxEvent event) {
@@ -331,7 +348,7 @@ class ChatController extends _$ChatController {
         state = state.withoutOutgoing(clientId).withMessages([
           _toMessage(message),
         ]);
-        _markRead(message.seq);
+        _markRead(message.seq, live: true);
       case OutgoingDiscarded(:final clientId):
         state = state.withoutOutgoing(clientId);
       case UploadProgress() || CompressProgress():
@@ -363,13 +380,36 @@ class ChatController extends _$ChatController {
     _markRead(max(state.lastSeq ?? 0, listed));
   }
 
-  void _markRead(int seq) {
+  /// Marks [topic] read up to [seq]: in the list at once, and on the
+  /// server at once too, unless [live] messages already sent one less than
+  /// [readMarkerInterval] ago.
+  void _markRead(int seq, {bool live = false}) {
     if (seq <= _lastMarkedRead) {
       return;
     }
     _lastMarkedRead = seq;
-    _session.markRead(topic, seq);
     ref.read(chatListControllerProvider.notifier).markRead(topic, seq);
+    if (!live) {
+      _readPending = null;
+      _session.markRead(topic, seq);
+    } else if (_readWindow == null) {
+      _sendLiveRead(seq);
+    } else {
+      _readPending = seq;
+    }
+  }
+
+  void _sendLiveRead(int seq) {
+    _session.markRead(topic, seq);
+    _readWindow = Timer(readMarkerInterval, _closeReadWindow);
+  }
+
+  void _closeReadWindow() {
+    _readWindow = null;
+    if (_readPending case final pending?) {
+      _readPending = null;
+      _sendLiveRead(pending);
+    }
   }
 
   ChatMessage _toMessage(DataMessage message) =>

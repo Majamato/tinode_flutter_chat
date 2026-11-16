@@ -90,7 +90,7 @@ final class DeviceChatStoreOpener implements ChatStoreOpener {
 
   @override
   Future<ChatStore> open(Uri server, String userId) async =>
-      ChatStore(ChatDatabase(_connection(_name(server, userId))));
+      ChatStore(ChatDatabase(_connection(_name(server, userId), cache: true)));
 
   @override
   Future<void> delete(Uri server, String userId) =>
@@ -99,26 +99,47 @@ final class DeviceChatStoreOpener implements ChatStoreOpener {
   /// A session being rebuilt may overlap the next one, and a write refused
   /// here is a call lost for good: a second connection waits its turn.
   @override
-  Future<CallLog> openCallLog(Uri server, String userId) async => CallLog(
-    CallLogDatabase(
-      _connection(_callLogName(server, userId), waitWhenBusy: true),
-    ),
-  );
+  Future<CallLog> openCallLog(Uri server, String userId) async =>
+      CallLog(CallLogDatabase(_connection(_callLogName(server, userId))));
 
   @override
   Future<void> deleteCallLog(Uri server, String userId) =>
       _deleteFile(_callLogName(server, userId));
 
-  QueryExecutor _connection(String name, {bool waitWhenBusy = false}) =>
-      driftDatabase(
-        name: name,
-        native: DriftNativeOptions(
-          databaseDirectory: directory,
-          setup: waitWhenBusy
-              ? (db) => db.execute('PRAGMA busy_timeout = 5000')
-              : null,
-        ),
-      );
+  /// A connection to the file [name] that waits for another one rather
+  /// than failing.
+  ///
+  /// The [cache]'s file also keeps a write-ahead log, synced at its
+  /// checkpoints only (`synchronous = NORMAL`). Each write synced on its own
+  /// took 9 to 22 ms on a desktop SSD against about 0.5 ms like this. Only a
+  /// power cut can then lose the newest writes, never the file; the outbox,
+  /// which must survive even that, syncs its own (`ChatStore`). A file that
+  /// can't take the log stays as it was. The setup never throws: a throw
+  /// would leave the user with a cache in memory.
+  QueryExecutor _connection(String name, {bool cache = false}) => driftDatabase(
+    name: name,
+    native: DriftNativeOptions(
+      databaseDirectory: directory,
+      setup: cache
+          ? (db) {
+              try {
+                db.execute('PRAGMA busy_timeout = 5000');
+                final mode = db.select('PRAGMA journal_mode = WAL').firstOrNull;
+                if (mode?.values.firstOrNull == 'wal') {
+                  db.execute('PRAGMA synchronous = NORMAL');
+                }
+              } on Object catch (e, stackTrace) {
+                log(
+                  'The cache keeps its journal',
+                  name: 'tinode_flutter_chat',
+                  error: e,
+                  stackTrace: stackTrace,
+                );
+              }
+            }
+          : (db) => db.execute('PRAGMA busy_timeout = 5000'),
+    ),
+  );
 
   Future<void> _deleteFile(String name) async {
     final base = '${(await directory()).path}/$name.sqlite';

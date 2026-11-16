@@ -70,9 +70,10 @@ One row of the chat list. *In code:* `ChatListTile`.
 **Preview**
 The tile's second line: the chat's newest cached message (its text, or an icon and label for a
 photo, file, voice message or call; "You" first for the user's own message in any chat, the
-sender first in a group), or who is typing. Read from the cache, which the **latest catch-up**
-fills from the server. When the chat has messages past it, until then or while offline, the line
-keeps the newest cached message, or nothing when none is cached. *In code:* `ChatPreview`,
+sender first in a group), or who is typing. Read from the cache only: the
+**latest catch-up**, a **push fetch** or opening the chat fill it from the server; a chat list sync
+does only for the direct chats with unread messages. When the chat has messages past it, until then or while offline, the line keeps the
+newest cached message, or nothing when none is cached. *In code:* `ChatPreview`,
 `ChatPreviewController`, `ChatPreviewLine`.
 
 **Bubble**
@@ -121,7 +122,9 @@ The floating glass bar with the chats, the calls history and the settings, on by
 **Calls history**
 The calls of direct chats shown newest first, in their own tab, read from the **call log** a page
 of 50 at a time: the next page as the user scrolls within a screen of the end, or at once while
-the calls don't fill the screen, until the oldest call. The tab is the calls history; "call log" means only the file behind it. Its search pill
+the calls don't fill the screen, until the oldest call. While it or the **call search** shows, the
+**latest catch-up** also runs for every direct chat the cache is behind on, so their calls reach
+the log. The tab is the calls history; "call log" means only the file behind it. Its search pill
 opens the **call search**. *In code:* `CallHistoryController`, `CallHistoryEntry`, `CallWindow`,
 `CallsScreen`.
 
@@ -188,12 +191,26 @@ or never existed; an uncovered one may be on the server. Live messages extend th
 when they follow it, so a gap never hides.
 *In code:* `SeqRanges`, `ChatStore.coverage`.
 
+**Chat list sync**
+Asking the server for the chat list: once the link is up, the chats changed
+since the newest server time the cache holds ("if modified since"; a device's clock never counts),
+or the whole list when the cache is empty, merged into the cache. A chat goes only when the server
+says so (`deleted` in a listing, `pres gone`). A list cut at the server's 1024 isn't detected. A
+change to one chat (`pres upd`, `pres acs`, a chat new to the list) fetches that
+chat alone. A sync fetches messages only for the direct chats with unread ones (the **latest
+catch-up**). *In code:* `ChatSession.chatList`, `chatListWatermark`, `TinodeSession.chat`,
+`ChatListController.refreshChat`.
+
 **Latest catch-up**
-Keeping the end of each chat in the cache as the server has it, for the previews: after each chat
-list sync, and a moment after a `pres msg`, the session attaches each chat whose `lastSeq` is past
-what the cache covers, catches it up and detaches, newest chats first, a few at a time. It fetches
-the members a preview needs too: a group's sender, the counters for the user's own message.
-*In code:* `CachedTinodeSession` (`_queueLatest`, `latestDelay`).
+Keeping the end of each chat in the cache as the server has it: a moment
+after a `pres msg` for a chat that isn't attached (one fetch for a burst), the session attaches
+it, catches it up (32 messages at most), sends the **received marker** while attached, and
+detaches, a few chats at a time. It fetches only the members a preview needs: a group's sender if
+unknown, every member for the user's own newest message if none are cached. A chat the app holds
+(open, or checked for a call) gets only the marker. After a chat list sync it runs only for the
+direct chats with unread messages, whose badges leave out a call's later states only once the
+cache has them; while the **calls history** shows, for every direct chat behind.
+*In code:* `CachedTinodeSession` (`_queueLatest`, `latestDelay`, `watchCalls`).
 
 **Gap**
 Uncovered seqs between covered ones. Older pages come from the cache where it covers them and
@@ -241,7 +258,7 @@ theirs, and the file cache drops the files used longest ago until it fits.
 *Avoid:* "clean", "evict".
 
 **Cache limits**
-How much pruning keeps: messages per chat (1000 by default) and the size of the file cache
+How much pruning keeps: messages per chat (5000 by default) and the size of the file cache
 (200 MiB). The host sets them. *In code:* `TinodeCacheLimits`, `TinodeChat.cacheLimits`.
 
 **Call log**
@@ -429,9 +446,10 @@ when their message arrives; the user's own typing goes out at most every 3 s.
 *In code:* `TypingController`, `TypingMembers`, `TypingIndicator`.
 
 **Received marker**
-`note recv`: this device has the messages up to a seq. Sent for each message from someone else as
-it arrives (live, or as `pres msg` for a chat that isn't attached), and after each chat list sync
-for what came while away. Not queued offline. *In code:* `TinodeSession.markReceived`.
+`note recv`: this device has the messages up to a seq. The server keeps it only while the chat is
+attached, so it goes only then: for each live message from someone else, from the **latest
+catch-up** after a `pres msg`, and from a **push fetch**. A chat nothing brings keeps one tick for
+its sender until it is opened. Not queued offline. *In code:* `TinodeSession.markReceived`.
 
 ## Attachments
 
@@ -628,6 +646,28 @@ payload**.
 The host's device token, passed to `TinodeChat(pushToken:)`. Registered for whoever logs in,
 removed from the server on log out. *In code:* `PushTokenController`, `PushRegistration`.
 *Avoid:* device ID.
+
+**Push fetch**
+What a new-message push does while the app is in the background or closed: the chat's new messages and delete log are fetched into the cache and the **received marker**
+sent while attached, so the sender sees it delivered and the chat shows it offline. A message the
+cache marked received already needs nothing. While the app lives in the process, its own session
+does it, woken for one **background grace** if suspended (**push relay**); otherwise a
+**passive session** logs in with the saved token, within 15 s. A `read` push keeps the read
+marker; a `sub` push fetches the new chat. The host passes every push to `TinodeMessages`, which
+also names the notification from the cache. *In code:* `TinodeMessages`, `handleMessagePush`,
+`ChatSession.applyPush`, `TinodePushNames`.
+
+**Push relay**
+The app's session taking a push from the push service's background isolate, through a port named
+after the server, as long as the user is logged in. It answers at once that it took it; a port
+that doesn't answer within a second is left by an app that is gone, and the background isolate
+fetches alone. *In code:* `PushRelay`, `AppPushPort`, `relayToApp`.
+
+**Passive session**
+A cached session that only fetches: it never sends the outbox, uploads, compresses, seeds the call
+log or prunes, since the app's own session may own the same files. Its `hi` says it is in the
+background, so a short fetch never shows the user online. *In code:*
+`CachedTinodeSession(passive: true)`, `TinodeConfig.background`.
 
 **Requested chat**
 A chat the host asked to open, e.g. from a tapped notification. It waits for the widget and a

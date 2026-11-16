@@ -34,7 +34,37 @@ void main() {
 
   ChatPreview? bobPreview() => container.read(chatPreviewProvider(bob));
 
-  test('with nothing cached, the previews come from the server', () async {
+  test('with nothing cached, a sync brings the previews of unread direct '
+      'chats only', () async {
+    final server = FakeTinodeSession(
+      chats: [
+        chat(bob, name: 'Bob', lastSeq: 1, lastMessageAt: at(1)),
+        chat(carol, name: 'Carol', lastSeq: 1, read: 1, lastMessageAt: at(1)),
+        chat(friends, name: 'Friends', lastSeq: 1, lastMessageAt: at(1)),
+      ],
+      histories: {
+        bob: [message(bob, 1, text: 'hi there')],
+        carol: [message(carol, 1, from: carol)],
+        friends: [message(friends, 1, from: carol)],
+      },
+    );
+    final fresh = (await loggedInContainer(server))
+      ..listen(chatListControllerProvider, (_, _) {})
+      ..listen(chatPreviewControllerProvider, (_, _) {});
+    ChatPreview? preview(String topic) =>
+        fresh.read(chatPreviewProvider(topic));
+    for (var i = 0; i < 400 && preview(bob) == null; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    expect(preview(bob)?.text, 'hi there');
+    expect(preview(carol), isNull);
+    expect(preview(friends), isNull);
+    expect(server.calls, isNot(contains('history $friends')));
+  });
+
+  test('with nothing cached, a pres msg brings the preview', () async {
     final server = FakeTinodeSession(
       chats: [
         chat(bob, name: 'Bob', lastSeq: 1, lastMessageAt: at(1)),
@@ -51,8 +81,26 @@ void main() {
       ..listen(chatPreviewControllerProvider, (_, _) {});
     ChatPreview? preview(String topic) =>
         fresh.read(chatPreviewProvider(topic));
+    await later();
+    server
+      ..emitPresence(
+        const PresMessage(
+          topic: 'me',
+          event: PresenceEvent.message,
+          source: bob,
+          seq: 1,
+        ),
+      )
+      ..emitPresence(
+        const PresMessage(
+          topic: 'me',
+          event: PresenceEvent.message,
+          source: friends,
+          seq: 2,
+        ),
+      );
 
-    for (var i = 0; i < 200 && preview(friends)?.senderName == null; i++) {
+    for (var i = 0; i < 400 && preview(friends)?.senderName == null; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }
 

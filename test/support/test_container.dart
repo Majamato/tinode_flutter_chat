@@ -9,6 +9,7 @@ import 'package:tinode_flutter_chat/src/attachments/data/memory_file_store.dart'
 import 'package:tinode_flutter_chat/src/calls/domain/call_media.dart';
 import 'package:tinode_flutter_chat/src/calls/domain/system_calls.dart';
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
+import 'package:tinode_flutter_chat/src/push/data/port_names.dart';
 import 'package:tinode_flutter_chat/src/session/application/session_controller.dart';
 import 'package:tinode_flutter_chat/src/session/data/tinode_session.dart';
 import 'package:tinode_flutter_chat/src/session/domain/tinode_chat_features.dart';
@@ -58,6 +59,7 @@ ProviderContainer createTestContainer({
   VoicePlayerFactory? voicePlayer,
   VoiceSpeedStorage? voiceSpeedStorage,
   TinodeChatFeatures features = const TinodeChatFeatures(),
+  PortNames? portNames,
 }) {
   final container = createTinodeContainer(
     config: testConfig,
@@ -80,6 +82,7 @@ ProviderContainer createTestContainer({
     voiceRecorder: voiceRecorder ?? FakeVoiceRecorder.new,
     voicePlayer: voicePlayer ?? FakeVoicePlayer.new,
     voiceSpeedStorage: voiceSpeedStorage ?? MemoryVoiceSpeedStorage(),
+    portNames: portNames,
   );
   addTearDown(container.dispose);
   return container;
@@ -101,6 +104,7 @@ Future<ProviderContainer> loggedInContainer(
   VoiceSpeedStorage? voiceSpeedStorage,
   TinodeChatFeatures features = const TinodeChatFeatures(),
   ChatStoreOpener? storeOpener,
+  PortNames? portNames,
 }) async {
   final container = createTestContainer(
     connector: connectTo(session),
@@ -115,6 +119,7 @@ Future<ProviderContainer> loggedInContainer(
     voiceSpeedStorage: voiceSpeedStorage,
     features: features,
     storeOpener: storeOpener,
+    portNames: portNames,
   )..listen(sessionControllerProvider, (_, _) {});
   await container.read(sessionControllerProvider.future);
   return container;

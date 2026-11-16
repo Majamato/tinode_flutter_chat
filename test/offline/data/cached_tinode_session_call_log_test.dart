@@ -136,16 +136,48 @@ void main() {
       expect(await stored(), ['$bob 1 [2]', '$bob 4 []']);
     });
 
-    test('the latest catch-up, for a chat not open', () async {
+    test("the latest catch-up, for a chat not open: a pres msg's", () async {
       remote.chats
         ..clear()
-        ..add(chat(bob, lastSeq: 4, lastMessageAt: at(4)));
-
+        ..add(chat(bob, lastMessageAt: at(4)));
       await session.chatList();
+      await idle();
+      expect(await stored(), isEmpty);
+
+      remote.emitPresence(
+        const PresMessage(
+          topic: 'me',
+          event: PresenceEvent.message,
+          source: bob,
+          seq: 4,
+        ),
+      );
+      for (var i = 0; i < 200 && !remote.calls.contains('detach $bob'); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
       await idle();
 
       expect(await stored(), ['$bob 1 [2]', '$bob 4 []']);
     });
+
+    test(
+      "the latest catch-up, for a chat not open: the calls history's",
+      () async {
+        remote.chats
+          ..clear()
+          ..add(chat(bob, lastSeq: 4, lastMessageAt: at(4)));
+        await session.chatList();
+
+        session.watchCalls();
+        addTearDown(session.unwatchCalls);
+        for (var i = 0; i < 200 && !remote.calls.contains('detach $bob'); i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+        await idle();
+
+        expect(await stored(), ['$bob 1 [2]', '$bob 4 []']);
+      },
+    );
 
     test('a call found while reconciling a lost message', () async {
       remote

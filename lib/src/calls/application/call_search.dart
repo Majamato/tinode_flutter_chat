@@ -48,6 +48,7 @@ class CallSearchController extends _$CallSearchController {
     }
 
     final reader = _reader = CallLogReader(session, me);
+    watchCallsWhileShown(ref, session);
     final changes = session.storedChanges.listen((topic) {
       if (TopicKind.of(topic) != TopicKind.direct) {
         return;

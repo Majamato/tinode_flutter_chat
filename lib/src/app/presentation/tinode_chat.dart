@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
 import 'package:tinode_flutter_chat/src/app/application/tinode_container.dart';
+import 'package:tinode_flutter_chat/src/app/presentation/isolate_port_names.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/session_gate.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/shell_scope.dart';
 import 'package:tinode_flutter_chat/src/app/presentation/tinode_appearance.dart';
@@ -21,6 +22,7 @@ import 'package:tinode_flutter_chat/src/chats/presentation/chat/bubble_builder_s
 import 'package:tinode_flutter_chat/src/offline/data/chat_store_opener.dart';
 import 'package:tinode_flutter_chat/src/offline/domain/tinode_cache_limits.dart';
 import 'package:tinode_flutter_chat/src/push/application/push_registration.dart';
+import 'package:tinode_flutter_chat/src/push/application/push_relay.dart';
 import 'package:tinode_flutter_chat/src/push/application/push_token_controller.dart';
 import 'package:tinode_flutter_chat/src/session/application/background_policy.dart';
 import 'package:tinode_flutter_chat/src/session/application/credentials_controller.dart';
@@ -355,6 +357,7 @@ class _TinodeChatState extends State<TinodeChat> {
     voiceRecorder: widget.voiceRecorder,
     voicePlayer: widget.voicePlayer,
     voiceSpeedStorage: widget.voiceSpeedStorage,
+    portNames: const IsolatePortNames(),
   );
 
   late final AppLifecycleListener _lifecycle;
@@ -372,6 +375,7 @@ class _TinodeChatState extends State<TinodeChat> {
       ..read(networkPolicyProvider)
       // Listened to, so it rebuilds as the token and session change.
       ..listen(pushRegistrationProvider, (_, _) {})
+      ..listen(pushRelayProvider, (_, _) {})
       ..listen(
         sessionControllerProvider.select(
           (s) => switch (s) {

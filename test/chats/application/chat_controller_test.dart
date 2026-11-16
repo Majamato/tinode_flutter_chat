@@ -176,6 +176,44 @@ void main() {
     expect(session.calls.last, 'markRead $bob 4');
   });
 
+  test('a burst of live messages sends one read marker a second', () async {
+    openChat();
+    await settle();
+
+    session
+      ..emitMessage(message(bob, 4))
+      ..emitMessage(message(bob, 5))
+      ..emitMessage(message(bob, 6));
+
+    expect(container.read(chatSummaryProvider(bob))?.unread, 0);
+    expect(session.calls.where((c) => c.startsWith('markRead')), [
+      'markRead $bob 3',
+      'markRead $bob 4',
+    ]);
+    await Future<void>.delayed(readMarkerInterval);
+    expect(session.calls.where((c) => c.startsWith('markRead')), [
+      'markRead $bob 3',
+      'markRead $bob 4',
+      'markRead $bob 6',
+    ]);
+  });
+
+  test('a read marker held back goes out when the chat closes', () async {
+    final open = openChat();
+    await settle();
+    session
+      ..emitMessage(message(bob, 4))
+      ..emitMessage(message(bob, 5));
+
+    open.close();
+    await settle();
+
+    expect(
+      session.calls,
+      containsAllInOrder(['markRead $bob 4', 'markRead $bob 5', 'detach $bob']),
+    );
+  });
+
   test('messages of other chats are ignored', () async {
     openChat();
     await settle();
@@ -225,22 +263,24 @@ void main() {
     expect(session.calls, contains('history $carol before 6'));
   });
 
-  test('opening a chat the list lacks syncs the list', () async {
+  test('opening a chat the list lacks fetches that chat', () async {
     // The server makes the 1:1 chat on attach; its creator gets no pres.
     session.chats.add(chat(carol, name: 'Carol', lastMessageAt: at(9)));
     session.calls.clear();
     openChat(carol);
     await settle();
 
-    expect(session.calls, containsAllInOrder(['attach $carol', 'chatList']));
+    expect(session.calls, containsAllInOrder(['attach $carol', 'chat $carol']));
+    expect(session.calls, isNot(contains('chatList')));
     expect(container.read(chatSummaryProvider(carol))?.title, 'Carol');
   });
 
-  test('opening a listed chat does not sync the list', () async {
+  test('opening a listed chat fetches neither it nor the list', () async {
     session.calls.clear();
     openChat();
     await settle();
     expect(session.calls, isNot(contains('chatList')));
+    expect(session.calls, isNot(contains('chat $bob')));
   });
 
   test('detaches when the chat closes', () async {
@@ -500,10 +540,7 @@ void main() {
     }
 
     test('reaches the server when the chat opens from the cache', () async {
-      // As the latest catch-up does before the user opens the chat.
-      while (!session.calls.contains('detach $bob')) {
-        await settle();
-      }
+      await cacheChat();
 
       openChat();
       await settle();

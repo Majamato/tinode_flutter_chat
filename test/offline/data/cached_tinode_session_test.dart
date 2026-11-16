@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinode_dart_client/tinode_dart_client.dart';
@@ -392,9 +393,8 @@ void main() {
       session.markReceived(bob, 100);
       await settle();
 
-      expect(remote.calls.where((c) => c.startsWith('markReceived')), [
-        'markReceived $bob 100',
-      ]);
+      expect(remote.calls, isNot(contains('markReceived $bob 99')));
+      expect(remote.calls, contains('markReceived $bob 100'));
       expect((await session.storedChatList()).single.received, 100);
     });
   });
@@ -478,115 +478,56 @@ void main() {
     Iterable<String> attaches(FakeTinodeSession remote, String topic) =>
         remote.calls.where((c) => c == 'attach $topic');
 
-    test('after a sync, caches the newest message of each chat', () async {
+    /// A `pres msg` for [topic]: its message [seq] is on the server.
+    void pres(
+      FakeTinodeSession remote,
+      String topic,
+      int seq, {
+      String? actor,
+    }) => remote.emitPresence(
+      PresMessage(
+        topic: 'me',
+        event: PresenceEvent.message,
+        source: topic,
+        seq: seq,
+        actor: actor,
+      ),
+    );
+
+    test('a sync fetches no messages of read chats, nor of groups', () async {
       final remote = FakeTinodeSession(
         chats: [
-          chat(bob, lastSeq: 3, lastMessageAt: at(3)),
-          chat(carol, lastMessageAt: at(1)),
+          chat(bob, lastSeq: 3, read: 3, lastMessageAt: at(3)),
+          chat(friends, lastSeq: 2, lastMessageAt: at(2)),
         ],
         histories: {
           bob: [message(bob, 1), message(bob, 2), message(bob, 3)],
+          friends: [message(friends, 1), message(friends, 2)],
         },
       );
       final cached = open(remote);
-
-      await cached.chatList();
-      await until(() => remote.calls.contains('detach $bob'));
-
-      final latest = await cached.storedLatestMessages();
-      expect(latest[bob]?.message?.seq, 3);
-      expect(remote.attachCount(bob), 0);
-      // Without messages, nothing to fetch.
-      expect(attaches(remote, carol), isEmpty);
-    });
-
-    test('a chat the cache already covers is not attached', () async {
-      final remote = FakeTinodeSession(
-        chats: [chat(bob, lastSeq: 2, lastMessageAt: at(2))],
-        histories: {
-          bob: [message(bob, 1), message(bob, 2)],
-        },
-      );
-      final cached = open(remote);
-      await cached.history(bob, limit: 32);
 
       await cached.chatList();
       await quiet();
 
       expect(attaches(remote, bob), isEmpty);
+      expect(attaches(remote, friends), isEmpty);
+      expect(remote.calls, isNot(contains(startsWith('markReceived'))));
+      expect(await cached.storedLatestMessages(), isEmpty);
     });
 
-    test('fetches four chats at a time, the newest first', () async {
-      final users = [for (var i = 0; i < 6; i++) 'usr$i'];
+    test('a sync catches up the unread direct chats, newest first, so '
+        "their badges leave out a call's later states", () async {
       final remote = FakeTinodeSession(
         chats: [
-          for (final (i, user) in users.indexed)
-            chat(user, lastSeq: 1, lastMessageAt: at(i)),
+          chat(bob, lastSeq: 2, read: 1, lastMessageAt: at(2)),
+          chat(carol, lastSeq: 1, lastMessageAt: at(3)),
         ],
         histories: {
-          for (final user in users) user: [message(user, 1)],
-        },
-      );
-      final hold = remote.holdHistory = Completer<void>();
-      final cached = open(remote);
-
-      await cached.chatList();
-      await until(
-        () => remote.calls.where((c) => c.startsWith('history')).length == 4,
-      );
-      await quiet();
-
-      bool attached(String call) => call.startsWith('attach usr');
-      expect(remote.calls.where(attached), [
-        'attach usr5',
-        'attach usr4',
-        'attach usr3',
-        'attach usr2',
-      ]);
-
-      hold.complete();
-      await until(() => remote.calls.where(attached).length == 6);
-      await until(() => remote.calls.contains('detach usr0'));
-    });
-
-    test('a group fetches its members first, to name the sender', () async {
-      final remote = FakeTinodeSession(
-        chats: [chat(friends, lastSeq: 2, lastMessageAt: at(2))],
-        histories: {
-          friends: [message(friends, 1, from: carol), message(friends, 2)],
-        },
-      );
-      remote.memberLists[friends] = [
-        member(bob, name: 'Bob'),
-        member(carol, name: 'Carol'),
-      ];
-      final cached = open(remote);
-
-      await cached.chatList();
-      await until(() => remote.calls.contains('detach $friends'));
-
-      final membersAt = remote.calls.indexOf('members $friends');
-      expect(membersAt, isNonNegative);
-      expect(membersAt, lessThan(remote.calls.indexOf('history $friends')));
-      // The sender was known: no second fetch.
-      expect(remote.calls.where((c) => c == 'members $friends'), hasLength(1));
-      final stored = await cached.storedMembers(friends);
-      expect(stored.map((m) => m.userId), contains(bob));
-    });
-
-    test("the user's own newest message fetches the members, for its "
-        'receipt', () async {
-      final remote = FakeTinodeSession(
-        chats: [
-          chat(bob, lastSeq: 1, lastMessageAt: at(2)),
-          chat(carol, lastSeq: 1, lastMessageAt: at(1)),
-        ],
-        histories: {
-          bob: [message(bob, 1, from: alice)],
+          bob: [message(bob, 1), message(bob, 2)],
           carol: [message(carol, 1, from: carol)],
         },
       );
-      remote.memberLists[bob] = [member(alice), member(bob, read: 1)];
       final cached = open(remote);
 
       await cached.chatList();
@@ -596,8 +537,174 @@ void main() {
             remote.calls.contains('detach $carol'),
       );
 
+      expect(remote.calls.where((c) => c.startsWith('attach usr')), [
+        'attach $carol',
+        'attach $bob',
+      ]);
+      expect(remote.calls, contains('markReceived $bob 2'));
+      final latest = await cached.storedLatestMessages();
+      expect(latest.keys, unorderedEquals([bob, carol]));
+    });
+
+    test("a pres msg caches the chat's newest messages and marks them "
+        'received while attached', () async {
+      final remote = FakeTinodeSession(
+        chats: [chat(bob, lastSeq: 2, lastMessageAt: at(2))],
+        histories: {
+          bob: [message(bob, 1), message(bob, 2), message(bob, 3)],
+        },
+      );
+      final cached = open(remote);
+      await cached.chatList();
+
+      pres(remote, bob, 3);
+      await until(() => remote.calls.contains('detach $bob'));
+
+      expect(
+        remote.calls,
+        containsAllInOrder([
+          'attach $bob',
+          'history $bob',
+          'markReceived $bob 3',
+          'detach $bob',
+        ]),
+      );
+      final latest = await cached.storedLatestMessages();
+      expect(latest[bob]?.message?.seq, 3);
+      expect((await cached.storedChatList()).single.received, 3);
+      expect(remote.attachCount(bob), 0);
+    });
+
+    test('a chat whose messages are cached is attached for its marker '
+        'alone', () async {
+      final remote = FakeTinodeSession(
+        chats: [chat(bob, lastSeq: 2, lastMessageAt: at(2))],
+        histories: {
+          bob: [message(bob, 1), message(bob, 2)],
+        },
+      );
+      final cached = open(remote);
+      await cached.chatList();
+      await cached.history(bob, limit: 32);
+      remote.calls.clear();
+
+      pres(remote, bob, 2);
+      await until(() => remote.calls.contains('detach $bob'));
+
+      expect(remote.calls, [
+        'attach $bob',
+        'markReceived $bob 2',
+        'detach $bob',
+      ]);
+    });
+
+    test('a marked chat with its messages cached is left alone', () async {
+      final remote = FakeTinodeSession(
+        chats: [chat(bob, lastSeq: 2, lastMessageAt: at(2))],
+        histories: {
+          bob: [message(bob, 1), message(bob, 2)],
+        },
+      );
+      final cached = open(remote);
+      await cached.chatList();
+      pres(remote, bob, 2);
+      await until(() => remote.calls.contains('detach $bob'));
+      remote.calls.clear();
+
+      pres(remote, bob, 2);
+      await quiet();
+
+      expect(remote.calls, isEmpty);
+    });
+
+    test('fetches four chats at a time', () async {
+      final users = [for (var i = 0; i < 6; i++) 'usr$i'];
+      final remote = FakeTinodeSession(
+        chats: [
+          for (final (i, user) in users.indexed)
+            chat(user, lastMessageAt: at(i)),
+        ],
+        histories: {
+          for (final user in users) user: [message(user, 1)],
+        },
+      );
+      final cached = open(remote);
+      await cached.chatList();
+      final hold = remote.holdHistory = Completer<void>();
+
+      for (final user in users) {
+        pres(remote, user, 1);
+      }
+      await until(
+        () => remote.calls.where((c) => c.startsWith('history')).length == 4,
+      );
+      await quiet();
+
+      bool attached(String call) => call.startsWith('attach usr');
+      expect(remote.calls.where(attached), hasLength(4));
+
+      hold.complete();
+      await until(() => remote.calls.where(attached).length == 6);
+      await until(() => users.every((u) => remote.calls.contains('detach $u')));
+    });
+
+    test('a group fetches only the sender of its newest message', () async {
+      final remote = FakeTinodeSession(
+        chats: [chat(friends, lastSeq: 1, lastMessageAt: at(1))],
+        histories: {
+          friends: [message(friends, 1, from: carol), message(friends, 2)],
+        },
+      );
+      remote.memberLists[friends] = [
+        member(bob, name: 'Bob'),
+        member(carol, name: 'Carol'),
+      ];
+      final cached = open(remote);
+      await cached.chatList();
+
+      pres(remote, friends, 2);
+      await until(() => remote.calls.contains('detach $friends'));
+
+      expect(remote.calls, contains('members $friends $bob'));
+      expect(remote.calls, isNot(contains('members $friends')));
+      final stored = await cached.storedMembers(friends);
+      expect(stored.map((m) => m.userId), [bob]);
+
+      // Bob is known now: no second fetch.
+      remote
+        ..calls.clear()
+        ..histories[friends]!.add(message(friends, 3));
+      pres(remote, friends, 3);
+      await until(() => remote.calls.contains('detach $friends'));
+      expect(remote.calls, isNot(contains(startsWith('members'))));
+    });
+
+    test("the user's own newest message fetches the members, for its "
+        'receipt', () async {
+      final remote = FakeTinodeSession(
+        chats: [
+          chat(bob, lastMessageAt: at(2)),
+          chat(carol, lastMessageAt: at(1)),
+        ],
+        histories: {
+          bob: [message(bob, 1, from: alice)],
+          carol: [message(carol, 1, from: carol)],
+        },
+      );
+      remote.memberLists[bob] = [member(alice), member(bob, read: 1)];
+      final cached = open(remote);
+      await cached.chatList();
+
+      pres(remote, bob, 1, actor: alice);
+      pres(remote, carol, 1);
+      await until(
+        () =>
+            remote.calls.contains('detach $bob') &&
+            remote.calls.contains('detach $carol'),
+      );
+
       expect(remote.calls, contains('members $bob'));
-      expect(remote.calls, isNot(contains('members $carol')));
+      expect(remote.calls, isNot(contains(startsWith('members $carol'))));
     });
 
     test('a pres msg fetches its chat, once for a burst', () async {
@@ -610,6 +717,7 @@ void main() {
       remote.memberLists[friends] = [member(bob, name: 'Bob')];
       final cached = open(remote);
       await cached.chatList();
+      pres(remote, friends, 1);
       await until(() => remote.calls.contains('detach $friends'));
       remote
         ..calls.clear()
@@ -619,14 +727,7 @@ void main() {
         ]);
 
       for (final seq in [2, 3]) {
-        remote.emitPresence(
-          PresMessage(
-            topic: 'me',
-            event: PresenceEvent.message,
-            source: friends,
-            seq: seq,
-          ),
-        );
+        pres(remote, friends, seq);
       }
       await until(() => remote.calls.contains('detach $friends'));
       await quiet();
@@ -636,17 +737,19 @@ void main() {
       expect(latest[friends]?.message?.seq, 3);
     });
 
-    test('a chat the app holds catches itself up', () async {
+    test('a chat the app holds gets the marker, and no fetch', () async {
       final remote = FakeTinodeSession(
-        chats: [chat(bob, lastSeq: 1, lastMessageAt: at(1))],
+        chats: [chat(bob, lastMessageAt: at(1))],
         histories: {
           bob: [message(bob, 1)],
         },
       );
       final cached = open(remote);
+      await cached.chatList();
       await cached.attach(bob);
 
-      await cached.chatList();
+      pres(remote, bob, 1);
+      await until(() => remote.calls.contains('markReceived $bob 1'));
       await quiet();
 
       expect(attaches(remote, bob), hasLength(1));
@@ -656,28 +759,19 @@ void main() {
 
     test('offline, it waits for the link', () async {
       final remote = FakeTinodeSession(
-        chats: [chat(bob, lastSeq: 1, lastMessageAt: at(1))],
+        chats: [chat(bob, lastSeq: 1, read: 1, lastMessageAt: at(1))],
         histories: {
           bob: [message(bob, 1)],
         },
       );
       final cached = open(remote);
       await cached.chatList();
-      await until(() => remote.calls.contains('detach $bob'));
       remote
         ..emitStatus(
           const Reconnecting(attempt: 1, retryIn: Duration(seconds: 1)),
         )
-        ..calls.clear()
-        ..histories[bob]!.add(message(bob, 2))
-        ..emitPresence(
-          const PresMessage(
-            topic: 'me',
-            event: PresenceEvent.message,
-            source: bob,
-            seq: 2,
-          ),
-        );
+        ..histories[bob]!.add(message(bob, 2));
+      pres(remote, bob, 2);
       await quiet();
       expect(attaches(remote, bob), isEmpty);
 
@@ -690,55 +784,139 @@ void main() {
 
     test('a refused chat is skipped until it has news', () async {
       final remote = FakeTinodeSession(
-        chats: [
-          chat(bob, lastSeq: 1, lastMessageAt: at(2)),
-          chat(carol, lastSeq: 1, lastMessageAt: at(1)),
-        ],
+        chats: [chat(bob, lastMessageAt: at(2))],
         histories: {
-          bob: [message(bob, 1)],
-          carol: [message(carol, 1, from: carol)],
+          bob: [message(bob, 1), message(bob, 2)],
         },
       );
       remote.refuseAttach.add(bob);
       final cached = open(remote);
-
       await cached.chatList();
-      await until(() => remote.calls.contains('detach $carol'));
-      final latest = await cached.storedLatestMessages();
-      expect(latest.keys, [carol]);
 
+      pres(remote, bob, 1);
+      await until(() => attaches(remote, bob).isNotEmpty);
+      await quiet();
       remote.calls.clear();
-      await cached.chatList();
+      pres(remote, bob, 1);
       await quiet();
       expect(attaches(remote, bob), isEmpty);
 
-      remote.emitPresence(
-        const PresMessage(
-          topic: 'me',
-          event: PresenceEvent.message,
-          source: bob,
-          seq: 2,
-        ),
-      );
+      pres(remote, bob, 2);
       await until(() => attaches(remote, bob).isNotEmpty);
     });
 
     test('a chat whose newest messages were deleted is fetched once', () async {
       final remote = FakeTinodeSession(
-        chats: [chat(bob, lastSeq: 3, lastMessageAt: at(3))],
+        chats: [chat(bob, lastMessageAt: at(3))],
         histories: {
           bob: [message(bob, 1), message(bob, 2)],
         },
       );
       final cached = open(remote);
       await cached.chatList();
+      pres(remote, bob, 3);
       await until(() => remote.calls.contains('detach $bob'));
 
       remote.calls.clear();
-      await cached.chatList();
+      pres(remote, bob, 3);
       await quiet();
 
       expect(attaches(remote, bob), isEmpty);
+    });
+
+    test('a pres msg the user sent from another device is read', () async {
+      final remote = FakeTinodeSession(
+        chats: [chat(bob, lastSeq: 1, read: 1, lastMessageAt: at(1))],
+      )..holdHistory = Completer<void>();
+      final cached = open(remote);
+      await cached.chatList();
+
+      pres(remote, bob, 2, actor: alice);
+      await quiet();
+
+      final stored = (await cached.storedChatList()).single;
+      expect(stored.lastSeq, 2);
+      expect(stored.read, 2);
+    });
+
+    test('a pres recv raises the stored received marker', () async {
+      final remote = FakeTinodeSession(
+        chats: [chat(bob, lastSeq: 2, lastMessageAt: at(2))],
+      );
+      final cached = open(remote);
+      await cached.chatList();
+
+      remote.emitPresence(
+        const PresMessage(
+          topic: 'me',
+          event: PresenceEvent.received,
+          source: bob,
+          seq: 2,
+        ),
+      );
+      await quiet();
+
+      expect((await cached.storedChatList()).single.received, 2);
+    });
+
+    test("the chat list's \"if modified since\" keeps to the server's "
+        'times', () async {
+      final remote = FakeTinodeSession(
+        chats: [chat(bob, lastSeq: 1, lastMessageAt: at(1))],
+        histories: {
+          bob: [message(bob, 1), message(bob, 2, time: at(2))],
+        },
+      );
+      final cached = open(remote);
+      await cached.chatList();
+      final hold = remote.holdHistory = Completer<void>();
+
+      // The device's clock is a day ahead of the server's.
+      await withClock(Clock.fixed(at(24 * 60)), () async {
+        pres(remote, bob, 2);
+        await quiet();
+        await cached.chatList();
+      });
+      expect(
+        remote.lastChatListSince,
+        at(1).subtract(const Duration(milliseconds: 1)),
+      );
+
+      hold.complete();
+      await until(() => remote.calls.contains('detach $bob'));
+      await cached.chatList();
+      expect(
+        remote.lastChatListSince,
+        at(2).subtract(const Duration(milliseconds: 1)),
+      );
+    });
+  });
+
+  group('passive', () {
+    test('never sends the outbox, not even on a reconnect', () async {
+      final remote = FakeTinodeSession(
+        chats: [chat(bob, lastSeq: 1, lastMessageAt: at(1))],
+      );
+      final store = ChatStore(ChatDatabase(NativeDatabase.memory()));
+      await store.mergeChats(remote.chats);
+      await store.enqueuePublish(bob, 'client-1', const PlainText('hi'), at(2));
+      final passive = CachedTinodeSession(
+        remote,
+        store,
+        userId: alice,
+        passive: true,
+      );
+      addTearDown(passive.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      remote
+        ..emitStatus(const Reconnecting(attempt: 1, retryIn: Duration.zero))
+        ..emitStatus(const Connected());
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(remote.calls, isNot(contains(startsWith('publish'))));
+      expect(remote.calls, isNot(contains('attach $bob')));
+      expect(await store.outbox(), hasLength(1));
     });
   });
 }
